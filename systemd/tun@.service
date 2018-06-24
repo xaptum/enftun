@@ -1,0 +1,16 @@
+[Unit]
+Description=TUN device %I
+After=network.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+
+ExecStart=/usr/sbin/ip tuntap add mode tun %I
+ExecStart=/usr/sbin/ip link set dev %I mtu 1280
+ExecStart=/usr/sbin/ip link set dev %I up
+
+ExecStop=/usr/sbin/ip tuntap del mode tun %I
+
+[Install]
+WantedBy=multi-user.target
