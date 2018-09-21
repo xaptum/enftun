@@ -77,14 +77,16 @@ enftun_tls_handshake(struct enftun_tls* tls,
         goto err;
     }
 
-    if (!SSL_CTX_use_certificate_file(tls->ctx, cert_file, SSL_FILETYPE_PEM))
+    if (!(SSL_CTX_use_certificate_file(tls->ctx, cert_file, SSL_FILETYPE_PEM) ||
+          SSL_CTX_use_certificate_file(tls->ctx, cert_file, SSL_FILETYPE_ASN1)))
     {
         enftun_log_ssl_error("Failed to load client TLS certificate %s:", cert_file);
         goto err;
     }
     enftun_log_debug("Loaded client TLS certificate %s\n", cert_file);
 
-    if (!SSL_CTX_use_PrivateKey_file(tls->ctx, key_file, SSL_FILETYPE_PEM))
+    if (!(SSL_CTX_use_PrivateKey_file(tls->ctx, key_file, SSL_FILETYPE_PEM) ||
+          SSL_CTX_use_PrivateKey_file(tls->ctx, key_file, SSL_FILETYPE_ASN1)))
     {
         enftun_log_ssl_error("Failed to load client TLS key %s:", key_file);
         goto err;

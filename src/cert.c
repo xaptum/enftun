@@ -105,6 +105,7 @@ enftun_cert_common_name_file(const char *file, char* out, size_t out_len)
     X509 *cert;
     int len;
 
+    // Try to open cert as PEM format
     fp = fopen(file, "r");
     if (!fp)
     {
@@ -112,13 +113,27 @@ enftun_cert_common_name_file(const char *file, char* out, size_t out_len)
         len = -1;
         goto out;
     }
-
     cert = PEM_read_X509(fp, NULL, NULL, NULL);
+    fclose(fp);
+
+    // If not PEM, try to open cert as DER format
+    if (!cert)
+    {
+        fp = fopen(file, "r");
+        if (!fp)
+        {
+            enftun_log_error("Failed to open cert %s\n", file);
+            len = -1;
+            goto out;
+        }
+        cert = d2i_X509_fp(fp, NULL);
+        fclose(fp);
+    }
+
     if (!cert)
     {
         enftun_log_error("Failed to parse cert %s\n", file);
         len = -1;
-        goto close_fp;
     }
 
     len = enftun_cert_common_name_X509(cert, out, out_len);
@@ -126,9 +141,6 @@ enftun_cert_common_name_file(const char *file, char* out, size_t out_len)
         enftun_log_error("Failed to get common name from cert %s\n", file);
 
     X509_free(cert);
-
- close_fp:
-    fclose(fp);
 
  out:
     return len;
