@@ -16,6 +16,7 @@
 
 #include "filter.h"
 #include "ip.h"
+#include "log.h"
 
 
 #define IPV6_HEADER_INIT(header, packet) \
@@ -28,13 +29,26 @@ enftun_is_ipv6(struct enftun_packet* pkt)
     uint16_t payload_length;
 
     if (pkt->size < sizeof(struct ipv6_header))
+    {
+        enftun_log_debug("enftun_is_ipv6: packet smaller than IPv6 header (%d < %d)\n",
+                         pkt->size, sizeof(struct ipv6_header));
         return 0;
+    }
+
 
     if (hdr->version != 6)
+    {
+        enftun_log_debug("enftun_is_ipv6: header version is not 6 (%d != %d)\n",
+                         hdr->version, 6);
         return 0;
+    }
 
     if (ntohs(hdr->payload_length) != pkt->size - sizeof(*hdr))
+    {
+        enftun_log_debug("enftun_is_ipv6: payload length does not match received (%d != %d\n",
+                         ntohs(hdr->payload_length), pkt->size - sizeof(*hdr));
         return 0;
+    }
 
     return 1;
 }
