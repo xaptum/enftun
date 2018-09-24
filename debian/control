@@ -1,0 +1,15 @@
+Source: enftun
+Section: net
+Priority: optional
+Maintainer: David R. Bild <david.bild@xaptum.com>
+Build-Depends: debhelper (>= 10), cmake (>= 3.1)
+Standards-Version: 3.9.8
+Homepage: https://github.com/xaptum.enftun
+
+Package: enftun
+Architecture: any
+Multi-Arch: foreign
+Depends: ${misc:Depends}, ${shlibs:Depends}
+Description: Tunnel client for the Xaptum ENF
+ This package contains a tunnel client for connecting to the Xaptum
+ Edge Network Fabric (ENF) IPv6 overlay network.
