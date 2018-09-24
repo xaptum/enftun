@@ -7,6 +7,8 @@ project(enftun
   LANGUAGES C
   )
 
+include(GNUInstallDirs)
+
 find_package(LibConfig REQUIRED QUIET 1.5)
 find_package(LibUV REQUIRED QUIET 1.9)
 find_package(OpenSSL REQUIRED QUIET 1.1)
@@ -28,7 +30,13 @@ target_link_libraries(enftun
   PRIVATE LibConfig::LibConfig
           LibUV::LibUV
           OpenSSL::SSL
-)
+          )
+
+install(TARGETS enftun
+        DESTINATION ${CMAKE_INSTALL_BINDIR})
+
+install(FILES systemd/enftun@.service
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/systemd/system)
 
 configure_file(example/example.conf    conf/example.conf    COPYONLY)
 configure_file(example/example.crt.pem conf/example.crt.pem COPYONLY)
