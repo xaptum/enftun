@@ -55,6 +55,7 @@ int
 enftun_tls_free(struct enftun_tls* tls)
 {
     SSL_CTX_free(tls->ctx);
+    return 0;
 }
 
 static
@@ -140,7 +141,7 @@ enftun_tls_connect(struct enftun_tls* tls,
 {
     struct addrinfo *addr_h, *addr, hints;
     char ip[45];
-    int err, rc;
+    int rc;
 
     memset(&hints, 0, sizeof(hints));
     hints.ai_family   = AF_UNSPEC;
@@ -194,7 +195,7 @@ enftun_tls_connect(struct enftun_tls* tls,
 int
 enftun_tls_disconnect(struct enftun_tls* tls)
 {
-    int err, rc;
+    int rc;
 
     if (tls->ssl)
     {
@@ -215,6 +216,8 @@ enftun_tls_disconnect(struct enftun_tls* tls)
 
     if (tls->fd)
         close(tls->fd);
+
+    return 0;
 }
 
 int
@@ -312,7 +315,8 @@ enftun_tls_read_packet(struct enftun_tls* tls, struct enftun_packet* pkt)
 }
 
 void
-enftun_tls_prepare_packet(struct enftun_tls* tls, struct enftun_packet* pkt)
+enftun_tls_prepare_packet(struct enftun_tls* tls __attribute__((unused)),
+                          struct enftun_packet* pkt)
 {
     enftun_packet_insert_head(pkt, 2);
     *(uint16_t*)(pkt->data) = htons(pkt->size - 2);

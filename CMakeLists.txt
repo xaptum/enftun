@@ -38,11 +38,21 @@ set_target_properties(enftun
   C_STANDARD 99
 )
 
-install(TARGETS enftun
-        DESTINATION ${CMAKE_INSTALL_BINDIR})
+if (MSVC)
+  target_compile_options(enftun PRIVATE /W4 /WX)
+else(MSVC)
+  target_compile_options(enftun PRIVATE -Wall -Wextra)
+endif(MSVC)
 
-install(FILES systemd/enftun@.service
-        DESTINATION ${CMAKE_INSTALL_LIBDIR}/systemd/system)
+install(
+  TARGETS enftun
+  DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
+
+install(
+  FILES systemd/enftun@.service
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/systemd/system
+)
 
 configure_file(example/example.conf    conf/example.conf    COPYONLY)
 configure_file(example/example.crt.pem conf/example.crt.pem COPYONLY)

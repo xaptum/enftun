@@ -50,8 +50,8 @@ enftun_tun_free(struct enftun_tun* tun)
 {
     if (tun->name)
         free(tun->name);
-
     CLEAR(*tun);
+    return 0;
 }
 
 int

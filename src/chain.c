@@ -70,7 +70,7 @@ enftun_chain_init(struct enftun_chain* chain,
 }
 
 int
-enftun_chain_free(struct enftun_chain* chain)
+enftun_chain_free(struct enftun_chain* chain __attribute__((unused)))
 {
     return 0;
 }
@@ -82,10 +82,12 @@ enftun_chain_start(struct enftun_chain* chain,
     chain->complete = complete;
     chain->state = enftun_chain_reading;
     enftun_crb_read(&chain->crb, chain->input);
+    return 0;
 }
 
 int
 enftun_chain_stop(struct enftun_chain* chain)
 {
     enftun_crb_cancel(&chain->crb);
+    return 0;
 }

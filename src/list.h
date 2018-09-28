@@ -29,6 +29,7 @@ int
 enftun_list_init(struct enftun_list* head)
 {
     head->next = head->prev = head;
+    return 0;
 }
 
 static inline

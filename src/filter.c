@@ -26,7 +26,6 @@ int
 enftun_is_ipv6(struct enftun_packet* pkt)
 {
     IPV6_HEADER_INIT(hdr, pkt);
-    uint16_t payload_length;
 
     if (pkt->size < sizeof(struct ipv6_header))
     {
