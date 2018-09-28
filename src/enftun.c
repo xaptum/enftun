@@ -73,6 +73,8 @@ enftun_context_free(struct enftun_context* ctx)
     enftun_tls_free(&ctx->tls);
 
     enftun_options_free(&ctx->options);
+
+    return 0;
 }
 
 /**
@@ -141,7 +143,7 @@ stop_all(struct enftun_context* ctx)
 
 static
 void
-chain_complete(struct enftun_chain* chain, int status)
+chain_complete(struct enftun_chain* chain, int status __attribute__((unused)))
 {
     struct enftun_context* ctx = (struct enftun_context*) chain->data;
     stop_all(ctx);
@@ -153,7 +155,6 @@ chain_ingress_filter(struct enftun_chain* chain,
                      struct enftun_packet* pkt)
 {
     struct enftun_context* ctx = (struct enftun_context*) chain->data;
-    char addr[INET6_ADDRSTRLEN];
 
     if (!enftun_is_ipv6(pkt))
     {
@@ -222,7 +223,6 @@ enftun_tunnel(struct enftun_context* ctx)
 
     uv_run(&ctx->loop, UV_RUN_DEFAULT);
 
- free_egress:
     enftun_chain_free(&ctx->egress);
 
  free_ingress:
