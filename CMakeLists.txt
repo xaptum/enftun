@@ -1,11 +1,11 @@
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.1)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
 project(enftun
   VERSION 0.1.0
   LANGUAGES C
-  )
+)
 
 include(GNUInstallDirs)
 
@@ -27,10 +27,16 @@ add_executable(enftun
 )
 
 target_link_libraries(enftun
-  PRIVATE LibConfig::LibConfig
-          LibUV::LibUV
-          OpenSSL::SSL
-          )
+  PRIVATE
+  LibConfig::LibConfig
+  LibUV::LibUV
+  OpenSSL::SSL
+)
+
+set_target_properties(enftun
+  PROPERTIES
+  C_STANDARD 99
+)
 
 install(TARGETS enftun
         DESTINATION ${CMAKE_INSTALL_BINDIR})
