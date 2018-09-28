@@ -37,7 +37,7 @@ struct enftun_channel_ops enftun_tls_ops =
 int
 enftun_tls_init(struct enftun_tls* tls)
 {
-    int rc;
+    int rc = 0;
 
     tls->ctx = SSL_CTX_new(TLS_client_method());
     if (!tls->ctx)
