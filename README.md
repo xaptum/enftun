@@ -19,7 +19,7 @@ mkdir -p build
 cd build
 
 # Configure the build
-cmake .. -CMAKE_BUILD_TYPE=RelWithDebInfo
+cmake .. -DCMAKE_BUILD_TYPE=RelWithDebInfo
 
 # Build the library
 cmake --build .
