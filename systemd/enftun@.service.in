@@ -6,7 +6,7 @@ Documentation=https://github.com/xaptum/enftun
 
 [Service]
 WorkingDirectory=/etc/enftun
-ExecStart=@CMAKE_INSTALL_BINDIR@/enftun -c %i.conf
+ExecStart=@CMAKE_INSTALL_FULL_BINDIR@/enftun -c %i.conf
 ProtectSystem=true
 ProtectHome=true
 Restart=on-failure

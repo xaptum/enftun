@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 3.1 FATAL_ERROR)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
@@ -6,6 +6,8 @@ project(enftun
   VERSION 0.1.0
   LANGUAGES C
 )
+
+option(BUILD_SYSTEMD "Build with systemd support" ON)
 
 include(GNUInstallDirs)
 
@@ -49,10 +51,9 @@ install(
   DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
 
-install(
-  FILES systemd/enftun@.service
-  DESTINATION ${CMAKE_INSTALL_LIBDIR}/systemd/system
-)
+if (BUILD_SYSTEMD)
+  add_subdirectory(systemd)
+endif()
 
 configure_file(example/example.conf    conf/example.conf    COPYONLY)
 configure_file(example/example.crt.pem conf/example.crt.pem COPYONLY)
