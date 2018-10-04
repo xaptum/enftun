@@ -134,7 +134,7 @@ enftun_tls_handshake(struct enftun_tls* tls,
 }
 
 int
-enftun_tls_connect(struct enftun_tls* tls,
+enftun_tls_connect(struct enftun_tls* tls, int mark,
                    const char* host, const char *port,
                    const char* cacert_file,
                    const char* cert_file, const char* key_file)
@@ -166,6 +166,16 @@ enftun_tls_connect(struct enftun_tls* tls,
             enftun_log_debug("Failed to create socket: %s\n", strerror(errno));
             rc = -errno;
             continue;
+        }
+
+        if (mark > 0)
+        {
+            if ((rc = setsockopt(tls->fd, SOL_SOCKET, SO_MARK, &mark, sizeof(mark))) < 0)
+            {
+                enftun_log_debug("Failed to set mark %d: %s\n", mark, strerror(errno));
+                rc = -errno;
+                continue;
+            }
         }
 
         if ((rc = connect(tls->fd, addr->ai_addr, addr->ai_addrlen)) < 0)

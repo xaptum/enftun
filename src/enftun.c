@@ -250,6 +250,7 @@ enftun_connect(struct enftun_context* ctx)
         goto out;
 
     if ((rc = enftun_tls_connect(&ctx->tls,
+                                 ctx->options.fwmark,
                                  ctx->options.remote_host,
                                  ctx->options.remote_port,
                                  ctx->options.remote_ca_cert_file,

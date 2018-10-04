@@ -47,6 +47,8 @@ enftun_options_init(struct enftun_options* opts)
     opts->remote_host = "23.147.128.112";
     opts->remote_port = "443";
 
+    opts->fwmark = 363;
+
     return 0;
 }
 
@@ -127,6 +129,9 @@ enftun_options_parse_conf(struct enftun_options* opts)
     config_lookup_string(cfg, "remote.host", &opts->remote_host);
     config_lookup_string(cfg, "remote.port", &opts->remote_port);
     config_lookup_string(cfg, "remote.ca_cert_file", &opts->remote_ca_cert_file);
+
+    /* Route settings */
+    config_lookup_int(cfg, "route.fwmark", &opts->fwmark);
 
     /* Identity settings */
     config_lookup_string(cfg, "identity.cert_file", &opts->cert_file);
