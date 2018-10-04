@@ -38,6 +38,8 @@ struct enftun_options
 
     const char* cert_file;
     const char* key_file;
+
+    int fwmark;
 };
 
 int
