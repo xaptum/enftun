@@ -1,8 +1,10 @@
 [Unit]
 Description=ENF tunnel client for %I
+Documentation=https://github.com/xaptum/enftun
+After=tun@%i.service
+BindsTo=tun@%i.service
 After=network-online.target
 Wants=network-online.target
-Documentation=https://github.com/xaptum/enftun
 
 [Service]
 WorkingDirectory=/etc/enftun
