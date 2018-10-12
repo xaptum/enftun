@@ -19,6 +19,7 @@ add_executable(enftun
   src/cert.c
   src/chain.c
   src/channel.c
+  src/context.c
   src/enftun.c
   src/filter.c
   src/log.c
