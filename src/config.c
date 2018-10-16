@@ -109,3 +109,40 @@ enftun_config_parse(struct enftun_config* config, const char* file)
 
     return 0;
 }
+
+int
+enftun_config_print(struct enftun_config* config, const char* key)
+{
+    /* Platform settings */
+    if (strcmp(key, "tun.ip_path") == 0)
+        fprintf(stdout, "%s\n", config->ip_path);
+    /* TUN settings */
+    else if (strcmp(key, "tun.dev") == 0)
+        fprintf(stdout, "%s\n", config->dev);
+    else if (strcmp(key, "tun.dev_node") == 0)
+        fprintf(stdout, "%s\n", config->dev_node);
+    /* Remote settings */
+    else if (strcmp(key, "remote.host") == 0)
+        fprintf(stdout, "%s\n", config->remote_host);
+    else if (strcmp(key, "remote.port") == 0)
+        fprintf(stdout, "%s\n", config->remote_port);
+    else if (strcmp(key, "remote.port") == 0)
+        fprintf(stdout, "%s\n", config->remote_port);
+    else if (strcmp(key, "remote.ca_cert_file") == 0)
+        fprintf(stdout, "%s\n", config->remote_ca_cert_file);
+    /* Route settings */
+    else if (strcmp(key, "route.fwmark") == 0)
+        fprintf(stdout, "%d\n", config->fwmark);
+    /* Identity settings */
+    else if (strcmp(key, "identity.cert_file") == 0)
+        fprintf(stdout, "%s\n", config->cert_file);
+    else if (strcmp(key, "identity.key_file") == 0)
+        fprintf(stdout, "%s\n", config->key_file);
+    else
+    {
+        fprintf(stderr, "%s not found\n", key);
+        return -1;
+    }
+
+    return 0;
+}

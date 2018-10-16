@@ -27,7 +27,7 @@
 static
 void print_usage()
 {
-    puts("usage: enftun [-h] [-c conf_file]");
+    puts("usage: enftun [-h] -c conf_file [-p key]");
 }
 
 int
@@ -55,7 +55,7 @@ enftun_options_parse_argv(struct enftun_options* opts,
                           char *argv[])
 {
     int c;
-    while ((c = getopt(argc, argv, "hc:")) != -1)
+    while ((c = getopt(argc, argv, "hc:p:")) != -1)
     {
         switch (c)
         {
@@ -64,6 +64,10 @@ enftun_options_parse_argv(struct enftun_options* opts,
             return -EINVAL;
         case 'c':
             opts->conf_file = optarg;
+            break;
+        case 'p':
+            opts->action = ENFTUN_ACTION_PRINT;
+            opts->print_arg = optarg;
             break;
         default:
             print_usage();

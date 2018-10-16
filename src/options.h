@@ -30,6 +30,8 @@ struct enftun_options
     enum enftun_action action;
 
     const char* conf_file;
+
+    const char* print_arg;
 };
 
 int

@@ -185,6 +185,24 @@ enftun_connect(struct enftun_context* ctx)
 }
 
 static
+int enftun_print(struct enftun_context* ctx)
+{
+    return enftun_config_print(&ctx->config, ctx->options.print_arg);
+}
+
+static
+int enftun_run(struct enftun_context* ctx)
+{
+    int rc;
+    while (1)
+    {
+        rc = enftun_connect(ctx);
+        sleep(1);
+    }
+    return rc;
+}
+
+static
 int
 enftun_main(int argc, char *argv[])
 {
@@ -202,10 +220,15 @@ enftun_main(int argc, char *argv[])
     if ((rc = enftun_config_parse(&ctx.config, ctx.options.conf_file) < 0))
         goto free_context;
 
-    while (1)
+    switch (ctx.options.action)
     {
-        rc = enftun_connect(&ctx);
-        sleep(1);
+    case ENFTUN_ACTION_PRINT:
+        rc = enftun_print(&ctx);
+        break;
+    case ENFTUN_ACTION_RUN:
+    default:
+        rc = enftun_run(&ctx);
+        break;
     }
 
  free_context:

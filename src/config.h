@@ -34,6 +34,7 @@ struct enftun_config
     const char* dev;
     const char* dev_node;
 
+
     const char* remote_host;
     const char* remote_port;
     const char* remote_ca_cert_file;
@@ -52,5 +53,8 @@ enftun_config_free(struct enftun_config* config);
 
 int
 enftun_config_parse(struct enftun_config* config, const char* file);
+
+int
+enftun_config_print(struct enftun_config* config, const char* key);
 
 #endif // ENFTUN_OPTIONS_H
