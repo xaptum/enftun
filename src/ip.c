@@ -14,37 +14,38 @@
  * limitations under the License.
  */
 
-#pragma once
-
-#ifndef ENFTUN_IP_H
-#define ENFTUN_IP_H
-
-#include <netinet/in.h>
-#include <stdint.h>
+#include <stdio.h>
 #include <string.h>
 
-#pragma pack(push, 1)
-struct ipv6_header
-{
-    uint8_t  priority  : 4,
-             version   : 4;
-    uint8_t  flow_label[3];
-    uint16_t payload_length;
-    uint8_t  next_header;
-    uint8_t  hop_limit;
-    struct in6_addr src;
-    struct in6_addr dst;
-};
-#pragma pack(pop)
+#include <arpa/inet.h>
 
-static inline
-int ipv6_equal(const struct in6_addr* a, const struct in6_addr* b)
-{
-    return memcmp(a, b, sizeof(struct in6_addr)) == 0;
-}
+#include "ip.h"
 
 int ip6_prefix_str(const struct in6_addr* addr,
                            const int prefix, char* dst,
-                           size_t size);
+                           size_t size)
+{
+    int rc;
 
-#endif // ENFTUN_IP_H
+    /* Print the IP address */
+    if (inet_ntop(AF_INET6, addr, dst, size) == NULL)
+        return -1;
+
+    int len = strlen(dst);
+    size -= len; dst += len;
+
+    /* Print the slash */
+    if (size < 2)
+        return -1;
+
+    dst[0] = '/';
+    dst[1] = '\0';
+    size -= 1; dst += 1;
+
+    /* Print the prefix */
+    rc = snprintf(dst, size, "%d", prefix);
+    if ((rc < 0) || ((size_t) rc >= size))
+        return -1;
+
+    return 0;
+}
