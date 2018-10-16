@@ -23,6 +23,9 @@ cmake .. -DCMAKE_BUILD_TYPE=RelWithDebInfo
 
 # Build the library
 cmake --build .
+
+# Install the libary
+cmake --build . --target install
 ```
 
 ### CMake Options
@@ -38,41 +41,52 @@ The following CMake configuration options are supported.
 
 ## Usage
 
-### Preparing the TUN device
+### Using Systemd
 
-The TUN device must be created prior to starting `enftun`.
+A [`systemd`]() unit file to manage an enftun are included in this
+repo.
 
-A [`systemd`]() unit file to managed TUN devices is located in this repo.  Copy the `systemd/tun@.service` file to `/etc/systemd/service/` and run `systemctl start tun@enf0.service`.
+First copy the `example/example.conf` configuration file to
+`/etc/enftun/enf0.conf` and make any desired changes.
 
-Or use the following `iproute2` commands.
+Then enable or start the `enftun` services.
+
 ``` bash
-ip tuntap add mode tun enf0
-ip link set dev enf0 mtu 1280
-ip link set dev enf0 up
+# Enable enf0 to start on boot
+systemctl enable enftun-setup@enf0
+systemctl enable enftun@enf0
+
+# Start enf0 manually
+systemctl start enftun@enf0
 ```
 
-### Configuring enftun
+### Manual usage
 
-An example configuration file is located in `example/example.conf`.  See documentation in the example file for more information.
+An example configuration file is located in `example/example.conf`.
+See documentation in the example file for more information.
 
-### Running enftun
+##### enftun-setup
+The TUN device should be created must be created prior to starting
+`enftun`.
+
+Additionally, any desired routes should be configured before other
+networking services start. This will ensure that traffic intended for
+the ENF cannot transit a different interface before the enftun is
+configured.
+
+The `enftun-setup` script included in this package will perform this
+setup.
+
+``` bash
+enftun-setup up <path_to_config_file>
+```
+
+#### enftun
+
+After `enftun-setup` is complete, run the `enftun`.
 
 ``` bash
 enftun -c <path_to_config_file>
-```
-
-### Adding a route and IP address
-
-Add the IP address specified in the config file to the tunnel interface:
-
-``` bash
-ip addr add dev enf0 <ipv6_address>
-```
-
-Direct all IPv6 traffic through the tunnel interface:
-
-``` bash
-ip -6 route add default dev enf0
 ```
 
 ## Development

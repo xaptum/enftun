@@ -38,10 +38,10 @@ on_complete(struct enftun_crb* crb)
         handled = chain->filter(chain, &chain->packet);
         if (!handled)
         {
-        chain->state = enftun_chain_writing;
-        enftun_crb_write(&chain->crb, chain->output);
-        break;
+            chain->state = enftun_chain_writing;
+            enftun_crb_write(&chain->crb, chain->output);
         }
+        break;
     case enftun_chain_writing:
         chain->state = enftun_chain_reading;
         enftun_crb_read(&chain->crb, chain->input);

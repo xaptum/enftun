@@ -16,14 +16,15 @@
 
 #pragma once
 
-#ifndef ENFTUN_H
-#define ENFTUN_H
+#ifndef ENFTUN_CONTEXT_H
+#define ENFTUN_CONTEXT_H
 
 #include <netinet/in.h>
 #include <uv.h>
 
 #include "chain.h"
 #include "channel.h"
+#include "config.h"
 #include "options.h"
 #include "tls.h"
 #include "tun.h"
@@ -34,6 +35,7 @@
 struct enftun_context
 {
     struct enftun_options options;
+    struct enftun_config config;
 
     struct enftun_tls tls;
     struct enftun_tun tun;
@@ -50,17 +52,14 @@ struct enftun_context
     char ipv6_str[45];
 };
 
-static
 int
 enftun_context_init(struct enftun_context* ctx);
 
-static
 int
 enftun_context_free(struct enftun_context* ctx);
 
-static
 int
 enftun_context_ipv6_from_cert(struct enftun_context* ctx, const char* cert);
 
 
-#endif // ENFTUN_H
+#endif // ENFTUN_CONTEXT_H

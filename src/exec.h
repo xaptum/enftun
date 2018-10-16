@@ -16,33 +16,9 @@
 
 #pragma once
 
-#ifndef ENFTUN_OPTIONS_H
-#define ENFTUN_OPTIONS_H
+#ifndef ENFTUN_EXEC_H
+#define ENFTUN_EXEC_H
 
-enum enftun_action
-{
-    ENFTUN_ACTION_RUN,
-    ENFTUN_ACTION_PRINT
-};
+int enftun_exec(const char* const argv[], const char* const envp[]);
 
-struct enftun_options
-{
-    enum enftun_action action;
-
-    const char* conf_file;
-
-    const char* print_arg;
-};
-
-int
-enftun_options_init(struct enftun_options* opts);
-
-int
-enftun_options_free(struct enftun_options* opts);
-
-int
-enftun_options_parse_argv(struct enftun_options* opts,
-                          const int argc,
-                          char *argv[]);
-
-#endif // ENFTUN_OPTIONS_H
+#endif // ENFTUN_EXEC_H

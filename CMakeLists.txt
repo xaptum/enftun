@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.1 FATAL_ERROR)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
 project(enftun
-  VERSION 0.1.0
+  VERSION 0.1.2
   LANGUAGES C
 )
 
@@ -19,8 +19,12 @@ add_executable(enftun
   src/cert.c
   src/chain.c
   src/channel.c
+  src/config.c
+  src/context.c
   src/enftun.c
+  src/exec.c
   src/filter.c
+  src/ip.c
   src/log.c
   src/options.c
   src/packet.c
@@ -49,7 +53,9 @@ endif(MSVC)
 install(
   TARGETS enftun
   DESTINATION ${CMAKE_INSTALL_BINDIR}
-)
+  )
+
+add_subdirectory(tools)
 
 if (BUILD_SYSTEMD)
   add_subdirectory(systemd)
