@@ -168,8 +168,13 @@ enftun_connect(struct enftun_context* ctx)
                               ctx->options.dev_node)) < 0)
         goto close_tls;
 
+    if ((rc = enftun_tun_set_ip6(&ctx->tun,
+                                 ctx->options.ip_path, &ctx->ipv6)) < 0)
+        goto close_tun;
+
     rc = enftun_tunnel(ctx);
 
+ close_tun:
     enftun_tun_close(&ctx->tun);
 
  close_tls:

@@ -29,6 +29,8 @@ struct enftun_options
 
     const char* conf_file;
 
+    const char* ip_path;
+
     const char* dev;
     const char* dev_node;
 

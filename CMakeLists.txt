@@ -21,7 +21,9 @@ add_executable(enftun
   src/channel.c
   src/context.c
   src/enftun.c
+  src/exec.c
   src/filter.c
+  src/ip.c
   src/log.c
   src/options.c
   src/packet.c

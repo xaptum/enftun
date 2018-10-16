@@ -61,13 +61,7 @@ An example configuration file is located in `example/example.conf`.  See documen
 enftun -c <path_to_config_file>
 ```
 
-### Adding a route and IP address
-
-Add the IP address specified in the config file to the tunnel interface:
-
-``` bash
-ip addr add dev enf0 <ipv6_address>
-```
+### Adding a route
 
 Direct all IPv6 traffic through the tunnel interface:
 

@@ -21,12 +21,15 @@
 #include <unistd.h>
 
 #include <sys/ioctl.h>
-#include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/types.h>
 
 #include <linux/if.h>
 #include <linux/if_tun.h>
+#include <linux/ipv6.h>
 
+#include "exec.h"
+#include "ip.h"
 #include "log.h"
 #include "memory.h"
 #include "tun.h"
@@ -122,6 +125,28 @@ enftun_tun_close(struct enftun_tun* tun)
         return -errno;
     else
         return 0;
+}
+
+int
+enftun_tun_set_ip6(struct enftun_tun* tun,
+                   const char* ip_path, const struct in6_addr* ip6)
+{
+    int rc;
+    char addr[45+1+3+1]; // max addr + '/' + max prefix + null term
+
+    if ((rc = ip6_prefix_str(ip6, 128, addr, sizeof(addr))) < 0)
+        return rc;
+
+    const char* argv[] = { ip_path, "-6", "addr", "replace", addr, "dev", tun->name, 0 };
+    const char* envp[] = { 0 };
+
+    if ((rc = enftun_exec(argv, envp)) < 0)
+    {
+        enftun_log_error("Failed to set the address of %s\n", tun->name);
+        return rc;
+    }
+
+    return 0;
 }
 
 int
