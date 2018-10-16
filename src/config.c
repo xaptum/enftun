@@ -25,6 +25,50 @@
 #include "memory.h"
 #include "config.h"
 
+/**
+ * Joins a null-terminated array of strings with the specified
+ * separator and prints to stdout.
+ */
+static
+void
+print_joined(const char** strs, const char* sep)
+{
+    while (*strs != NULL)
+    {
+        fprintf(stdout, "%s", *strs);
+        strs++;
+        if (*strs != NULL)
+            fprintf(stdout, "%s", sep);
+    }
+    fprintf(stdout, "\n");
+}
+
+/**
+ * Looks up the value of string array in the configuration config
+ * specified by the path path. It stores the values in a
+ * null-terminated array at value.
+ *
+ * The caller is responsible for free-ing value.  If value was
+ * non-NULL when called, this method will free it.
+ */
+static
+void
+lookup_string_array(config_t* cfg, const char* path, const char** value)
+{
+    config_setting_t* s = config_lookup(cfg, path);
+    if (!s || !config_setting_is_array(s))
+        return;
+
+    int cnt = config_setting_length(s);
+
+    if (value) free(value);
+    value = calloc(cnt + 1, sizeof(char*));
+    for (int i = 0; i < cnt; i++)
+        {
+            value[i] = config_setting_get_string_elem(s, i);
+        }
+}
+
 int
 enftun_config_init(struct enftun_config* config)
 {
@@ -41,6 +85,10 @@ enftun_config_init(struct enftun_config* config)
     config->remote_port = "443";
 
     config->fwmark = 363;
+    config->table = 2097;
+
+    config->prefixes = calloc(2, sizeof(char*));
+    config->prefixes[0] = "default";
 
     return 0;
 }
@@ -48,10 +96,9 @@ enftun_config_init(struct enftun_config* config)
 int
 enftun_config_free(struct enftun_config* config)
 {
+    free(config->prefixes);
     config_destroy(&config->cfg);
-
     CLEAR(*config);
-
     return 0;
 }
 
@@ -102,6 +149,8 @@ enftun_config_parse(struct enftun_config* config, const char* file)
 
     /* Route settings */
     config_lookup_int(cfg, "route.fwmark", &config->fwmark);
+    config_lookup_int(cfg, "route.table", &config->table);
+    lookup_string_array(cfg, "route.prefixes", config->prefixes);
 
     /* Identity settings */
     config_lookup_string(cfg, "identity.cert_file", &config->cert_file);
@@ -133,6 +182,10 @@ enftun_config_print(struct enftun_config* config, const char* key)
     /* Route settings */
     else if (strcmp(key, "route.fwmark") == 0)
         fprintf(stdout, "%d\n", config->fwmark);
+    else if (strcmp(key, "route.table") == 0)
+        fprintf(stdout, "%d\n", config->table);
+    else if (strcmp(key, "route.prefixes") == 0)
+        print_joined(config->prefixes, " ");
     /* Identity settings */
     else if (strcmp(key, "identity.cert_file") == 0)
         fprintf(stdout, "%s\n", config->cert_file);

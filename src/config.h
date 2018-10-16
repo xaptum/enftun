@@ -34,7 +34,6 @@ struct enftun_config
     const char* dev;
     const char* dev_node;
 
-
     const char* remote_host;
     const char* remote_port;
     const char* remote_ca_cert_file;
@@ -43,6 +42,8 @@ struct enftun_config
     const char* key_file;
 
     int fwmark;
+    int table;
+    const char** prefixes;
 };
 
 int
