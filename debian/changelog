@@ -1,3 +1,9 @@
+enftun (0.1.2-1) unstable; urgency=medium
+
+  * Update to version 0.1.2
+
+ -- David R. Bild <david.bild@xaptum.com>  Tue, 16 Oct 2018 23:28:08 +0000
+
 enftun (0.1.1-1) unstable; urgency=medium
 
   * Initial release.
