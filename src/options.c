@@ -121,6 +121,9 @@ enftun_options_parse_conf(struct enftun_options* opts)
         return -EINVAL;
     }
 
+    /* Platform settings */
+    config_lookup_string(cfg, "tun.ip_path", &opts->ip_path);
+
     /* TUN settings */
     config_lookup_string(cfg, "tun.dev", &opts->dev);
     config_lookup_string(cfg, "tun.dev_node", &opts->dev_node);
