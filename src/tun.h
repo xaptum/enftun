@@ -46,6 +46,10 @@ int
 enftun_tun_close(struct enftun_tun* tun);
 
 int
+enftun_tun_set_ip6(struct enftun_tun* tun,
+                   const char* ip_path, const struct in6_addr* ip6);
+
+int
 enftun_tun_read(struct enftun_tun* tun,
                 uint8_t* buf, size_t len);
 
