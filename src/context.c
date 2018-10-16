@@ -45,9 +45,13 @@ enftun_context_init(struct enftun_context* ctx)
     if (rc < 0)
         goto err;
 
-    rc = enftun_tls_init(&ctx->tls);
+    rc = enftun_config_init(&ctx->config);
     if (rc < 0)
         goto free_options;
+
+    rc = enftun_tls_init(&ctx->tls);
+    if (rc < 0)
+        goto free_config;
 
     rc = enftun_tun_init(&ctx->tun);
     if (rc < 0)
@@ -67,6 +71,9 @@ enftun_context_init(struct enftun_context* ctx)
  free_tls:
     enftun_tls_free(&ctx->tls);
 
+ free_config:
+    enftun_config_free(&ctx->config);
+
  free_options:
     enftun_options_free(&ctx->options);
 
@@ -82,6 +89,7 @@ enftun_context_free(struct enftun_context* ctx)
     enftun_tun_free(&ctx->tun);
     enftun_tls_free(&ctx->tls);
 
+    enftun_config_free(&ctx->config);
     enftun_options_free(&ctx->options);
 
     return 0;
@@ -92,7 +100,7 @@ enftun_context_ipv6_from_cert(struct enftun_context* ctx, const char* file)
 {
     int rc;
 
-    if ((rc = enftun_cert_common_name_file(ctx->options.cert_file,
+    if ((rc = enftun_cert_common_name_file(ctx->config.cert_file,
                                            ctx->ipv6_str,
                                            sizeof(ctx->ipv6_str))) < 0)
     {

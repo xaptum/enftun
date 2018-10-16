@@ -1,0 +1,165 @@
+#!/bin/bash
+#
+#  Copyright 2018 Xaptum, Inc.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+
+set -e
+
+SELF="$0"
+ENFTUN="$(which enftun || echo ./enftun)"
+
+cmd() {
+    echo "# $*" >&2
+    "$@"
+}
+
+die() {
+    echo "$SELF: $*" >&2
+    exit 1
+}
+
+parse_config() {
+    MTU=1280
+    INTERFACE=$($ENFTUN -c "$1" -p tun.dev)
+    FWMARK=$($ENFTUN -c "$1" -p route.fwmark)
+    TABLE=$($ENFTUN -c "$1" -p route.table)
+    PREFIXES=$($ENFTUN -c "$1" -p route.prefixes)
+}
+
+cmd_usage() {
+    cat <<-EOF
+Usage: $0 [-h,--help] {up|down|help}
+EOF
+}
+
+add_tun() {
+    cmd ip tuntap add mode tun "$INTERFACE"
+
+    cmd ip link set mtu "$MTU" dev "$INTERFACE"
+    cmd ip link set "$INTERFACE" up
+}
+
+del_tun() {
+    cmd ip link del "$INTERFACE"
+}
+
+add_route() {
+    local proto=-4
+    [[ $1 == *:* ]] && proto=-6
+    cmd ip $proto route add "$1" dev "$INTERFACE"
+}
+
+del_route() {
+    local proto=-4
+    [[ $1 == *:* ]] && proto=-6
+    cmd ip $proto route del "$1" dev "$INTERFACE"
+}
+
+add_default() {
+    cmd ip -6 route add default dev "$INTERFACE" table "$TABLE"
+    cmd ip -6 rule add not fwmark "$FWMARK" table "$TABLE"
+    cmd ip -6 rule add table main suppress_prefixlength 0
+
+    cmd ip -4 route add blackhole default table "$TABLE"
+    cmd ip -4 rule add not fwmark "$FWMARK" table "$TABLE"
+    cmd ip -4 rule add table main suppress_prefixlength 0
+}
+
+del_default() {
+    while [[ $(ip -4 route show table "$TABLE") ]]; do
+        cmd ip -4 route del all table "$TABLE"
+    done
+    while [[ $(ip -4 rule show) == *"lookup $TABLE"* ]]; do
+        cmd ip -4 rule del table "$TABLE"
+    done
+    while [[ $(ip -4 rule show) == *"from all lookup main suppress_prefixlength 0"* ]]; do
+        cmd ip -4 rule delete table main suppress_prefixlength 0
+    done
+
+    while [[ $(ip -6 route show table "$TABLE") ]]; do
+        cmd ip -6 route del all table "$TABLE"
+    done
+    while [[ $(ip -6 rule show) == *"lookup $TABLE"* ]]; do
+        cmd ip -6 rule del table "$TABLE"
+    done
+    while [[ $(ip -6 rule show) == *"from all lookup main suppress_prefixlength 0"* ]]; do
+        cmd ip -6 rule delete table main suppress_prefixlength 0
+    done
+}
+
+add_routes() {
+    for rt in $1; do
+        case $rt in
+            default)
+                add_default
+                ;;
+            *:*)
+                add_route $rt
+                ;;
+            *)
+                die "$rt is not a valid route"
+        esac
+    done
+}
+
+del_routes() {
+    for rt in $1; do
+        case $rt in
+            default)
+                del_default
+                ;;
+            *:*)
+                del_route $rt
+                ;;
+            *)
+                die "$rt is not a valid route"
+        esac
+    done
+}
+
+cmd_up() {
+    [[ -z $(ip link show dev "$INTERFACE" 2>/dev/null) ]] || die "$INTERFACE already exists."
+
+    trap 'del_default; del_tun; exit' INT TERM EXIT
+    add_tun
+    add_routes "$PREFIXES"
+    trap - INT TERM EXIT
+}
+
+cmd_down() {
+    [[ $(ip link show dev "$INTERFACE" 2>/dev/null) ]] || die "$INTERFACE does not exist."
+
+    del_routes "$PREFIXES"
+    del_tun
+}
+
+case $1 in
+    up)
+        parse_config $2
+        cmd_up
+        ;;
+    down)
+        parse_config $2
+        cmd_down
+        ;;
+    -h|--help|help)
+        cmd_usage
+        ;;
+    *)
+        cmd_usage
+        exit 1
+        ;;
+esac
+
+exit 0

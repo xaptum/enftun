@@ -1,0 +1,17 @@
+[Unit]
+Description=Setup for the enftun@%I
+Documentation=https://github.com/xaptum/enftun
+Before=network-pre.target
+Wants=network-pre.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=@CMAKE_INSTALL_FULL_BINDIR@/enftun-setup up -c %i.conf
+ExecStop=@CMAKE_INSTALL_FULL_BINDIR@/enftun-setup down -c %i.conf
+WorkingDirectory=/etc/enftun
+ProtectSystem=true
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target
