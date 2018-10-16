@@ -7,8 +7,8 @@ Wants=network-pre.target
 [Service]
 Type=oneshot
 RemainAfterExit=yes
-ExecStart=@CMAKE_INSTALL_FULL_BINDIR@/enftun-setup up -c %i.conf
-ExecStop=@CMAKE_INSTALL_FULL_BINDIR@/enftun-setup down -c %i.conf
+ExecStart=@CMAKE_INSTALL_FULL_BINDIR@/enftun-setup up %i.conf
+ExecStop=@CMAKE_INSTALL_FULL_BINDIR@/enftun-setup down %i.conf
 WorkingDirectory=/etc/enftun
 ProtectSystem=true
 ProtectHome=true
