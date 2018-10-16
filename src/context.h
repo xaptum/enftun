@@ -24,6 +24,7 @@
 
 #include "chain.h"
 #include "channel.h"
+#include "config.h"
 #include "options.h"
 #include "tls.h"
 #include "tun.h"
@@ -34,6 +35,7 @@
 struct enftun_context
 {
     struct enftun_options options;
+    struct enftun_config config;
 
     struct enftun_tls tls;
     struct enftun_tun tun;

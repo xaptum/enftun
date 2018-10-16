@@ -152,24 +152,24 @@ enftun_connect(struct enftun_context* ctx)
 
     // enftun_xtt_handshake();
 
-    if ((rc = enftun_context_ipv6_from_cert(ctx, ctx->options.cert_file)) < 0)
+    if ((rc = enftun_context_ipv6_from_cert(ctx, ctx->config.cert_file)) < 0)
         goto out;
 
     if ((rc = enftun_tls_connect(&ctx->tls,
-                                 ctx->options.fwmark,
-                                 ctx->options.remote_host,
-                                 ctx->options.remote_port,
-                                 ctx->options.remote_ca_cert_file,
-                                 ctx->options.cert_file,
-                                 ctx->options.key_file)) < 0)
+                                 ctx->config.fwmark,
+                                 ctx->config.remote_host,
+                                 ctx->config.remote_port,
+                                 ctx->config.remote_ca_cert_file,
+                                 ctx->config.cert_file,
+                                 ctx->config.key_file)) < 0)
         goto out;
 
-    if ((rc = enftun_tun_open(&ctx->tun, ctx->options.dev,
-                              ctx->options.dev_node)) < 0)
+    if ((rc = enftun_tun_open(&ctx->tun, ctx->config.dev,
+                              ctx->config.dev_node)) < 0)
         goto close_tls;
 
     if ((rc = enftun_tun_set_ip6(&ctx->tun,
-                                 ctx->options.ip_path, &ctx->ipv6)) < 0)
+                                 ctx->config.ip_path, &ctx->ipv6)) < 0)
         goto close_tun;
 
     rc = enftun_tunnel(ctx);
@@ -199,7 +199,7 @@ enftun_main(int argc, char *argv[])
     if ((rc = enftun_options_parse_argv(&ctx.options, argc, argv)) < 0)
         goto free_context;
 
-    if ((rc = enftun_options_parse_conf(&ctx.options) < 0))
+    if ((rc = enftun_config_parse(&ctx.config, ctx.options.conf_file) < 0))
         goto free_context;
 
     while (1)

@@ -16,31 +16,41 @@
 
 #pragma once
 
-#ifndef ENFTUN_OPTIONS_H
-#define ENFTUN_OPTIONS_H
+#ifndef ENFTUN_CONFIG_H
+#define ENFTUN_CONFIG_H
 
-enum enftun_action
-{
-    ENFTUN_ACTION_RUN,
-    ENFTUN_ACTION_PRINT
-};
+#include <netinet/in.h>
 
-struct enftun_options
+#include <libconfig.h>
+
+struct enftun_config
 {
-    enum enftun_action action;
+    config_t cfg;
 
     const char* conf_file;
+
+    const char* ip_path;
+
+    const char* dev;
+    const char* dev_node;
+
+    const char* remote_host;
+    const char* remote_port;
+    const char* remote_ca_cert_file;
+
+    const char* cert_file;
+    const char* key_file;
+
+    int fwmark;
 };
 
 int
-enftun_options_init(struct enftun_options* opts);
+enftun_config_init(struct enftun_config* config);
 
 int
-enftun_options_free(struct enftun_options* opts);
+enftun_config_free(struct enftun_config* config);
 
 int
-enftun_options_parse_argv(struct enftun_options* opts,
-                          const int argc,
-                          char *argv[]);
+enftun_config_parse(struct enftun_config* config, const char* file);
 
 #endif // ENFTUN_OPTIONS_H
