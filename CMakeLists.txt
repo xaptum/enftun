@@ -53,7 +53,9 @@ endif(MSVC)
 install(
   TARGETS enftun
   DESTINATION ${CMAKE_INSTALL_BINDIR}
-)
+  )
+
+add_subdirectory(tools)
 
 if (BUILD_SYSTEMD)
   add_subdirectory(systemd)
