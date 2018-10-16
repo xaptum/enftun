@@ -41,6 +41,8 @@ enftun_options_init(struct enftun_options* opts)
 
     opts->conf_file = "";
 
+    opts->ip_path = "/bin/ip";
+
     opts->dev = "enf0";
     opts->dev_node = "/dev/net/tun";
 
