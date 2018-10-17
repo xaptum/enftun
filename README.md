@@ -108,7 +108,6 @@ In a separate terminal, run the tunnel.
 
 ``` bash
 $ cd build
-
 $ ./enftun -c conf/example.conf
 ```
 
