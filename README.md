@@ -95,18 +95,40 @@ An example server is available for testing and development.  It
 responds to ICMPv6 echo requests from the client, so `ping -6 ...` can
 be used from the client to test the connection.
 
+Python3 and the dependencies listed in `test/requirements.txt` must be
+installed.
+
 To start the server run:
 ``` bash
-cd test
-python3 router.py
+$ cd test
+$ python3 router.py
 ```
 
 In a separate terminal, run the tunnel.
 
 ``` bash
-cd build
+$ cd build
 
-./enftun -c conf/example.conf
+$ ./enftun -c conf/example.conf
+```
+
+### Virtual Environment
+
+The required Python3 dependencies can be installed in a local virtual
+environment rather than in the global system directories.
+
+``` bash
+$ cd test
+
+# Create a virtual environment for python
+$ python3 -m venv enftun-env
+$ source enftun-env/bin/activate
+
+# Install the dependencies
+(enftun-env) $ pip3 install -r requirements.txt
+
+# Run the router
+(enftun-env) $ python3 router.py
 ```
 
 # License
