@@ -109,6 +109,27 @@ cd build
 ./enftun -c conf/example.conf
 ```
 
+The manifest file `requirements.txt` contains a list of all necessary,
+non-standard modules required by router.py. The preferred installation
+procedure is `pip install -r requirements.txt`.
+
+Note that router.py is not compatible with Python 2. On Debian, or it's
+derivatives, the `pip` command will install modules for Python 2, and you
+may have to use `pip3` instead to update your Python 3 environment.
+
+If you prefer to not install extra modules globally, it is possible
+to use a virtual environment to install these extra modules:
+
+``` bash
+$ sudo apt install python3-venv
+$ python3 -m venv enftun-env
+$ source enftun-env/bin/activate
+(enftun-env) $ python -V
+Python 3.6.6
+(enftun-env) $ pip install -r requirements.txt
+(enftun-env) $ python router.py
+```
+
 # License
 Copyright 2018 Xaptum, Inc.
 
