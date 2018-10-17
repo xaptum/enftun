@@ -4,6 +4,7 @@ import ssl
 import socket
 import struct
 import sys
+import argparse
 
 import dpkt
 
@@ -44,7 +45,7 @@ dpkt.icmp6.ICMP6.__str__ = lambda self: icmp6_str(self)
 
 class Router(object):
 
-    def __init__(self, host='localhost', port=4443):
+    def __init__(self, host, port):
         self.host = host
         self.port = port
 
@@ -142,5 +143,15 @@ class Connection(object):
         self.send_packet(ip)
 
 if __name__ == "__main__":
-    router = Router()
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-b", "--bind",
+                        help="set IP address to bind server to",
+                        default="localhost")
+    parser.add_argument("-p", "--port",
+                        help="set TCP port to bind server to",
+                        type=int, default=4443)
+    args = parser.parse_args()
+
+    router = Router(args.bind, args.port)
     router.start()
