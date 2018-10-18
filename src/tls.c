@@ -120,7 +120,7 @@ enftun_tls_handshake(struct enftun_tls* tls,
 
     if ((rc = SSL_do_handshake(tls->ssl)) != 1)
     {
-        enftun_log_ssl_error("Failed to do TLS handshake: ");
+        enftun_log_ssl_error("Failed to do TLS handshake:");
         goto err;
     }
 
@@ -175,7 +175,7 @@ enftun_tls_connect(struct enftun_tls* tls, int mark,
             {
                 enftun_log_debug("Failed to set mark %d: %s\n", mark, strerror(errno));
                 rc = -errno;
-                continue;
+                goto close_fd;
             }
         }
 
