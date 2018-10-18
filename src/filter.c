@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
+#include <arpa/inet.h>
+
 #include "filter.h"
 #include "ip.h"
 #include "log.h"
-
 
 #define IPV6_HEADER_INIT(header, packet) \
     struct ipv6_header* header = (struct ipv6_header*) packet->data
@@ -33,7 +34,6 @@ enftun_is_ipv6(struct enftun_packet* pkt)
                          pkt->size, sizeof(struct ipv6_header));
         return 0;
     }
-
 
     if (hdr->version != 6)
     {
@@ -56,7 +56,18 @@ int
 enftun_has_src_ip(struct enftun_packet* pkt, struct in6_addr* addr)
 {
     IPV6_HEADER_INIT(hdr, pkt);
-    return ipv6_equal(&hdr->src, addr);
+
+    if (!ipv6_equal(&hdr->src, addr))
+    {
+        char actual[45], expected[45];
+        inet_ntop(AF_INET6, addr, expected, sizeof(expected));
+        inet_ntop(AF_INET6, &hdr->src, actual, sizeof(actual));
+
+        enftun_log_debug("enftun_has_src_ip: %s != %s\n", expected, actual);
+        return 0;
+    }
+
+    return 1;
 }
 
 int

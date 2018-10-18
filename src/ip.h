@@ -44,7 +44,7 @@ int ipv6_equal(const struct in6_addr* a, const struct in6_addr* b)
 }
 
 int ip6_prefix_str(const struct in6_addr* addr,
-                           const int prefix, char* dst,
-                           size_t size);
+                   const int prefix, char* dst,
+                   size_t size);
 
 #endif // ENFTUN_IP_H
