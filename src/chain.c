@@ -21,6 +21,22 @@
 
 static
 void
+do_read(struct enftun_chain* chain)
+{
+    chain->state = enftun_chain_reading;
+    enftun_crb_read(&chain->crb, chain->input);
+}
+
+static
+void
+do_write(struct enftun_chain* chain)
+{
+    chain->state = enftun_chain_writing;
+    enftun_crb_write(&chain->crb, chain->output);
+}
+
+static
+void
 on_complete(struct enftun_crb* crb)
 {
     struct enftun_chain* chain = (struct enftun_chain*) crb->context;
@@ -36,15 +52,13 @@ on_complete(struct enftun_crb* crb)
     {
     case enftun_chain_reading:
         handled = chain->filter(chain, &chain->packet);
-        if (!handled)
-        {
-            chain->state = enftun_chain_writing;
-            enftun_crb_write(&chain->crb, chain->output);
-        }
+        if (handled)
+            do_read(chain);
+        else
+            do_write(chain);
         break;
     case enftun_chain_writing:
-        chain->state = enftun_chain_reading;
-        enftun_crb_read(&chain->crb, chain->input);
+        do_read(chain);
         break;
     }
 }
@@ -80,8 +94,7 @@ enftun_chain_start(struct enftun_chain* chain,
                    enftun_chain_complete complete)
 {
     chain->complete = complete;
-    chain->state = enftun_chain_reading;
-    enftun_crb_read(&chain->crb, chain->input);
+    do_read(chain);
     return 0;
 }
 
