@@ -77,6 +77,7 @@ enftun_tls_handshake(struct enftun_tls* tls,
         enftun_log_ssl_error("Failed to load server TLS certificate %s", cacert_file);
         goto err;
     }
+    enftun_log_debug("Loaded server TLS certificate %s\n", cacert_file);
 
     if (!(SSL_CTX_use_certificate_file(tls->ctx, cert_file, SSL_FILETYPE_PEM) ||
           SSL_CTX_use_certificate_file(tls->ctx, cert_file, SSL_FILETYPE_ASN1)))
