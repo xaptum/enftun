@@ -56,14 +56,18 @@ del_tun() {
 
 add_route() {
     local proto=-4
+    local table=main
     [[ $1 == *:* ]] && proto=-6
-    cmd ip $proto route add "$1" dev "$INTERFACE"
+    [[ $1 == ff* ]] && table=local
+    cmd ip $proto route add "$1" dev "$INTERFACE" table "$table"
 }
 
 del_route() {
     local proto=-4
+    local table=main
     [[ $1 == *:* ]] && proto=-6
-    cmd ip $proto route del "$1" dev "$INTERFACE"
+    [[ $1 == ff* ]] && table=local
+    cmd ip $proto route del "$1" dev "$INTERFACE" table "$table"
 }
 
 add_default() {
