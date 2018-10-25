@@ -39,7 +39,7 @@ parse_config() {
 
 cmd_usage() {
     cat <<-EOF
-Usage: $0 [-h,--help] {up|down|help}
+Usage: $0 [-h,--help] {up|down|help} <config_file>
 EOF
 }
 
@@ -56,17 +56,22 @@ del_tun() {
 
 add_route() {
     local proto=-4
+    local table=main
     [[ $1 == *:* ]] && proto=-6
-    cmd ip $proto route add "$1" dev "$INTERFACE"
+    [[ $1 == ff* ]] && table=local
+    cmd ip $proto route add "$1" dev "$INTERFACE" table "$table"
 }
 
 del_route() {
     local proto=-4
+    local table=main
     [[ $1 == *:* ]] && proto=-6
-    cmd ip $proto route del "$1" dev "$INTERFACE"
+    [[ $1 == ff* ]] && table=local
+    cmd ip $proto route del "$1" dev "$INTERFACE" table "$table"
 }
 
 add_default() {
+    cmd ip -6 route add ff00::/8 dev "$INTERFACE" metric 50 pref high table local
     cmd ip -6 route add default dev "$INTERFACE" table "$TABLE"
     cmd ip -6 rule add not fwmark "$FWMARK" table "$TABLE"
     cmd ip -6 rule add table main suppress_prefixlength 0
@@ -87,6 +92,9 @@ del_default() {
         cmd ip -4 rule delete table main suppress_prefixlength 0
     done
 
+    while [[ $(ip -6 route show table local) == *"ff00::/8 dev $INTERFACE metric 50"* ]]; do
+          cmd ip -6 route del ff00::/8 dev "$INTERFACE" metric 50 pref high table local
+    done
     while [[ $(ip -6 route show table "$TABLE") ]]; do
         cmd ip -6 route del all table "$TABLE"
     done
