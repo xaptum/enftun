@@ -74,11 +74,9 @@ add_default() {
     cmd ip -6 route add ff00::/8 dev "$INTERFACE" metric 50 pref high table local
     cmd ip -6 route add default dev "$INTERFACE" table "$TABLE"
     cmd ip -6 rule add not fwmark "$FWMARK" table "$TABLE"
-    ### cmd ip -6 rule add table main suppress_prefixlength 0
 
     cmd ip -4 route add blackhole default table "$TABLE"
     cmd ip -4 rule add not fwmark "$FWMARK" table "$TABLE"
-    ### cmd ip -4 rule add table main suppress_prefixlength 0
 }
 
 del_default() {
@@ -137,7 +135,7 @@ del_routes() {
 }
 
 cmd_up() {
-    [[ -z $(f "$INTERFACE" 2>/dev/null) ]] || die "$INTERFACE already exists."
+    [[ -z $(ip link show dev "$INTERFACE" 2>/dev/null) ]] || die "$INTERFACE already exists."
 
     trap 'del_default; del_tun; exit' INT TERM EXIT
     add_tun
