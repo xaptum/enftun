@@ -88,9 +88,6 @@ del_default() {
     while [[ $(ip -4 rule show) == *"lookup $TABLE"* ]]; do
         cmd ip -4 rule del table "$TABLE"
     done
-    while [[ $(ip -4 rule show) == *"from all lookup main suppress_prefixlength 0"* ]]; do
-        cmd ip -4 rule delete table main suppress_prefixlength 0
-    done
 
     while [[ $(ip -6 route show table local) == *"ff00::/8 dev $INTERFACE metric 50"* ]]; do
           cmd ip -6 route del ff00::/8 dev "$INTERFACE" metric 50 pref high table local
@@ -100,9 +97,6 @@ del_default() {
     done
     while [[ $(ip -6 rule show) == *"lookup $TABLE"* ]]; do
         cmd ip -6 rule del table "$TABLE"
-    done
-    while [[ $(ip -6 rule show) == *"from all lookup main suppress_prefixlength 0"* ]]; do
-        cmd ip -6 rule delete table main suppress_prefixlength 0
     done
 }
 
