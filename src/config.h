@@ -44,6 +44,7 @@ struct enftun_config
     int fwmark;
     int table;
     const char** prefixes;
+    const char** trusted_ifaces;
 };
 
 int

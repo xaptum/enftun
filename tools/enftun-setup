@@ -35,6 +35,8 @@ parse_config() {
     FWMARK=$($ENFTUN -c "$1" -p route.fwmark)
     TABLE=$($ENFTUN -c "$1" -p route.table)
     PREFIXES=$($ENFTUN -c "$1" -p route.prefixes)
+    TRUSTED_IFACES=$($ENFTUN -c "$1" -p route.trusted_interfaces)
+    TRUSTED_GROUP=$FWMARK # make these the same, to reduce config knobs
 }
 
 cmd_usage() {
@@ -104,6 +106,30 @@ del_default() {
     done
 }
 
+add_trusted() {
+    for iface in $TRUSTED_IFACES; do
+        ip link set dev $iface group "$TRUSTED_GROUP"
+    done
+
+    if [[ -n "$TRUSTED_IFACES" ]]; then
+       cmd ip -6 rule add table main suppress_ifgroup 0
+       cmd ip -4 rule add table main suppress_ifgroup 0
+    fi
+}
+
+del_trusted() {
+    while [[ $(ip -4 rule show) == *"from all lookup main suppress_ifgroup $TRUSTED_GROUP"* ]]; do
+        cmd ip -4 rule del table main suppress_ifgroup 0
+    done
+    while [[ $(ip -6 rule show) == *"from all lookup main suppress_ifgroup $TRUSTED_GROUP"* ]]; do
+        cmd ip -6 rule del table main suppress_ifgroup 0
+    done
+
+    for iface in $TRUSTED_IFACES; do
+        ip link set dev $iface group 0
+    done
+}
+
 add_routes() {
     for rt in $1; do
         case $rt in
@@ -140,12 +166,14 @@ cmd_up() {
     trap 'del_default; del_tun; exit' INT TERM EXIT
     add_tun
     add_routes "$PREFIXES"
+    add_trusted
     trap - INT TERM EXIT
 }
 
 cmd_down() {
     [[ $(ip link show dev "$INTERFACE" 2>/dev/null) ]] || die "$INTERFACE does not exist."
 
+    del_trusted
     del_routes "$PREFIXES"
     del_tun
 }
