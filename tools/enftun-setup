@@ -74,11 +74,9 @@ add_default() {
     cmd ip -6 route add ff00::/8 dev "$INTERFACE" metric 50 pref high table local
     cmd ip -6 route add default dev "$INTERFACE" table "$TABLE"
     cmd ip -6 rule add not fwmark "$FWMARK" table "$TABLE"
-    cmd ip -6 rule add table main suppress_prefixlength 0
 
     cmd ip -4 route add blackhole default table "$TABLE"
     cmd ip -4 rule add not fwmark "$FWMARK" table "$TABLE"
-    cmd ip -4 rule add table main suppress_prefixlength 0
 }
 
 del_default() {
