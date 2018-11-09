@@ -81,7 +81,8 @@ enftun_config_init(struct enftun_config* config)
     config->dev = "enf0";
     config->dev_node = "/dev/net/tun";
 
-    config->remote_host = "23.147.128.112";
+    config->remote_hosts = calloc(2, sizeof(char*));
+    config->remote_hosts[0] = "23.147.128.112";
     config->remote_port = "443";
 
     config->fwmark = 363;
@@ -100,6 +101,7 @@ enftun_config_free(struct enftun_config* config)
 {
     free(config->trusted_ifaces);
     free(config->prefixes);
+    free(config->remote_hosts);
     config_destroy(&config->cfg);
     CLEAR(*config);
     return 0;
@@ -146,7 +148,7 @@ enftun_config_parse(struct enftun_config* config, const char* file)
     config_lookup_string(cfg, "tun.dev_node", &config->dev_node);
 
     /* Remote settings */
-    config_lookup_string(cfg, "remote.host", &config->remote_host);
+    lookup_string_array(cfg, "remote.hosts", config->remote_hosts);
     config_lookup_string(cfg, "remote.port", &config->remote_port);
     config_lookup_string(cfg, "remote.ca_cert_file", &config->remote_ca_cert_file);
 
@@ -175,8 +177,8 @@ enftun_config_print(struct enftun_config* config, const char* key)
     else if (strcmp(key, "tun.dev_node") == 0)
         fprintf(stdout, "%s\n", config->dev_node);
     /* Remote settings */
-    else if (strcmp(key, "remote.host") == 0)
-        fprintf(stdout, "%s\n", config->remote_host);
+    else if (strcmp(key, "remote.hosts") == 0)
+        print_joined(config->remote_hosts, " ");
     else if (strcmp(key, "remote.port") == 0)
         fprintf(stdout, "%s\n", config->remote_port);
     else if (strcmp(key, "remote.port") == 0)
