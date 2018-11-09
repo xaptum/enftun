@@ -244,6 +244,11 @@ enftun_tls_connect(struct enftun_tls* tls, int mark,
         goto out;
 
     rc = enftun_tls_handshake(tls, cacert_file, cert_file, key_file);
+    if (rc < 0)
+    {
+        close(tls->fd);
+        tls->fd = 0;
+    }
 
  out:
     return rc;
