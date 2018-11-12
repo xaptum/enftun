@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 
+import argparse
+import ipaddress
 import ssl
 import socket
 import struct
 import sys
-import argparse
 
 import dpkt
 
@@ -43,6 +44,13 @@ def icmp6_str(icmp):
 dpkt.ip6.IP6.__str__ = lambda self: ip6_str(self)
 dpkt.icmp6.ICMP6.__str__ = lambda self: icmp6_str(self)
 
+def is6(host):
+    try:
+        addr = ipaddress.ip_address(host)
+        return addr.version == 6
+    except:
+        return False
+
 class Router(object):
 
     def __init__(self, host, port):
@@ -54,7 +62,8 @@ class Router(object):
 
         print('Listening up on {}:{}'.format(*address))
 
-        self._sock  = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        family = socket.AF_INET6 if is6(self.host) else socket.AF_INET
+        self._sock  = socket.socket(family, socket.SOCK_STREAM)
         self._sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
         self._sock.bind(address)
