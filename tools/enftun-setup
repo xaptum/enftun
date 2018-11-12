@@ -210,12 +210,14 @@ add_fw_rules() {
     if [[ $iptables == *6* ]]; then
         # Allow DCHPv6 from LAN
         cmd $iptables -A INPUT -m state --state NEW -m udp -p udp -s fe80::/10 --dport 546 -j ACCEPT
+        cmd $iptables -A OUTPUT -p udp -d fe80::/10 --dport 547 -j ACCEPT
 
         # Drop ICMPv6 echo packets
         cmd $iptables -A INPUT -p icmpv6 --icmpv6-type echo-request -j DROP
 
         # Accept all other ICMPv6 packets
         cmd $iptables -A INPUT -p icmpv6 -j ACCEPT
+        cmd $iptables -A OUTPUT -p icmpv6 -j ACCEPT
     fi
 
     # Drop all other traffic
@@ -231,8 +233,12 @@ del_fw_rules() {
     cmd $iptables -D OUTPUT -j DROP || true
 
     if [[ $iptables == *6* ]]; then
+        cmd $iptables -D OUTPUT -p icmpv6 -j ACCEPT || true
         cmd $iptables -D INPUT -p icmpv6 -j ACCEPT || true
+
         cmd $iptables -D INPUT -p icmpv6 --icmpv6-type echo-request -j DROP || true
+
+        cmd $iptables -D OUTPUT -p udp -d fe80::/10 --dport 547 -j ACCEPT || true
         cmd $iptables -D INPUT -m state --state NEW -m udp -p udp -s fe80::/10 --dport 546 -j ACCEPT || true
     fi
 
