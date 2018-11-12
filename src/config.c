@@ -53,7 +53,7 @@ print_joined(const char** strs, const char* sep)
  */
 static
 void
-lookup_string_array(config_t* cfg, const char* path, const char** value)
+lookup_string_array(config_t* cfg, const char* path, const char*** value)
 {
     config_setting_t* s = config_lookup(cfg, path);
     if (!s || !config_setting_is_array(s))
@@ -61,12 +61,12 @@ lookup_string_array(config_t* cfg, const char* path, const char** value)
 
     int cnt = config_setting_length(s);
 
-    if (value) free(value);
-    value = calloc(cnt + 1, sizeof(char*));
+    if (*value) free(*value);
+    *value = calloc(cnt + 1, sizeof(char*));
     for (int i = 0; i < cnt; i++)
-        {
-            value[i] = config_setting_get_string_elem(s, i);
-        }
+    {
+        (*value)[i] = config_setting_get_string_elem(s, i);
+    }
 }
 
 int
@@ -148,15 +148,15 @@ enftun_config_parse(struct enftun_config* config, const char* file)
     config_lookup_string(cfg, "tun.dev_node", &config->dev_node);
 
     /* Remote settings */
-    lookup_string_array(cfg, "remote.hosts", config->remote_hosts);
+    lookup_string_array(cfg, "remote.hosts", &config->remote_hosts);
     config_lookup_string(cfg, "remote.port", &config->remote_port);
     config_lookup_string(cfg, "remote.ca_cert_file", &config->remote_ca_cert_file);
 
     /* Route settings */
     config_lookup_int(cfg, "route.fwmark", &config->fwmark);
     config_lookup_int(cfg, "route.table", &config->table);
-    lookup_string_array(cfg, "route.prefixes", config->prefixes);
-    lookup_string_array(cfg, "route.trusted_interfaces", config->trusted_ifaces);
+    lookup_string_array(cfg, "route.prefixes", &config->prefixes);
+    lookup_string_array(cfg, "route.trusted_interfaces", &config->trusted_ifaces);
 
     /* Identity settings */
     config_lookup_string(cfg, "identity.cert_file", &config->cert_file);
