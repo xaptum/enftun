@@ -225,7 +225,7 @@ add_fw_rules() {
 
 del_fw_rules() {
     local iptables=$1
-    local enf_ip=$2
+    local remote_hosts=$2
 
     cmd $iptables -D INPUT -j DROP
     cmd $iptables -D OUTPUT -j DROP
