@@ -196,8 +196,14 @@ add_fw_rules() {
         cmd $iptables -A OUTPUT -d $ip -j chain-enf-tunnel
     done
 
+    # Allow traffic on trusted interfaces
+    for iface in $TRUSTED_IFACES; do
+        cmd $iptables -A INPUT  -i $iface -j ACCEPT
+        cmd $iptables -A OUTPUT -o $iface -j ACCEPT
+    done
+
     # Allow all traffic on loopback
-    cmd $iptables -A INPUT -i lo -j ACCEPT
+    cmd $iptables -A INPUT  -i lo -j ACCEPT
     cmd $iptables -A OUTPUT -o lo -j ACCEPT
 
     # IPv6-specific rules
@@ -232,6 +238,11 @@ del_fw_rules() {
 
     cmd $iptables -D INPUT  -i lo -j ACCEPT
     cmd $iptables -D OUTPUT -o lo -j ACCEPT
+
+    for iface in $TRUSTED_IFACES; do
+        cmd $iptables -D OUTPUT -o $iface -j ACCEPT
+        cmd $iptables -D INPUT  -i $iface -j ACCEPT
+    done
 
     for ip in $remote_hosts; do
         cmd $iptables -D INPUT  -s $ip -j chain-enf-tunnel
