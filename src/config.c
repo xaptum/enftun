@@ -53,7 +53,7 @@ print_joined(const char** strs, const char* sep)
  */
 static
 void
-lookup_string_array(config_t* cfg, const char* path, const char** value)
+lookup_string_array(config_t* cfg, const char* path, const char*** value)
 {
     config_setting_t* s = config_lookup(cfg, path);
     if (!s || !config_setting_is_array(s))
@@ -61,12 +61,12 @@ lookup_string_array(config_t* cfg, const char* path, const char** value)
 
     int cnt = config_setting_length(s);
 
-    if (value) free(value);
-    value = calloc(cnt + 1, sizeof(char*));
+    if (*value) free(*value);
+    *value = calloc(cnt + 1, sizeof(char*));
     for (int i = 0; i < cnt; i++)
-        {
-            value[i] = config_setting_get_string_elem(s, i);
-        }
+    {
+        (*value)[i] = config_setting_get_string_elem(s, i);
+    }
 }
 
 int
@@ -81,7 +81,8 @@ enftun_config_init(struct enftun_config* config)
     config->dev = "enf0";
     config->dev_node = "/dev/net/tun";
 
-    config->remote_host = "23.147.128.112";
+    config->remote_hosts = calloc(2, sizeof(char*));
+    config->remote_hosts[0] = "23.147.128.112";
     config->remote_port = "443";
 
     config->fwmark = 363;
@@ -90,13 +91,17 @@ enftun_config_init(struct enftun_config* config)
     config->prefixes = calloc(2, sizeof(char*));
     config->prefixes[0] = "default";
 
+    config->trusted_ifaces = calloc(2, sizeof(char*));
+
     return 0;
 }
 
 int
 enftun_config_free(struct enftun_config* config)
 {
+    free(config->trusted_ifaces);
     free(config->prefixes);
+    free(config->remote_hosts);
     config_destroy(&config->cfg);
     CLEAR(*config);
     return 0;
@@ -143,14 +148,15 @@ enftun_config_parse(struct enftun_config* config, const char* file)
     config_lookup_string(cfg, "tun.dev_node", &config->dev_node);
 
     /* Remote settings */
-    config_lookup_string(cfg, "remote.host", &config->remote_host);
+    lookup_string_array(cfg, "remote.hosts", &config->remote_hosts);
     config_lookup_string(cfg, "remote.port", &config->remote_port);
     config_lookup_string(cfg, "remote.ca_cert_file", &config->remote_ca_cert_file);
 
     /* Route settings */
     config_lookup_int(cfg, "route.fwmark", &config->fwmark);
     config_lookup_int(cfg, "route.table", &config->table);
-    lookup_string_array(cfg, "route.prefixes", config->prefixes);
+    lookup_string_array(cfg, "route.prefixes", &config->prefixes);
+    lookup_string_array(cfg, "route.trusted_interfaces", &config->trusted_ifaces);
 
     /* Identity settings */
     config_lookup_string(cfg, "identity.cert_file", &config->cert_file);
@@ -171,8 +177,8 @@ enftun_config_print(struct enftun_config* config, const char* key)
     else if (strcmp(key, "tun.dev_node") == 0)
         fprintf(stdout, "%s\n", config->dev_node);
     /* Remote settings */
-    else if (strcmp(key, "remote.host") == 0)
-        fprintf(stdout, "%s\n", config->remote_host);
+    else if (strcmp(key, "remote.hosts") == 0)
+        print_joined(config->remote_hosts, " ");
     else if (strcmp(key, "remote.port") == 0)
         fprintf(stdout, "%s\n", config->remote_port);
     else if (strcmp(key, "remote.port") == 0)
@@ -186,6 +192,8 @@ enftun_config_print(struct enftun_config* config, const char* key)
         fprintf(stdout, "%d\n", config->table);
     else if (strcmp(key, "route.prefixes") == 0)
         print_joined(config->prefixes, " ");
+    else if (strcmp(key, "route.trusted_interfaces") == 0)
+        print_joined(config->trusted_ifaces, " ");
     /* Identity settings */
     else if (strcmp(key, "identity.cert_file") == 0)
         fprintf(stdout, "%s\n", config->cert_file);

@@ -10,6 +10,8 @@
 * A C99-compliant compiler
 
 * [OpenSSL]() (version 1.1.0 or higher)
+* [LibUV]() (version 1.9 or higher)
+* [LibConfig]() (version 1.5 or higher)
 
 ### Building the Binary
 

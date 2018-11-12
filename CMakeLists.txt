@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.1 FATAL_ERROR)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
 project(enftun
-  VERSION 0.1.3
+  VERSION 0.1.4
   LANGUAGES C
 )
 
@@ -53,7 +53,7 @@ endif(MSVC)
 install(
   TARGETS enftun
   DESTINATION ${CMAKE_INSTALL_BINDIR}
-  )
+)
 
 add_subdirectory(tools)
 

@@ -49,7 +49,7 @@ enftun_tls_free(struct enftun_tls* tls);
 
 int
 enftun_tls_connect(struct enftun_tls* tls, int mark,
-                   const char* host, const char* port,
+                   const char** hosts, const char* port,
                    const char* cacert_file,
                    const char* cert_file,
                    const char* key_file);

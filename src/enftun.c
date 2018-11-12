@@ -157,7 +157,7 @@ enftun_connect(struct enftun_context* ctx)
 
     if ((rc = enftun_tls_connect(&ctx->tls,
                                  ctx->config.fwmark,
-                                 ctx->config.remote_host,
+                                 ctx->config.remote_hosts,
                                  ctx->config.remote_port,
                                  ctx->config.remote_ca_cert_file,
                                  ctx->config.cert_file,

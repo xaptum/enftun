@@ -35,11 +35,33 @@ parse_config() {
     FWMARK=$($ENFTUN -c "$1" -p route.fwmark)
     TABLE=$($ENFTUN -c "$1" -p route.table)
     PREFIXES=$($ENFTUN -c "$1" -p route.prefixes)
+    REMOTE_HOSTS=$($ENFTUN -c "$1" -p remote.hosts)
+    REMOTE_PORT=$($ENFTUN -c "$1" -p remote.port)
+    TRUSTED_IFACES=$($ENFTUN -c "$1" -p route.trusted_interfaces)
+    TRUSTED_GROUP=$FWMARK # make these the same, to reduce config knobs
+}
+
+filter_ipv4() {
+    local hosts=$1
+    for h in $hosts; do
+        if [[ $h =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+           echo $h
+        fi
+    done
+}
+
+filter_ipv6() {
+    local hosts=$1
+    for h in $hosts; do
+        if [[ $h == *:* ]]; then
+            echo $h
+        fi
+    done
 }
 
 cmd_usage() {
     cat <<-EOF
-Usage: $0 [-h,--help] {up|down|help}
+Usage: $0 [-h,--help] {up|down|help} <config_file>
 EOF
 }
 
@@ -54,26 +76,30 @@ del_tun() {
     cmd ip link del "$INTERFACE"
 }
 
+
 add_route() {
     local proto=-4
+    local table=main
     [[ $1 == *:* ]] && proto=-6
-    cmd ip $proto route add "$1" dev "$INTERFACE"
+    [[ $1 == ff* ]] && table=local
+    cmd ip $proto route add "$1" dev "$INTERFACE" table "$table"
 }
 
 del_route() {
     local proto=-4
+    local table=main
     [[ $1 == *:* ]] && proto=-6
-    cmd ip $proto route del "$1" dev "$INTERFACE"
+    [[ $1 == ff* ]] && table=local
+    cmd ip $proto route del "$1" dev "$INTERFACE" table "$table"
 }
 
 add_default() {
+    cmd ip -6 route add ff00::/8 dev "$INTERFACE" metric 50 pref high table local
     cmd ip -6 route add default dev "$INTERFACE" table "$TABLE"
     cmd ip -6 rule add not fwmark "$FWMARK" table "$TABLE"
-    cmd ip -6 rule add table main suppress_prefixlength 0
 
     cmd ip -4 route add blackhole default table "$TABLE"
     cmd ip -4 rule add not fwmark "$FWMARK" table "$TABLE"
-    cmd ip -4 rule add table main suppress_prefixlength 0
 }
 
 del_default() {
@@ -83,18 +109,40 @@ del_default() {
     while [[ $(ip -4 rule show) == *"lookup $TABLE"* ]]; do
         cmd ip -4 rule del table "$TABLE"
     done
-    while [[ $(ip -4 rule show) == *"from all lookup main suppress_prefixlength 0"* ]]; do
-        cmd ip -4 rule delete table main suppress_prefixlength 0
-    done
 
+    while [[ $(ip -6 route show table local) == *"ff00::/8 dev $INTERFACE metric 50"* ]]; do
+          cmd ip -6 route del ff00::/8 dev "$INTERFACE" metric 50 pref high table local
+    done
     while [[ $(ip -6 route show table "$TABLE") ]]; do
         cmd ip -6 route del all table "$TABLE"
     done
     while [[ $(ip -6 rule show) == *"lookup $TABLE"* ]]; do
         cmd ip -6 rule del table "$TABLE"
     done
-    while [[ $(ip -6 rule show) == *"from all lookup main suppress_prefixlength 0"* ]]; do
-        cmd ip -6 rule delete table main suppress_prefixlength 0
+}
+
+add_trusted() {
+    for iface in $TRUSTED_IFACES; do
+        ip link set dev $iface group "$TRUSTED_GROUP"
+    done
+
+    if [[ -n "$TRUSTED_IFACES" ]]; then
+       cmd ip -6 rule add table main suppress_ifgroup 0
+       cmd ip -4 rule add table main suppress_ifgroup 0
+    fi
+}
+
+
+del_trusted() {
+    while [[ $(ip -4 rule show) == *"from all lookup main suppress_ifgroup $TRUSTED_GROUP"* ]]; do
+        cmd ip -4 rule del table main suppress_ifgroup 0
+    done
+    while [[ $(ip -6 rule show) == *"from all lookup main suppress_ifgroup $TRUSTED_GROUP"* ]]; do
+        cmd ip -6 rule del table main suppress_ifgroup 0
+    done
+
+    for iface in $TRUSTED_IFACES; do
+        ip link set dev $iface group 0
     done
 }
 
@@ -103,6 +151,7 @@ add_routes() {
         case $rt in
             default)
                 add_default
+                add_firewall
                 ;;
             *:*)
                 add_route $rt
@@ -118,6 +167,7 @@ del_routes() {
         case $rt in
             default)
                 del_default
+                del_firewall
                 ;;
             *:*)
                 del_route $rt
@@ -128,18 +178,114 @@ del_routes() {
     done
 }
 
+add_fw_rules() {
+    local iptables=$1
+    local remote_hosts=$2
+
+    # Allow all traffic on ENF interface
+    cmd $iptables -A INPUT -i "$INTERFACE" -j ACCEPT
+    cmd $iptables -A OUTPUT -o "$INTERFACE" -j ACCEPT
+
+    # Allow tunnel traffic to ENF on any interface
+    cmd $iptables -N chain-enf-tunnel
+    cmd $iptables -A chain-enf-tunnel -p tcp -m multiport --dports ${REMOTE_PORT},444 -j ACCEPT
+    cmd $iptables -A chain-enf-tunnel -p tcp -m multiport --sports ${REMOTE_PORT},444 -j ACCEPT
+
+    for ip in $remote_hosts; do
+        cmd $iptables -A INPUT -s $ip -j chain-enf-tunnel
+        cmd $iptables -A OUTPUT -d $ip -j chain-enf-tunnel
+    done
+
+    # Allow traffic on trusted interfaces
+    for iface in $TRUSTED_IFACES; do
+        cmd $iptables -A INPUT  -i $iface -j ACCEPT
+        cmd $iptables -A OUTPUT -o $iface -j ACCEPT
+    done
+
+    # Allow all traffic on loopback
+    cmd $iptables -A INPUT  -i lo -j ACCEPT
+    cmd $iptables -A OUTPUT -o lo -j ACCEPT
+
+    # IPv6-specific rules
+    if [[ $iptables == *6* ]]; then
+        # Allow DCHPv6 from LAN
+        cmd $iptables -A INPUT -m state --state NEW -m udp -p udp -s fe80::/10 --dport 546 -j ACCEPT
+        cmd $iptables -A OUTPUT -p udp -d fe80::/10 --dport 547 -j ACCEPT
+
+        # Drop ICMPv6 echo packets
+        cmd $iptables -A INPUT -p icmpv6 --icmpv6-type echo-request -j DROP
+
+        # Accept all other ICMPv6 packets
+        cmd $iptables -A INPUT -p icmpv6 -j ACCEPT
+        cmd $iptables -A OUTPUT -p icmpv6 -j ACCEPT
+    fi
+
+    # Drop all other traffic
+    cmd $iptables -A INPUT -j DROP
+    cmd $iptables -A OUTPUT -j DROP
+}
+
+del_fw_rules() {
+    local iptables=$1
+    local remote_hosts=$2
+
+    cmd $iptables -D INPUT -j DROP  || true
+    cmd $iptables -D OUTPUT -j DROP || true
+
+    if [[ $iptables == *6* ]]; then
+        cmd $iptables -D OUTPUT -p icmpv6 -j ACCEPT || true
+        cmd $iptables -D INPUT -p icmpv6 -j ACCEPT || true
+
+        cmd $iptables -D INPUT -p icmpv6 --icmpv6-type echo-request -j DROP || true
+
+        cmd $iptables -D OUTPUT -p udp -d fe80::/10 --dport 547 -j ACCEPT || true
+        cmd $iptables -D INPUT -m state --state NEW -m udp -p udp -s fe80::/10 --dport 546 -j ACCEPT || true
+    fi
+
+    cmd $iptables -D INPUT  -i lo -j ACCEPT || true
+    cmd $iptables -D OUTPUT -o lo -j ACCEPT || true
+
+    for iface in $TRUSTED_IFACES; do
+        cmd $iptables -D OUTPUT -o $iface -j ACCEPT || true
+        cmd $iptables -D INPUT  -i $iface -j ACCEPT || true
+    done
+
+    for ip in $remote_hosts; do
+        cmd $iptables -D INPUT  -s $ip -j chain-enf-tunnel || true
+        cmd $iptables -D OUTPUT -d $ip -j chain-enf-tunnel || true
+    done
+
+    cmd $iptables -F chain-enf-tunnel || true
+    cmd $iptables -X chain-enf-tunnel || true
+
+    cmd $iptables -D INPUT  -i "$INTERFACE" -j ACCEPT || true
+    cmd $iptables -D OUTPUT -o "$INTERFACE" -j ACCEPT || true
+}
+
+add_firewall(){
+    add_fw_rules iptables  "$(filter_ipv4 "$REMOTE_HOSTS")"
+    add_fw_rules ip6tables "$(filter_ipv6 "$REMOTE_HOSTS")"
+}
+
+del_firewall(){
+    del_fw_rules ip6tables "$(filter_ipv6 "$REMOTE_HOSTS")"
+    del_fw_rules iptables  "$(filter_ipv4 "$REMOTE_HOSTS")"
+}
+
 cmd_up() {
     [[ -z $(ip link show dev "$INTERFACE" 2>/dev/null) ]] || die "$INTERFACE already exists."
 
     trap 'del_default; del_tun; exit' INT TERM EXIT
     add_tun
     add_routes "$PREFIXES"
+    add_trusted
     trap - INT TERM EXIT
 }
 
 cmd_down() {
     [[ $(ip link show dev "$INTERFACE" 2>/dev/null) ]] || die "$INTERFACE does not exist."
 
+    del_trusted
     del_routes "$PREFIXES"
     del_tun
 }
