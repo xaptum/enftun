@@ -227,33 +227,33 @@ del_fw_rules() {
     local iptables=$1
     local remote_hosts=$2
 
-    cmd $iptables -D INPUT -j DROP
-    cmd $iptables -D OUTPUT -j DROP
+    cmd $iptables -D INPUT -j DROP  || true
+    cmd $iptables -D OUTPUT -j DROP || true
 
     if [[ $iptables == *6* ]]; then
-        cmd $iptables -D INPUT -p icmpv6 -j ACCEPT
-        cmd $iptables -D INPUT -p icmpv6 --icmpv6-type echo-request -j DROP
-        cmd $iptables -D INPUT -m state --state NEW -m udp -p udp -s fe80::/10 --dport 546 -j ACCEPT
+        cmd $iptables -D INPUT -p icmpv6 -j ACCEPT || true
+        cmd $iptables -D INPUT -p icmpv6 --icmpv6-type echo-request -j DROP || true
+        cmd $iptables -D INPUT -m state --state NEW -m udp -p udp -s fe80::/10 --dport 546 -j ACCEPT || true
     fi
 
-    cmd $iptables -D INPUT  -i lo -j ACCEPT
-    cmd $iptables -D OUTPUT -o lo -j ACCEPT
+    cmd $iptables -D INPUT  -i lo -j ACCEPT || true
+    cmd $iptables -D OUTPUT -o lo -j ACCEPT || true
 
     for iface in $TRUSTED_IFACES; do
-        cmd $iptables -D OUTPUT -o $iface -j ACCEPT
-        cmd $iptables -D INPUT  -i $iface -j ACCEPT
+        cmd $iptables -D OUTPUT -o $iface -j ACCEPT || true
+        cmd $iptables -D INPUT  -i $iface -j ACCEPT || true
     done
 
     for ip in $remote_hosts; do
-        cmd $iptables -D INPUT  -s $ip -j chain-enf-tunnel
-        cmd $iptables -D OUTPUT -d $ip -j chain-enf-tunnel
+        cmd $iptables -D INPUT  -s $ip -j chain-enf-tunnel || true
+        cmd $iptables -D OUTPUT -d $ip -j chain-enf-tunnel || true
     done
 
-    cmd $iptables -F chain-enf-tunnel
-    cmd $iptables -X chain-enf-tunnel
+    cmd $iptables -F chain-enf-tunnel || true
+    cmd $iptables -X chain-enf-tunnel || true
 
-    cmd $iptables -D INPUT  -i "$INTERFACE" -j ACCEPT
-    cmd $iptables -D OUTPUT -o "$INTERFACE" -j ACCEPT
+    cmd $iptables -D INPUT  -i "$INTERFACE" -j ACCEPT || true
+    cmd $iptables -D OUTPUT -o "$INTERFACE" -j ACCEPT || true
 }
 
 add_firewall(){
