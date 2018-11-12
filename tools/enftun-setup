@@ -35,8 +35,28 @@ parse_config() {
     FWMARK=$($ENFTUN -c "$1" -p route.fwmark)
     TABLE=$($ENFTUN -c "$1" -p route.table)
     PREFIXES=$($ENFTUN -c "$1" -p route.prefixes)
+    REMOTE_HOSTS=$($ENFTUN -c "$1" -p remote.hosts)
+    REMOTE_PORT=$($ENFTUN -c "$1" -p remote.port)
     TRUSTED_IFACES=$($ENFTUN -c "$1" -p route.trusted_interfaces)
     TRUSTED_GROUP=$FWMARK # make these the same, to reduce config knobs
+}
+
+filter_ipv4() {
+    local hosts=$1
+    for h in $hosts; do
+        if [[ $h =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+           echo $h
+        fi
+    done
+}
+
+filter_ipv6() {
+    local hosts=$1
+    for h in $hosts; do
+        if [[ $h == *:* ]]; then
+            echo $h
+        fi
+    done
 }
 
 cmd_usage() {
@@ -55,6 +75,7 @@ add_tun() {
 del_tun() {
     cmd ip link del "$INTERFACE"
 }
+
 
 add_route() {
     local proto=-4
@@ -111,6 +132,7 @@ add_trusted() {
     fi
 }
 
+
 del_trusted() {
     while [[ $(ip -4 rule show) == *"from all lookup main suppress_ifgroup $TRUSTED_GROUP"* ]]; do
         cmd ip -4 rule del table main suppress_ifgroup 0
@@ -129,6 +151,7 @@ add_routes() {
         case $rt in
             default)
                 add_default
+                add_firewall
                 ;;
             *:*)
                 add_route $rt
@@ -144,6 +167,7 @@ del_routes() {
         case $rt in
             default)
                 del_default
+                del_firewall
                 ;;
             *:*)
                 del_route $rt
@@ -152,6 +176,83 @@ del_routes() {
                 die "$rt is not a valid route"
         esac
     done
+}
+
+add_fw_rules() {
+    local iptables=$1
+    local remote_hosts=$2
+
+    # Allow all traffic on ENF interface
+    cmd $iptables -A INPUT -i "$INTERFACE" -j ACCEPT
+    cmd $iptables -A OUTPUT -o "$INTERFACE" -j ACCEPT
+
+    # Allow tunnel traffic to ENF on any interface
+    cmd $iptables -N chain-enf-tunnel
+    cmd $iptables -A chain-enf-tunnel -p tcp -m multiport --dports ${REMOTE_PORT},444 -j ACCEPT
+    cmd $iptables -A chain-enf-tunnel -p tcp -m multiport --sports ${REMOTE_PORT},444 -j ACCEPT
+
+    for ip in $remote_hosts; do
+        cmd $iptables -A INPUT -s $ip -j chain-enf-tunnel
+        cmd $iptables -A OUTPUT -d $ip -j chain-enf-tunnel
+    done
+
+    # Allow all traffic on loopback
+    cmd $iptables -A INPUT -i lo -j ACCEPT
+    cmd $iptables -A OUTPUT -o lo -j ACCEPT
+
+    # IPv6-specific rules
+    if [[ $iptables == *6* ]]; then
+        # Allow DCHPv6 from LAN
+        cmd $iptables -A INPUT -m state --state NEW -m udp -p udp -s fe80::/10 --dport 546 -j ACCEPT
+
+        # Drop ICMPv6 echo packets
+        cmd $iptables -A INPUT -p icmpv6 --icmpv6-type echo-request -j DROP
+
+        # Accept all other ICMPv6 packets
+        cmd $iptables -A INPUT -p icmpv6 -j ACCEPT
+    fi
+
+    # Drop all other traffic
+    cmd $iptables -A INPUT -j DROP
+    cmd $iptables -A OUTPUT -j DROP
+}
+
+del_fw_rules() {
+    local iptables=$1
+    local enf_ip=$2
+
+    cmd $iptables -D INPUT -j DROP
+    cmd $iptables -D OUTPUT -j DROP
+
+    if [[ $iptables == *6* ]]; then
+        cmd $iptables -D INPUT -p icmpv6 -j ACCEPT
+        cmd $iptables -D INPUT -p icmpv6 --icmpv6-type echo-request -j DROP
+        cmd $iptables -D INPUT -m state --state NEW -m udp -p udp -s fe80::/10 --dport 546 -j ACCEPT
+    fi
+
+    cmd $iptables -D INPUT  -i lo -j ACCEPT
+    cmd $iptables -D OUTPUT -o lo -j ACCEPT
+
+    for ip in $remote_hosts; do
+        cmd $iptables -D INPUT  -s $ip -j chain-enf-tunnel
+        cmd $iptables -D OUTPUT -d $ip -j chain-enf-tunnel
+    done
+
+    cmd $iptables -F chain-enf-tunnel
+    cmd $iptables -X chain-enf-tunnel
+
+    cmd $iptables -D INPUT  -i "$INTERFACE" -j ACCEPT
+    cmd $iptables -D OUTPUT -o "$INTERFACE" -j ACCEPT
+}
+
+add_firewall(){
+    add_fw_rules iptables  "$(filter_ipv4 "$REMOTE_HOSTS")"
+    add_fw_rules ip6tables "$(filter_ipv6 "$REMOTE_HOSTS")"
+}
+
+del_firewall(){
+    del_fw_rules ip6tables "$(filter_ipv4 "$REMOTE_HOSTS")"
+    del_fw_rules iptables  "$(filter_ipv6 "$REMOTE_HOSTS")"
 }
 
 cmd_up() {
