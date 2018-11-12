@@ -262,8 +262,8 @@ add_firewall(){
 }
 
 del_firewall(){
-    del_fw_rules ip6tables "$(filter_ipv4 "$REMOTE_HOSTS")"
-    del_fw_rules iptables  "$(filter_ipv6 "$REMOTE_HOSTS")"
+    del_fw_rules ip6tables "$(filter_ipv6 "$REMOTE_HOSTS")"
+    del_fw_rules iptables  "$(filter_ipv4 "$REMOTE_HOSTS")"
 }
 
 cmd_up() {
