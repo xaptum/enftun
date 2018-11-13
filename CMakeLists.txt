@@ -7,6 +7,7 @@ project(enftun
   LANGUAGES C
 )
 
+option(BUILD_CACERT  "Install the the ENF ca cert" ON)
 option(BUILD_EXAMPLE "Build and install example configs" ON)
 option(BUILD_SYSTEMD "Build with systemd support" ON)
 option(BUILD_TEST "Build tests" ON)
@@ -58,6 +59,13 @@ install(
 )
 
 add_subdirectory(tools)
+
+if (BUILD_CACERT)
+  install(
+    FILES enf.cacert.pem
+    DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/enftun
+  )
+endif()
 
 if (BUILD_EXAMPLE)
   add_subdirectory(example)
