@@ -8,6 +8,7 @@ project(enftun
 )
 
 option(BUILD_SYSTEMD "Build with systemd support" ON)
+option(BUILD_TEST "Build tests" ON)
 
 include(GNUInstallDirs)
 
@@ -61,7 +62,6 @@ if (BUILD_SYSTEMD)
   add_subdirectory(systemd)
 endif()
 
-configure_file(example/example.conf    conf/example.conf    COPYONLY)
-configure_file(example/example.crt.pem conf/example.crt.pem COPYONLY)
-configure_file(example/example.key.pem conf/example.key.pem COPYONLY)
-configure_file(test/router.crt.pem     conf/router.crt.pem  COPYONLY)
+if (BUILD_TEST)
+  add_subdirectory(test)
+endif()
