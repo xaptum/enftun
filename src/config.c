@@ -81,9 +81,11 @@ enftun_config_init(struct enftun_config* config)
     config->dev = "enf0";
     config->dev_node = "/dev/net/tun";
 
-    config->remote_hosts = calloc(2, sizeof(char*));
+    config->remote_hosts = calloc(3, sizeof(char*));
     config->remote_hosts[0] = "23.147.128.112";
+    config->remote_hosts[1] = "2607:8f80:ffff::1";
     config->remote_port = "443";
+    config->remote_ca_cert_file = "/etc/enftun/enf.cacert.pem";
 
     config->fwmark = 363;
     config->table = 2097;

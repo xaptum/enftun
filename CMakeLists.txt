@@ -3,11 +3,14 @@ cmake_minimum_required(VERSION 3.1 FATAL_ERROR)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
 project(enftun
-  VERSION 0.1.4
+  VERSION 0.1.5
   LANGUAGES C
 )
 
+option(BUILD_CACERT  "Install the the ENF ca cert" ON)
+option(BUILD_EXAMPLE "Build and install example configs" ON)
 option(BUILD_SYSTEMD "Build with systemd support" ON)
+option(BUILD_TEST "Build tests" ON)
 
 include(GNUInstallDirs)
 
@@ -57,11 +60,21 @@ install(
 
 add_subdirectory(tools)
 
+if (BUILD_CACERT)
+  install(
+    FILES enf.cacert.pem
+    DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/enftun
+  )
+endif()
+
+if (BUILD_EXAMPLE)
+  add_subdirectory(example)
+endif()
+
 if (BUILD_SYSTEMD)
   add_subdirectory(systemd)
 endif()
 
-configure_file(example/example.conf    conf/example.conf    COPYONLY)
-configure_file(example/example.crt.pem conf/example.crt.pem COPYONLY)
-configure_file(example/example.key.pem conf/example.key.pem COPYONLY)
-configure_file(test/router.crt.pem     conf/router.crt.pem  COPYONLY)
+if (BUILD_TEST)
+  add_subdirectory(test)
+endif()
