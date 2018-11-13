@@ -48,8 +48,10 @@ The following CMake configuration options are supported.
 A [`systemd`]() unit file to manage an enftun are included in this
 repo.
 
-First copy the `example/example.conf` configuration file to
-`/etc/enftun/enf0.conf` and make any desired changes.
+The example config files `example/device.conf` and
+`example/server.conf` are installed to
+`/usr/share/doc/enftun/example/`.  First copy the desired starting
+config to `/etc/enftun/enf0.conf` and make any desired changes.
 
 Then enable or start the `enftun` services.
 
