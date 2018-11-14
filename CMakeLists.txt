@@ -19,28 +19,35 @@ find_package(LibConfig REQUIRED QUIET 1.5)
 find_package(LibUV REQUIRED QUIET 1.9)
 find_package(OpenSSL REQUIRED QUIET 1.1)
 
-add_executable(enftun
-  src/cert.c
-  src/chain.c
-  src/channel.c
-  src/config.c
-  src/context.c
-  src/enftun.c
-  src/exec.c
-  src/filter.c
-  src/ip.c
-  src/log.c
-  src/options.c
-  src/packet.c
-  src/tls.c
-  src/tun.c
-)
 if(BUILD_XTT)
     add_definitions(-DUSE_TPM)
     add_definitions(-DUSE_XTT)
     find_package(sodium REQUIRED QUIET 1.0.11)
-    find_package(xtt REQUIRED QUIET 0.9.1)
+    find_package(xtt COMPONENTS tpm REQUIRED QUIET 0.9.1)
 endif()
+
+set(ENFTUN_SRCS
+    src/cert.c
+    src/chain.c
+    src/channel.c
+    src/config.c
+    src/context.c
+    src/enftun.c
+    src/exec.c
+    src/filter.c
+    src/ip.c
+    src/log.c
+    src/options.c
+    src/packet.c
+    src/tls.c
+    src/tun.c
+    )
+
+if(BUILD_XTT)
+    list(APPEND ENFTUN_SRCS src/xtt.c)
+endif()
+
+add_executable(enftun ${ENFTUN_SRCS})
 
 target_link_libraries(enftun
   PRIVATE
