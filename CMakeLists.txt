@@ -10,7 +10,8 @@ project(enftun
 option(BUILD_CACERT  "Install the the ENF ca cert" ON)
 option(BUILD_EXAMPLE "Build and install example configs" ON)
 option(BUILD_SYSTEMD "Build with systemd support" ON)
-option(BUILD_TEST "Build tests" ON)
+option(BUILD_TEST    "Build tests" ON)
+option(BUILD_XTT     "Build with XTT support" ON)
 
 include(GNUInstallDirs)
 
@@ -34,6 +35,12 @@ add_executable(enftun
   src/tls.c
   src/tun.c
 )
+if(BUILD_XTT)
+    add_definitions(-DUSE_TPM)
+    add_definitions(-DUSE_XTT)
+    find_package(sodium REQUIRED QUIET 1.0.11)
+    find_package(xtt REQUIRED QUIET 0.9.1)
+endif()
 
 target_link_libraries(enftun
   PRIVATE
@@ -41,6 +48,13 @@ target_link_libraries(enftun
   LibUV::LibUV
   OpenSSL::SSL
 )
+
+if(BUILD_XTT)
+    target_link_libraries(enftun
+    PRIVATE
+    xtt::xtt
+    sodium)
+endif()
 
 set_target_properties(enftun
   PROPERTIES
