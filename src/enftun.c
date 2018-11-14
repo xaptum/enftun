@@ -23,7 +23,7 @@
 #include "context.h"
 #include "filter.h"
 #include "log.h"
-
+#include "tls.h"
 
 static void chain_complete(struct enftun_chain* chain, int status);
 
@@ -146,22 +146,25 @@ enftun_tunnel(struct enftun_context* ctx)
 
 static
 int
+enftun_provision(struct enftun_context* ctx)
+{
+    (void) ctx;
+
+    return 0;
+}
+
+static
+int
 enftun_connect(struct enftun_context* ctx)
 {
-    int rc;
-
-    // enftun_xtt_handshake();
-
+    int rc = 0;
     if ((rc = enftun_context_ipv6_from_cert(ctx, ctx->config.cert_file)) < 0)
         goto out;
 
     if ((rc = enftun_tls_connect(&ctx->tls,
                                  ctx->config.fwmark,
                                  ctx->config.remote_hosts,
-                                 ctx->config.remote_port,
-                                 ctx->config.remote_ca_cert_file,
-                                 ctx->config.cert_file,
-                                 ctx->config.key_file)) < 0)
+                                 ctx->config.remote_port)) < 0)
         goto out;
 
     if ((rc = enftun_tun_open(&ctx->tun, ctx->config.dev,
@@ -193,12 +196,28 @@ int enftun_print(struct enftun_context* ctx)
 static
 int enftun_run(struct enftun_context* ctx)
 {
-    int rc;
+    int rc = 0;
+
     while (1)
     {
-        rc = enftun_connect(ctx);
+        // Sets tls.need_provision if the certs don't exist yet
+        rc = enftun_tls_load_credentials(&ctx->tls, ctx->config.remote_ca_cert_file,
+                                         ctx->config.cert_file, ctx->config.key_file);
+
+        if (ctx->tls.need_provision && ctx->config.xtt_enable)
+        {
+            rc = enftun_provision(ctx);
+            continue;
+        }
+
+        // Sets tls.need_provision if the certs might be bad, i.e.,
+        // the SSL handshake fails
+        if (0 == rc)
+            rc = enftun_connect(ctx);
+
         sleep(1);
     }
+
     return rc;
 }
 

@@ -47,6 +47,8 @@ enftun_tls_init(struct enftun_tls* tls)
         goto out;
     }
 
+    tls->need_provision = 0;
+
  out:
     return rc;
 }
@@ -58,20 +60,11 @@ enftun_tls_free(struct enftun_tls* tls)
     return 0;
 }
 
-static
 int
-enftun_tls_handshake(struct enftun_tls* tls,
-                     const char* cacert_file,
-                     const char* cert_file, const char* key_file)
+enftun_tls_load_credentials(struct enftun_tls* tls,
+                            const char* cacert_file,
+                            const char* cert_file, const char* key_file)
 {
-    int rc;
-
-    if (SSL_CTX_set_min_proto_version(tls->ctx, TLS1_2_VERSION) < 0)
-    {
-        enftun_log_ssl_error("Cannot set min proto version:");
-        goto err;
-    }
-
     if (!SSL_CTX_load_verify_locations(tls->ctx, cacert_file, NULL))
     {
         enftun_log_ssl_error("Failed to load server TLS certificate %s", cacert_file);
@@ -100,7 +93,20 @@ enftun_tls_handshake(struct enftun_tls* tls,
         enftun_log_ssl_error("Failed to validate client TLS cert and private key:");
         goto err;
     }
+
     enftun_log_debug("Validated client TLS cert and private key\n");
+    return 0;
+
+ err:
+    tls->need_provision = 1;
+    return -1;
+}
+
+static
+int
+enftun_tls_handshake(struct enftun_tls* tls)
+{
+    int rc;
 
     tls->ssl = SSL_new(tls->ctx);
     if (!tls->ssl)
@@ -109,23 +115,49 @@ enftun_tls_handshake(struct enftun_tls* tls,
         goto err;
     }
 
+    if (SSL_set_min_proto_version(tls->ssl, TLS1_2_VERSION) < 0)
+    {
+        enftun_log_ssl_error("Cannot set min proto version:");
+        goto free_ssl;
+    }
+
     if (!SSL_set_fd(tls->ssl, tls->fd))
     {
         enftun_log_ssl_error("Failed to set SSL file descriptor (%d):", tls->fd);
-        goto err;
+        goto free_ssl;
     }
 
     SSL_set_connect_state(tls->ssl);
     SSL_set_verify(tls->ssl, SSL_VERIFY_PEER, NULL);
 
-    if ((rc = SSL_do_handshake(tls->ssl)) != 1)
+    /*
+     * Set this regardless of whether the handshake succeeds or
+     * fails.
+     *
+     * Failure might be due to bad credentials, so rerun
+     * provisioning.
+     *
+     * Success doesn't yet indicate that the credentials were
+     * accepted. The ENF doesn't check the certificate until after the
+     * SSL handshake is complete.  It will then close the TCP socket
+     * if the certificate checks fail. So set :need_provision: here,
+     * and then clear it on the first successful read.
+     */
+    tls->need_provision = 1;
+
+    rc = SSL_do_handshake(tls->ssl);
+    if (rc != 1)
     {
         enftun_log_ssl_error("Failed to do TLS handshake:");
-        goto err;
+        goto free_ssl;
     }
 
     enftun_log_info("Completed TLS handshake\n");
     goto out;
+
+
+ free_ssl:
+    SSL_free(tls->ssl);
 
  err:
     rc = -1;
@@ -198,6 +230,7 @@ attempt_connect_host(int* fd, int mark,
     if (rc < 0)
     {
         enftun_log_error("Cannot resolve %s:%s: %s\n", host, port, gai_strerror(rc));
+        rc = -1;
         goto out;
     }
 
@@ -233,9 +266,7 @@ int attempt_connect_hosts(int* fd, int mark,
 
 int
 enftun_tls_connect(struct enftun_tls* tls, int mark,
-                   const char** hosts, const char *port,
-                   const char* cacert_file,
-                   const char* cert_file, const char* key_file)
+                   const char** hosts, const char *port)
 {
     int rc;
 
@@ -243,7 +274,7 @@ enftun_tls_connect(struct enftun_tls* tls, int mark,
     if (rc < 0)
         goto out;
 
-    rc = enftun_tls_handshake(tls, cacert_file, cert_file, key_file);
+    rc = enftun_tls_handshake(tls);
     if (rc < 0)
     {
         close(tls->fd);
@@ -279,6 +310,8 @@ enftun_tls_disconnect(struct enftun_tls* tls)
     if (tls->fd)
         close(tls->fd);
 
+    SSL_free(tls->ssl);
+
     return 0;
 }
 
@@ -289,7 +322,11 @@ enftun_tls_read(struct enftun_tls* tls, uint8_t* buf, size_t len)
 
     ERR_clear_error();
     if ((rc = SSL_read(tls->ssl, buf, len)) >= 0)
+    {
+        if (tls->need_provision)
+            tls->need_provision = 0;
         goto out;
+    }
 
     err = SSL_get_error(tls->ssl, rc);
     if (err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_WRITE)
