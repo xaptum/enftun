@@ -24,6 +24,9 @@
 #include "filter.h"
 #include "log.h"
 #include "tls.h"
+#ifdef USE_XTT
+#include "xtt.h"
+#endif
 
 static void chain_complete(struct enftun_chain* chain, int status);
 
@@ -149,8 +152,38 @@ int
 enftun_provision(struct enftun_context* ctx)
 {
     (void) ctx;
+#ifdef USE_XTT
+    struct enftun_xtt xtt;
+    int rc = enftun_xtt_init(&xtt);
+    if (0 != rc)
+    {
+        goto err;
+    }
 
+    rc = enftun_xtt_handshake(ctx->config.remote_hosts[0],
+                              ctx->config.xtt_remote_port,
+                              ctx->config.xtt_tcti,
+                              ctx->config.xtt_device,
+                              ctx->config.cert_file,
+                              ctx->config.key_file,
+                              ctx->config.xtt_socket_host,
+                              ctx->config.xtt_socket_port,
+                              ctx->config.remote_ca_cert_file,
+                              &xtt);
+
+    if (0 != rc)
+    {
+        enftun_log_error("XTT handshake failed\n");
+        goto out;
+    }
+ out:
+    enftun_xtt_free(&xtt);
+    ctx->tls.need_provision = 0;
+ err:
+    return rc;
+#else
     return 0;
+#endif
 }
 
 static
