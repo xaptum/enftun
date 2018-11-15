@@ -247,17 +247,17 @@ finish:
 static int read_tls_root_cert(TSS2_TCTI_CONTEXT *tcti_context, const char* ca_cert_file)
 {
     //read in TLS root cert from TPM
-    unsigned char tls_root_cert[1024];
+    unsigned char tls_root_cert[461];
     int nvram_ret = read_nvram(tls_root_cert,
-                               1024,
+                               461,
                                TLS_ROOT_CERT_HANDLE,
                                tcti_context);
     if (0 != nvram_ret) {
-        fprintf(stderr, "Error reading server id from TPM NVRAM");
+        fprintf(stderr, "Error reading tls root from TPM NVRAM\n");
         return TPM_ERROR;
     }
     //write TLS root cert to ca_cert_file
-    int ret = xtt_save_to_file(tls_root_cert, 1024, ca_cert_file);
+    int ret = xtt_save_to_file(tls_root_cert, 461, ca_cert_file);
     if (ret < 0) {
         return SAVE_TO_FILE_ERROR;
     }
