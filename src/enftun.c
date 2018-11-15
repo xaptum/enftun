@@ -162,6 +162,7 @@ enftun_provision(struct enftun_context* ctx)
 
     rc = enftun_xtt_handshake(ctx->config.remote_hosts[0],
                               ctx->config.xtt_remote_port,
+                              ctx->config.fwmark,
                               ctx->config.xtt_tcti,
                               ctx->config.xtt_device,
                               ctx->config.cert_file,
