@@ -73,7 +73,9 @@ static int initialize_certs(TSS2_TCTI_CONTEXT *tcti_context,
                             struct xtt_server_root_certificate_context* saved_cert,
                             xtt_root_certificate* root_certificate);
 
-static int initialize_daa(struct xtt_client_group_context *group_ctx, TSS2_TCTI_CONTEXT *tcti_context);
+static int initialize_daa(struct xtt_client_group_context *group_ctx,
+                          TSS2_TCTI_CONTEXT *tcti_context,
+                          const char* basename_in);
 
 static int
 read_nvram(unsigned char *out,
@@ -106,6 +108,7 @@ enftun_xtt_handshake(const char *server_ip,
                      const char *tpm_hostname_g,
                      const char *tpm_port_g,
                      const char *ca_cert_file,
+                     const char *basename,
                      struct enftun_xtt* xtt)
 {
     int init_daa_ret = -1;
@@ -170,7 +173,7 @@ enftun_xtt_handshake(const char *server_ip,
 
     // 1ii) Initialize DAA
     struct xtt_client_group_context group_ctx;
-    init_daa_ret = initialize_daa(&group_ctx, tcti_context);
+    init_daa_ret = initialize_daa(&group_ctx, tcti_context, basename);
     ret = init_daa_ret;
     if (0 != init_daa_ret) {
         enftun_log_error("Error initializing DAA context\n");
@@ -359,33 +362,46 @@ int initialize_server_id(xtt_identity_type *intended_server_id,
 }
 
 static
-int initialize_daa(struct xtt_client_group_context *group_ctx, TSS2_TCTI_CONTEXT *tcti_context)
+int initialize_daa(struct xtt_client_group_context *group_ctx,
+                   TSS2_TCTI_CONTEXT *tcti_context,
+                   const char* basename_in)
 {
     xtt_return_code_type rc = 0;
 
     // 1) Read DAA-related things in from file/TPM-NVRAM
     xtt_daa_group_pub_key_lrsw gpk = {.data = {0}};
     xtt_daa_credential_lrsw cred = {.data = {0}};
-    unsigned char basename[1024] = {0};
     uint16_t basename_len = 0;
+
+    char basename[1024] = {0};
     int nvram_ret = 0;
-    uint8_t basename_len_from_tpm = 0;
-    nvram_ret = read_nvram((unsigned char*)&basename_len_from_tpm,
-                           1,
-                           XTT_BASENAME_SIZE_HANDLE,
-                           tcti_context);
-    if (0 != nvram_ret) {
-        enftun_log_error( "Error reading basename size from TPM NVRAM\n");
-        return TPM_ERROR;
-    }
-    basename_len = basename_len_from_tpm;
-    nvram_ret = read_nvram(basename,
-                           basename_len,
-                           XTT_BASENAME_HANDLE,
-                           tcti_context);
-    if (0 != nvram_ret) {
-        enftun_log_error("Error reading basename from TPM NVRAM\n");
-        return TPM_ERROR;
+
+    if (!basename_in)
+    {
+        uint8_t basename_len_from_tpm = 0;
+        nvram_ret = read_nvram((unsigned char*)&basename_len_from_tpm,
+                               1,
+                               XTT_BASENAME_SIZE_HANDLE,
+                               tcti_context);
+        if (0 != nvram_ret) {
+            enftun_log_error( "Error reading basename size from TPM NVRAM\n");
+            return TPM_ERROR;
+        }
+        basename_len = basename_len_from_tpm;
+        nvram_ret = read_nvram(basename,
+                               basename_len,
+                               XTT_BASENAME_HANDLE,
+                               tcti_context);
+        if (0 != nvram_ret) {
+            enftun_log_error("Error reading basename from TPM NVRAM\n");
+            return TPM_ERROR;
+        }
+
+        basename_in = &basename;
+
+    } else
+    {
+        basename_len = strlen(basename_in);
     }
 
     nvram_ret = read_nvram(gpk.data,
@@ -416,7 +432,7 @@ int initialize_daa(struct xtt_client_group_context *group_ctx, TSS2_TCTI_CONTEXT
     hash_ret = crypto_hash_sha256_update(&hash_state, gpk.data, sizeof(gpk));
     if (0 != hash_ret)
         return CRYPTO_HASH_ERROR;
-    hash_ret = crypto_hash_sha256_update(&hash_state, basename, basename_len);
+    hash_ret = crypto_hash_sha256_update(&hash_state, (unsigned char*)basename_in, basename_len);
     if (0 != hash_ret)
         return CRYPTO_HASH_ERROR;
     hash_ret = crypto_hash_sha256_final(&hash_state, gid.data);
@@ -427,7 +443,7 @@ int initialize_daa(struct xtt_client_group_context *group_ctx, TSS2_TCTI_CONTEXT
     rc = xtt_initialize_client_group_context_lrswTPM(group_ctx,
                                                      &gid,
                                                      &cred,
-                                                     (unsigned char*)basename,
+                                                     (unsigned char*)basename_in,
                                                      basename_len,
                                                      XTT_KEY_HANDLE,
                                                      NULL,
