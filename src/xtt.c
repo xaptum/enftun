@@ -63,7 +63,7 @@ static int initialize_tcti(TSS2_TCTI_CONTEXT **tcti_context, xtt_tcti_type tcti_
                            const char *tpm_hostname_g, const char *tpm_port_g, unsigned char* tcti_context_buffer_s,
                            unsigned int tcti_context_buffer_s_len);
 
-static int connect_to_server(const char *ip, char *port);
+static int connect_to_server(const char *ip, char *port, int mark);
 
 static int initialize_server_id(xtt_identity_type *intended_server_id,
                                 TSS2_TCTI_CONTEXT *tcti_context);
@@ -98,6 +98,7 @@ static int read_tls_root_cert(TSS2_TCTI_CONTEXT *tcti_context, const char* ca_ce
 int
 enftun_xtt_handshake(const char *server_ip,
                      const char *server_port,
+                     int mark,
                      const char *tcti,
                      const char *dev_file,
                      const char *longterm_cert_out_file,
@@ -193,7 +194,7 @@ enftun_xtt_handshake(const char *server_ip,
 
     // 3) Make TCP connection to server.
     enftun_log_info("Connecting to server at %s:%s ...\n", server_ip, server_port);
-    socket = connect_to_server(server_ip, (char*)server_port);
+    socket = connect_to_server(server_ip, (char*)server_port, mark);
     if (socket < 0) {
         ret = 1;
         goto finish;
@@ -266,7 +267,7 @@ static int read_tls_root_cert(TSS2_TCTI_CONTEXT *tcti_context, const char* ca_ce
 
 
 static
-int connect_to_server(const char *server_host, char *port)
+int connect_to_server(const char *server_host, char *port, int mark)
 {
     struct addrinfo *serverinfo;
     struct addrinfo hints = {.ai_protocol = IPPROTO_TCP};
@@ -284,6 +285,17 @@ int connect_to_server(const char *server_host, char *port)
             enftun_log_debug("Error opening client socket, trying next address\n");
             continue;
         }
+
+        if (mark > 0)
+        {
+            if (setsockopt(sock_ret, SOL_SOCKET, SO_MARK, &mark, sizeof(mark)) < 0)
+            {
+                enftun_log_debug("Failed to set mark %d: %s\n", mark, strerror(errno));
+                close(sock_ret);
+                continue;
+            }
+        }
+
 
         if (connect(sock_ret, addr->ai_addr, addr->ai_addrlen) < 0) {
             enftun_log_debug("Error connecting to server, trying next address\n");
