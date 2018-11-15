@@ -2,6 +2,24 @@
 
 `enftun` is a tunnel client for connecting to the Xaptum Edge Network Fabric (ENF).
 
+## Installation
+
+`enftun` is available for the following Linux distributions. It may
+also be built from source.
+
+### Debian Stretch
+
+``` bash
+# Install the Xaptum API repo GPG signing key.
+apt-key adv --keyserver keyserver.ubuntu.com --recv-keys c615bfaa7fe1b4ca
+
+# Add the repository to your APT sources
+echo "deb http://dl.bintray.com/xaptum/deb stretch main" > /etc/apt/sources.list.d/xaptum.list
+
+# Install the library.
+sudo apt-get install enftun
+```
+
 ## Installation from Source
 
 ### Build Dependencies
@@ -12,6 +30,8 @@
 * [OpenSSL]() (version 1.1.0 or higher)
 * [LibUV]() (version 1.9 or higher)
 * [LibConfig]() (version 1.5 or higher)
+* [xtt](https://github.com/xaptum/xtt) (version 0.10.0 or higher)
+  * If building with XTT and TPM support
 
 ### Building the Binary
 
