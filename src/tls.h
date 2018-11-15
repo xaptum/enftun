@@ -37,6 +37,8 @@ struct enftun_tls
     SSL *ssl;           // the openSSL connection
 
     BIO *bio;           // openSSL BIO socket wrapper
+
+    int need_provision; // Whether or not XTT provisioning is required
 };
 
 extern struct enftun_channel_ops enftun_tls_ops;
@@ -48,11 +50,13 @@ int
 enftun_tls_free(struct enftun_tls* tls);
 
 int
+enftun_tls_load_credentials(struct enftun_tls* tls,
+                            const char* cacert_file,
+                            const char* cert_file, const char* key_file);
+
+int
 enftun_tls_connect(struct enftun_tls* tls, int mark,
-                   const char** hosts, const char* port,
-                   const char* cacert_file,
-                   const char* cert_file,
-                   const char* key_file);
+                   const char** hosts, const char* port);
 
 int
 enftun_tls_disconnect(struct enftun_tls* tls);

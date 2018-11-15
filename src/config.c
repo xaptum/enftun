@@ -95,6 +95,13 @@ enftun_config_init(struct enftun_config* config)
 
     config->trusted_ifaces = calloc(2, sizeof(char*));
 
+    config->xtt_enable = 0;
+    config->xtt_remote_port = "444";
+    config->xtt_tcti = "device";
+    config->xtt_device = "/dev/tpm0";
+    config->xtt_socket_host = "localhost";
+    config->xtt_socket_port = "2321";
+
     return 0;
 }
 
@@ -164,6 +171,17 @@ enftun_config_parse(struct enftun_config* config, const char* file)
     config_lookup_string(cfg, "identity.cert_file", &config->cert_file);
     config_lookup_string(cfg, "identity.key_file", &config->key_file);
 
+    /* XTT settings */
+    if (NULL != config_lookup(cfg, "identity.xtt"))
+    {
+        config->xtt_enable = 1;
+        config_lookup_string(cfg, "identity.xtt.remote_port", &config->xtt_remote_port);
+        config_lookup_string(cfg, "identity.xtt.tcti", &config->xtt_tcti);
+        config_lookup_string(cfg, "identity.xtt.device", &config->xtt_device);
+        config_lookup_string(cfg, "identity.xtt.socket_host", &config->xtt_socket_host);
+        config_lookup_string(cfg, "identity.xtt.socket_port", &config->xtt_socket_port);
+    }
+
     return 0;
 }
 
@@ -201,6 +219,19 @@ enftun_config_print(struct enftun_config* config, const char* key)
         fprintf(stdout, "%s\n", config->cert_file);
     else if (strcmp(key, "identity.key_file") == 0)
         fprintf(stdout, "%s\n", config->key_file);
+    /* XTT settings */
+    else if (strcmp(key, "identity.xtt.enable") == 0)
+        fprintf(stdout, "%d\n", config->xtt_enable);
+    else if (strcmp(key, "identity.xtt.remote_port") == 0)
+        fprintf(stdout, "%s\n", config->xtt_remote_port);
+    else if (strcmp(key, "identity.xtt.tcti") == 0)
+        fprintf(stdout, "%s\n", config->xtt_tcti);
+    else if (strcmp(key, "identity.xtt.device") == 0)
+        fprintf(stdout, "%s\n", config->xtt_device);
+    else if (strcmp(key, "identity.xtt.socket_host") == 0)
+        fprintf(stdout, "%s\n", config->xtt_socket_host);
+    else if (strcmp(key, "identity.xtt.socket_port") == 0)
+        fprintf(stdout, "%s\n", config->xtt_socket_port);
     else
     {
         fprintf(stderr, "%s not found\n", key);

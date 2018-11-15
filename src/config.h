@@ -45,6 +45,14 @@ struct enftun_config
     int table;
     const char** prefixes;
     const char** trusted_ifaces;
+
+    int xtt_enable;
+    const char* xtt_remote_port;
+    const char* xtt_tcti;
+    const char* xtt_device;
+    const char* xtt_socket_host;
+    const char* xtt_socket_port;
+
 };
 
 int

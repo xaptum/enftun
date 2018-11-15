@@ -28,6 +28,12 @@ void
 fix_ipv6_string(char *ipv6_str)
 {
     int i, c;
+    for (i = 0; i < 5; i++)
+    {
+        if (ipv6_str[i] == ':')
+            return;
+    }
+
     for (i = 28, c = 7; i >= 0; i = i - 4, c = c - 1)
     {
         memcpy(ipv6_str + i + c, ipv6_str + i, 4);
