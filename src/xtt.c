@@ -371,12 +371,17 @@ int initialize_daa(struct xtt_client_group_context *group_ctx,
     // 1) Read DAA-related things in from file/TPM-NVRAM
     xtt_daa_group_pub_key_lrsw gpk = {.data = {0}};
     xtt_daa_credential_lrsw cred = {.data = {0}};
-    uint16_t basename_len = 0;
-
     char basename[1024] = {0};
+    uint16_t basename_len = 0;
     int nvram_ret = 0;
 
-    if (!basename_in)
+    if (basename_in)
+    {
+        basename_len = strlen(basename_in);
+        if (basename_len > 1024)
+            return CLIENT_ERROR;
+        memcpy(basename, basename_in, basename_len);
+    } else
     {
         uint8_t basename_len_from_tpm = 0;
         nvram_ret = read_nvram((unsigned char*)&basename_len_from_tpm,
@@ -396,12 +401,6 @@ int initialize_daa(struct xtt_client_group_context *group_ctx,
             enftun_log_error("Error reading basename from TPM NVRAM\n");
             return TPM_ERROR;
         }
-
-        basename_in = &basename;
-
-    } else
-    {
-        basename_len = strlen(basename_in);
     }
 
     nvram_ret = read_nvram(gpk.data,
@@ -432,7 +431,7 @@ int initialize_daa(struct xtt_client_group_context *group_ctx,
     hash_ret = crypto_hash_sha256_update(&hash_state, gpk.data, sizeof(gpk));
     if (0 != hash_ret)
         return CRYPTO_HASH_ERROR;
-    hash_ret = crypto_hash_sha256_update(&hash_state, (unsigned char*)basename_in, basename_len);
+    hash_ret = crypto_hash_sha256_update(&hash_state, basename, basename_len);
     if (0 != hash_ret)
         return CRYPTO_HASH_ERROR;
     hash_ret = crypto_hash_sha256_final(&hash_state, gid.data);
@@ -443,7 +442,7 @@ int initialize_daa(struct xtt_client_group_context *group_ctx,
     rc = xtt_initialize_client_group_context_lrswTPM(group_ctx,
                                                      &gid,
                                                      &cred,
-                                                     (unsigned char*)basename_in,
+                                                     (unsigned char*)basename,
                                                      basename_len,
                                                      XTT_KEY_HANDLE,
                                                      NULL,
