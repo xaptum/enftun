@@ -170,6 +170,7 @@ enftun_provision(struct enftun_context* ctx)
                               ctx->config.xtt_socket_host,
                               ctx->config.xtt_socket_port,
                               ctx->config.remote_ca_cert_file,
+                              ctx->config.xtt_basename,
                               &xtt);
 
     if (0 != rc)

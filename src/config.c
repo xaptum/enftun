@@ -101,6 +101,7 @@ enftun_config_init(struct enftun_config* config)
     config->xtt_device = "/dev/tpm0";
     config->xtt_socket_host = "localhost";
     config->xtt_socket_port = "2321";
+    config->xtt_basename = NULL;
 
     return 0;
 }
@@ -180,6 +181,7 @@ enftun_config_parse(struct enftun_config* config, const char* file)
         config_lookup_string(cfg, "identity.xtt.device", &config->xtt_device);
         config_lookup_string(cfg, "identity.xtt.socket_host", &config->xtt_socket_host);
         config_lookup_string(cfg, "identity.xtt.socket_port", &config->xtt_socket_port);
+        config_lookup_string(cfg, "identity.xtt.basename", &config->xtt_basename);
     }
 
     return 0;
@@ -232,6 +234,8 @@ enftun_config_print(struct enftun_config* config, const char* key)
         fprintf(stdout, "%s\n", config->xtt_socket_host);
     else if (strcmp(key, "identity.xtt.socket_port") == 0)
         fprintf(stdout, "%s\n", config->xtt_socket_port);
+    else if (strcmp(key, "identity.xtt.basename") == 0)
+        fprintf(stdout, "%s\n", config->xtt_basename);
     else
     {
         fprintf(stderr, "%s not found\n", key);
