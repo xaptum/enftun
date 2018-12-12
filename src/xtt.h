@@ -27,14 +27,9 @@
 struct enftun_xtt
 {
     const char *suitespec;
-    unsigned int tcti_context_buffer_s_len;
-    unsigned char* tcti_context_buffer_s;
+    struct xtt_tpm_context tpm_ctx;
+    struct xtt_tpm_params tpm_params;
 };
-
-typedef enum {
-    XTT_TCTI_SOCKET,
-    XTT_TCTI_DEVICE,
-} xtt_tcti_type;
 
 int
 enftun_xtt_init(struct enftun_xtt* xtt);
