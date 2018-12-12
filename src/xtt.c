@@ -50,7 +50,7 @@ enftun_xtt_init(struct enftun_xtt* xtt)
 int
 enftun_xtt_free(struct enftun_xtt* xtt)
 {
-
+    (void) xtt;
     return 0;
 }
 
