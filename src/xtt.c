@@ -65,9 +65,6 @@ static int initialize_tcti(TSS2_TCTI_CONTEXT **tcti_context, xtt_tcti_type tcti_
 
 static int connect_to_server(const char *ip, char *port, int mark);
 
-static int initialize_server_id(xtt_identity_type *intended_server_id,
-                                TSS2_TCTI_CONTEXT *tcti_context);
-
 static int initialize_certs(TSS2_TCTI_CONTEXT *tcti_context,
                             xtt_certificate_root_id* saved_root_id,
                             struct xtt_server_root_certificate_context* saved_cert,
@@ -85,7 +82,6 @@ read_nvram(unsigned char *out,
 
 static int do_handshake_client(int socket,
                                xtt_identity_type *requested_client_id,
-                               xtt_identity_type *intended_server_id,
                                struct xtt_client_group_context *group_ctx,
                                struct xtt_client_handshake_context *ctx,
                                xtt_certificate_root_id *saved_root_id,
@@ -187,15 +183,7 @@ enftun_xtt_handshake(const char *server_ip,
         goto finish;
     }
 
-    // 2) Set the intended server id.
-    xtt_identity_type intended_server_id = {.data = {0}};
-    ret = initialize_server_id(&intended_server_id, tcti_context);
-    if(0 != ret) {
-        enftun_log_error("Error setting XTT server ID!\n");
-        goto finish;
-    }
-
-    // 3) Make TCP connection to server.
+    // 2) Make TCP connection to server.
     enftun_log_info("Connecting to server at %s:%s ...\n", server_ip, server_port);
     socket = connect_to_server(server_ip, (char*)server_port, mark);
     if (socket < 0) {
@@ -203,7 +191,7 @@ enftun_xtt_handshake(const char *server_ip,
         goto finish;
     }
 
-    // 4) Initialize XTT handshake context
+    // 3) Initialize XTT handshake context
     // (will be populated with useful information after a successful handshake).
     enftun_log_debug("Using suite_spec = %d\n", suite_spec);
     unsigned char in_buffer[MAX_HANDSHAKE_SERVER_MESSAGE_LENGTH] = {0};
@@ -216,10 +204,9 @@ enftun_xtt_handshake(const char *server_ip,
         goto finish;
     }
 
-    // 5) Run the identity-provisioning handshake with the server.
+    // 4) Run the identity-provisioning handshake with the server.
     ret = do_handshake_client(socket,
                               &requested_client_id,
-                              &intended_server_id,
                               &group_ctx,
                               &ctx,
                               &saved_root_id,
@@ -338,24 +325,6 @@ int initialize_tcti(TSS2_TCTI_CONTEXT **tcti_context, xtt_tcti_type tcti_type, c
                 return TPM_ERROR;
             }
             break;
-    }
-
-    return 0;
-}
-
-static
-int initialize_server_id(xtt_identity_type *intended_server_id,
-                         TSS2_TCTI_CONTEXT *tcti_context)
-{
-    // Set server's id from file/NVRAM
-    int nvram_ret = 0;
-    nvram_ret = read_nvram(intended_server_id->data,
-                           sizeof(xtt_identity_type),
-                           XTT_SERVER_ID_HANDLE,
-                           tcti_context);
-    if (0 != nvram_ret) {
-        enftun_log_error( "Error reading server id from TPM NVRAM\n");
-        return TPM_ERROR;
     }
 
     return 0;
@@ -489,7 +458,6 @@ int initialize_certs(TSS2_TCTI_CONTEXT *tcti_context,
 static
 int do_handshake_client(int socket,
                         xtt_identity_type *requested_client_id,
-                        xtt_identity_type *intended_server_id,
                         struct xtt_client_group_context *group_ctx,
                         struct xtt_client_handshake_context *ctx,
                         xtt_certificate_root_id* saved_root_id,
@@ -560,7 +528,6 @@ int do_handshake_client(int socket,
                                                                    &io_ptr,
                                                                    server_cert,
                                                                    requested_client_id,
-                                                                   intended_server_id,
                                                                    group_ctx,
                                                                    ctx);
 
