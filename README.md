@@ -30,7 +30,7 @@ sudo apt-get install enftun
 * [OpenSSL]() (version 1.1.0 or higher)
 * [LibUV]() (version 1.9 or higher)
 * [LibConfig]() (version 1.5 or higher)
-* [xtt](https://github.com/xaptum/xtt) (version 0.10.0 or higher)
+* [xtt](https://github.com/xaptum/xtt) (version 0.10.1 or higher)
   * If building with XTT and TPM support
 
 ### Building the Binary

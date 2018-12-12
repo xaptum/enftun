@@ -27,13 +27,11 @@
 #include <tss2/tss2_sys.h>
 #include <tss2/tss2_tcti_socket.h>
 #include <tss2/tss2_tcti_device.h>
+#include <xtt/tpm/context.h>
 
 #include "xtt.h"
 #include "log.h"
 #include "tls.h"
-
-#define TLS_ROOT_CERT_HANDLE 0x1410005
-#define XTT_ROOT_CERT_HANDLE 0x1410009
 
 int
 enftun_xtt_init(struct enftun_xtt* xtt)
@@ -44,8 +42,6 @@ enftun_xtt_init(struct enftun_xtt* xtt)
         return -1;
     }
 
-    xtt->tcti_context_buffer_s_len = 256;
-    xtt->tcti_context_buffer_s = malloc(sizeof(unsigned char)*xtt->tcti_context_buffer_s_len);
     xtt->suitespec = "X25519_LRSW_ECDSAP256_CHACHA20POLY1305_SHA512";
 
     return 0;
@@ -54,31 +50,33 @@ enftun_xtt_init(struct enftun_xtt* xtt)
 int
 enftun_xtt_free(struct enftun_xtt* xtt)
 {
-    if (xtt->tcti_context_buffer_s)
-        free(xtt->tcti_context_buffer_s);
+
     return 0;
 }
 
-static int initialize_tcti(TSS2_TCTI_CONTEXT **tcti_context, xtt_tcti_type tcti_type, const char *dev_file,
-                           const char *tpm_hostname_g, const char *tpm_port_g, unsigned char* tcti_context_buffer_s,
-                           unsigned int tcti_context_buffer_s_len);
-
 static int connect_to_server(const char *ip, char *port, int mark);
 
-static int initialize_certs(TSS2_TCTI_CONTEXT *tcti_context,
+static int initialize_certs(struct xtt_server_root_certificate_context* saved_cert,
                             xtt_certificate_root_id* saved_root_id,
-                            struct xtt_server_root_certificate_context* saved_cert,
                             xtt_root_certificate* root_certificate);
 
 static int initialize_daa(struct xtt_client_group_context *group_ctx,
-                          TSS2_TCTI_CONTEXT *tcti_context,
+                          unsigned char* basename,
+                          uint16_t basename_len,
+                          xtt_daa_group_pub_key_lrsw* gpk,
+                          xtt_daa_credential_lrsw* cred,
+                          struct xtt_tpm_context *tpm_ctx,
                           const char* basename_in);
 
-static int
-read_nvram(unsigned char *out,
-           uint16_t length,
-           TPM_HANDLE index,
-           TSS2_TCTI_CONTEXT *tcti_context);
+
+static int read_in_from_TPM(struct xtt_tpm_context *tpm_ctx,
+                            unsigned char* basename,
+                            uint16_t* basename_len,
+                            xtt_daa_group_pub_key_lrsw* gpk,
+                            xtt_daa_credential_lrsw* cred,
+                            xtt_root_certificate* root_certificate,
+                            unsigned char* tls_root_cert,
+                            uint16_t* tls_len);
 
 static int do_handshake_client(int socket,
                                xtt_identity_type *requested_client_id,
@@ -91,8 +89,6 @@ static int save_credentials(struct xtt_client_handshake_context *ctx,
                             const char* longterm_cert_out_file,
                             const char* longterm_private_key_out_file);
 
-static int read_tls_root_cert(TSS2_TCTI_CONTEXT *tcti_context, const char* ca_cert_file);
-
 int
 enftun_xtt_handshake(const char *server_ip,
                      const char *server_port,
@@ -101,10 +97,10 @@ enftun_xtt_handshake(const char *server_ip,
                      const char *dev_file,
                      const char *longterm_cert_out_file,
                      const char *longterm_private_key_out_file,
-                     const char *tpm_hostname_g,
-                     const char *tpm_port_g,
+                     const char *tpm_hostname,
+                     const char *tpm_port,
                      const char *ca_cert_file,
-                     const char *basename,
+                     const char *basename_in,
                      struct enftun_xtt* xtt)
 {
     int init_daa_ret = -1;
@@ -135,49 +131,65 @@ enftun_xtt_handshake(const char *server_ip,
     }
 
     //Set TCTI from command line args
-    xtt_tcti_type tcti_type;
     if (0 == strcmp(tcti, "device")) {
-        tcti_type = XTT_TCTI_DEVICE;
+        xtt->tpm_params.tcti = XTT_TCTI_DEVICE;
     } else if (0 == strcmp(tcti, "socket")) {
-        tcti_type = XTT_TCTI_SOCKET;
+        xtt->tpm_params.tcti = XTT_TCTI_SOCKET;
     } else {
         enftun_log_error("Unknown tcti_type '%s'\n", tcti);
         exit(1);
     }
 
+    xtt->tpm_params.dev_file = dev_file;
+    xtt->tpm_params.hostname = tpm_hostname;
+    xtt->tpm_params.port = tpm_port;
+
     //Set TCTI device file from command line args
-    if(NULL == dev_file && tcti_type == XTT_TCTI_DEVICE)
+    if(NULL == dev_file && xtt->tpm_params.tcti == XTT_TCTI_DEVICE)
     {
         enftun_log_error("Not given a device file for TCTI\n");
         exit(1);
     }
 
-    // 1) Setup the needed XTT contexts (from files).
-    // 1i) Setup TPM TCTI
-    TSS2_TCTI_CONTEXT *tcti_context = NULL;
-    int init_tcti_ret = 0;
-    init_tcti_ret = initialize_tcti(&tcti_context, tcti_type, dev_file, tpm_hostname_g, tpm_port_g, xtt->tcti_context_buffer_s, xtt->tcti_context_buffer_s_len);
-    if (0 != init_tcti_ret) {
-        enftun_log_error("Error initializing TPM TCTI context\n");
+    int tpm_ctx_ret = SUCCESS;
+    tpm_ctx_ret = xtt_init_tpm_context(&xtt->tpm_ctx, &xtt->tpm_params);
+    if (SUCCESS != tpm_ctx_ret) {
+        fprintf(stderr, "Error initializing TPM context: %d\n", tpm_ctx_ret);
+        return tpm_ctx_ret;
+    }
+
+    // 1) Setup the needed XTT contexts (from files/TPM).
+    // 1i) Read in DAA data from the TPm or from files
+
+    xtt_daa_group_pub_key_lrsw gpk = {.data = {0}};
+    xtt_daa_credential_lrsw cred = {.data = {0}};
+    xtt_root_certificate root_certificate = {.data = {0}};
+    unsigned char basename[1024] = {0};
+    uint16_t basename_len = sizeof(basename);
+    unsigned char tls_root_cert[1024] = {0};
+    uint16_t tls_len = sizeof(tls_root_cert);
+
+    ret = read_in_from_TPM(&xtt->tpm_ctx, basename, &basename_len, &gpk, &cred, &root_certificate, tls_root_cert, &tls_len);
+    if (0 != ret) {
+        enftun_log_error("Error reading data from TPM\n");
         goto finish;
     }
 
-    ret = read_tls_root_cert(tcti_context, ca_cert_file);
-    if (0 != ret) {
-        goto finish;
+    ret = xtt_save_to_file(tls_root_cert, tls_len, ca_cert_file);
+    if (ret < 0) {
+        return SAVE_TO_FILE_ERROR;
     }
 
     // 1ii) Initialize DAA
     struct xtt_client_group_context group_ctx;
-    init_daa_ret = initialize_daa(&group_ctx, tcti_context, basename);
+    init_daa_ret = initialize_daa(&group_ctx, basename, basename_len, &gpk, &cred, &xtt->tpm_ctx, basename_in);
     ret = init_daa_ret;
     if (0 != init_daa_ret) {
         enftun_log_error("Error initializing DAA context\n");
         goto finish;
     }
     // 1iii) Initialize Certificates
-    xtt_root_certificate root_certificate;
-    ret = initialize_certs(tcti_context, &saved_root_id, &saved_cert, &root_certificate);
+    ret = initialize_certs(&saved_cert, &saved_root_id, &root_certificate);
     if (0 != ret) {
         enftun_log_error("Error initializing server/root certificate contexts\n");
         goto finish;
@@ -224,9 +236,7 @@ enftun_xtt_handshake(const char *server_ip,
 finish:
     if (socket > 0)
         close(socket);
-    if (0==init_tcti_ret) {
-        tss2_tcti_finalize(tcti_context);
-    }
+    xtt_free_tpm_context(&xtt->tpm_ctx);
     if (0 == ret) {
         return 0;
     } else {
@@ -234,25 +244,80 @@ finish:
     }
 }
 
-static int read_tls_root_cert(TSS2_TCTI_CONTEXT *tcti_context, const char* ca_cert_file)
+static
+int read_in_from_TPM(struct xtt_tpm_context *tpm_ctx,
+                     unsigned char* basename,
+                     uint16_t* basename_len,
+                     xtt_daa_group_pub_key_lrsw* gpk,
+                     xtt_daa_credential_lrsw* cred,
+                     xtt_root_certificate* root_certificate,
+                     unsigned char* tls_root_cert,
+                     uint16_t* tls_len
+                    )
 {
-    //read in TLS root cert from TPM
-    unsigned char tls_root_cert[461];
-    int nvram_ret = read_nvram(tls_root_cert,
-                               461,
-                               TLS_ROOT_CERT_HANDLE,
-                               tcti_context);
+    uint16_t length_read = 0;
+
+    int nvram_ret = xtt_read_object(basename,
+                                    *basename_len,
+                                    &length_read,
+                                    XTT_BASENAME,
+                                    tpm_ctx);
     if (0 != nvram_ret) {
-        fprintf(stderr, "Error reading tls root from TPM NVRAM\n");
-        return TPM_ERROR;
+        enftun_log_error("Error reading basename from TPM NVRAM\n");
+        goto finish;
     }
-    //write TLS root cert to ca_cert_file
-    int ret = xtt_save_to_file(tls_root_cert, 461, ca_cert_file);
-    if (ret < 0) {
-        return SAVE_TO_FILE_ERROR;
+    *basename_len = length_read;
+
+    length_read = 0;
+    nvram_ret = xtt_read_object(gpk->data,
+                                sizeof(xtt_daa_group_pub_key_lrsw),
+                                &length_read,
+                                XTT_GROUP_PUBLIC_KEY,
+                                tpm_ctx);
+    if (0 != nvram_ret) {
+        enftun_log_error("Error reading GPK from TPM NVRAM");
+        nvram_ret = TPM_ERROR;
+        goto finish;
     }
 
-    return 0;
+    length_read = 0;
+    nvram_ret = xtt_read_object(cred->data,
+                                sizeof(xtt_daa_credential_lrsw),
+                                &length_read,
+                                XTT_CREDENTIAL,
+                                tpm_ctx);
+    if (0 != nvram_ret) {
+        enftun_log_error("Error reading credential from TPM NVRAM");
+        nvram_ret = TPM_ERROR;
+        goto finish;
+    }
+
+    length_read = 0;
+    nvram_ret = xtt_read_object(root_certificate->data,
+                                sizeof(xtt_root_certificate),
+                                &length_read,
+                                XTT_ROOT_XTT_CERTIFICATE,
+                                tpm_ctx);
+    if (0 != nvram_ret) {
+        enftun_log_error("Error reading root's certificate from TPM NVRAM");
+        nvram_ret = TPM_ERROR;
+        goto finish;
+    }
+
+    nvram_ret = xtt_read_object(tls_root_cert,
+                                *tls_len,
+                                &length_read,
+                                XTT_ROOT_ASN1_CERTIFICATE,
+                                tpm_ctx);
+    if (0 != nvram_ret) {
+        enftun_log_error("Error reading tls root from TPM NVRAM\n");
+        nvram_ret = TPM_ERROR;
+        goto finish;
+    }
+    *tls_len = length_read;
+
+finish:
+    return nvram_ret;
 }
 
 
@@ -306,88 +371,24 @@ int connect_to_server(const char *server_host, char *port, int mark)
     return sock_ret;
 }
 
-int initialize_tcti(TSS2_TCTI_CONTEXT **tcti_context, xtt_tcti_type tcti_type, const char *dev_file, const char *tpm_hostname_g,
-                    const char *tpm_port_g, unsigned char* tcti_context_buffer_s, unsigned int tcti_context_buffer_s_len)
-{
-    *tcti_context = (TSS2_TCTI_CONTEXT*)tcti_context_buffer_s;
-    switch (tcti_type) {
-        case XTT_TCTI_SOCKET:
-            assert(tss2_tcti_getsize_socket() < tcti_context_buffer_s_len);
-            if (TSS2_RC_SUCCESS != tss2_tcti_init_socket(tpm_hostname_g, tpm_port_g, *tcti_context)) {
-                enftun_log_error("Error: Unable to initialize socket TCTI context\n");
-                return TPM_ERROR;
-            }
-            break;
-        case XTT_TCTI_DEVICE:
-            assert(tss2_tcti_getsize_device() < tcti_context_buffer_s_len);
-            if (TSS2_RC_SUCCESS != tss2_tcti_init_device(dev_file, strlen(dev_file), *tcti_context)) {
-                enftun_log_error("Error: Unable to initialize device TCTI context\n");
-                return TPM_ERROR;
-            }
-            break;
-    }
-
-    return 0;
-}
-
 static
 int initialize_daa(struct xtt_client_group_context *group_ctx,
-                   TSS2_TCTI_CONTEXT *tcti_context,
+                   unsigned char* basename,
+                   uint16_t basename_len,
+                   xtt_daa_group_pub_key_lrsw* gpk,
+                   xtt_daa_credential_lrsw* cred,
+                   struct xtt_tpm_context *tpm_ctx,
                    const char* basename_in)
 {
     xtt_return_code_type rc = 0;
 
-    // 1) Read DAA-related things in from file/TPM-NVRAM
-    xtt_daa_group_pub_key_lrsw gpk = {.data = {0}};
-    xtt_daa_credential_lrsw cred = {.data = {0}};
-    char basename[1024] = {0};
-    uint16_t basename_len = 0;
-    int nvram_ret = 0;
-
+    // 1) Change the basename if requested
     if (basename_in)
     {
         basename_len = strlen(basename_in);
         if (basename_len > 1024)
             return CLIENT_ERROR;
         memcpy(basename, basename_in, basename_len);
-    } else
-    {
-        uint8_t basename_len_from_tpm = 0;
-        nvram_ret = read_nvram((unsigned char*)&basename_len_from_tpm,
-                               1,
-                               XTT_BASENAME_SIZE_HANDLE,
-                               tcti_context);
-        if (0 != nvram_ret) {
-            enftun_log_error( "Error reading basename size from TPM NVRAM\n");
-            return TPM_ERROR;
-        }
-        basename_len = basename_len_from_tpm;
-        nvram_ret = read_nvram(basename,
-                               basename_len,
-                               XTT_BASENAME_HANDLE,
-                               tcti_context);
-        if (0 != nvram_ret) {
-            enftun_log_error("Error reading basename from TPM NVRAM\n");
-            return TPM_ERROR;
-        }
-    }
-
-    nvram_ret = read_nvram(gpk.data,
-                           sizeof(xtt_daa_group_pub_key_lrsw),
-                           XTT_GPK_HANDLE,
-                           tcti_context);
-    if (0 != nvram_ret) {
-        enftun_log_error("Error reading GPK from TPM NVRAM\n");
-        return TPM_ERROR;
-    }
-
-    nvram_ret = read_nvram(cred.data,
-                           sizeof(xtt_daa_credential_lrsw),
-                           XTT_CRED_HANDLE,
-                           tcti_context);
-    if (0 != nvram_ret) {
-        enftun_log_error("Error reading credential from TPM NVRAM\n");
-        return TPM_ERROR;
     }
 
     // 2) Generate gid from gpk (gid = SHA-256(gpk | basename))
@@ -397,7 +398,7 @@ int initialize_daa(struct xtt_client_group_context *group_ctx,
     int hash_ret = crypto_hash_sha256_init(&hash_state);
     if (0 != hash_ret)
         return CRYPTO_HASH_ERROR;
-    hash_ret = crypto_hash_sha256_update(&hash_state, gpk.data, sizeof(gpk));
+    hash_ret = crypto_hash_sha256_update(&hash_state, gpk->data, sizeof(*gpk));
     if (0 != hash_ret)
         return CRYPTO_HASH_ERROR;
     hash_ret = crypto_hash_sha256_update(&hash_state, basename, basename_len);
@@ -410,39 +411,28 @@ int initialize_daa(struct xtt_client_group_context *group_ctx,
     // 3) Initialize DAA context using the above information
     rc = xtt_initialize_client_group_context_lrswTPM(group_ctx,
                                                      &gid,
-                                                     &cred,
-                                                     (unsigned char*)basename,
+                                                     cred,
+                                                     basename,
                                                      basename_len,
                                                      XTT_KEY_HANDLE,
                                                      NULL,
                                                      0,
-                                                     tcti_context);
+                                                     tpm_ctx->tcti_context);
 
     return rc;
 }
 
 static
-int initialize_certs(TSS2_TCTI_CONTEXT *tcti_context,
+int initialize_certs(struct xtt_server_root_certificate_context* saved_cert,
                      xtt_certificate_root_id* saved_root_id,
-                     struct xtt_server_root_certificate_context* saved_cert,
                      xtt_root_certificate* root_certificate)
 {
     xtt_return_code_type rc = 0;
-    // 1) Read root id ang pubkey in from buffer
     xtt_certificate_root_id root_id = {.data = {0}};
     xtt_ecdsap256_pub_key root_public_key = {.data = {0}};
 
-    int nvram_ret;
-    nvram_ret = read_nvram(root_certificate->data,
-                           sizeof(xtt_root_certificate),
-                           XTT_ROOT_CERT_HANDLE,
-                           tcti_context);
-    if (0 != nvram_ret) {
-        enftun_log_error("Error reading root's certificate from TPM NVRAM\n");
-        return TPM_ERROR;
-    }
 
-    // 2) Initialize stored data
+    // Initialize stored data
     xtt_deserialize_root_certificate(&root_public_key, &root_id, root_certificate);
 
     memcpy(saved_root_id, root_id.data, sizeof(xtt_certificate_root_id));
@@ -613,85 +603,4 @@ int save_credentials(struct xtt_client_handshake_context *ctx,
     }
 
     return 0;
-}
-
-static int
-read_nvram(unsigned char *out,
-           uint16_t size,
-           TPM_HANDLE index,
-           TSS2_TCTI_CONTEXT *tcti_context)
-{
-    TSS2_RC ret = TSS2_RC_SUCCESS;
-
-    size_t sapi_ctx_size = Tss2_Sys_GetContextSize(0);
-    TSS2_SYS_CONTEXT *sapi_context = malloc(sapi_ctx_size);
-    if (NULL == sapi_context) {
-        enftun_log_error("Error allocating memory for TPM SAPI context\n");
-        return TPM_ERROR;
-    }
-
-    TSS2_ABI_VERSION abi_version = TSS2_ABI_CURRENT_VERSION;
-    ret = Tss2_Sys_Initialize(sapi_context,
-                              sapi_ctx_size,
-                              tcti_context,
-                              &abi_version);
-    if (TSS2_RC_SUCCESS != ret) {
-        enftun_log_error("Error initializing TPM SAPI context\n");
-        goto finish;
-    }
-
-    TPMS_AUTH_COMMAND session_data = {
-        .sessionHandle = TPM_RS_PW,
-        .sessionAttributes = {0},
-    };
-    TPMS_AUTH_RESPONSE sessionDataOut = {{0}, {0}, {0}};
-    (void)sessionDataOut;
-    TSS2_SYS_CMD_AUTHS sessionsData;
-    TSS2_SYS_RSP_AUTHS sessionsDataOut;
-    TPMS_AUTH_COMMAND *sessionDataArray[1];
-    sessionDataArray[0] = &session_data;
-    TPMS_AUTH_RESPONSE *sessionDataOutArray[1];
-    sessionDataOutArray[0] = &sessionDataOut;
-    sessionsDataOut.rspAuths = &sessionDataOutArray[0];
-    sessionsData.cmdAuths = &sessionDataArray[0];
-    sessionsDataOut.rspAuthsCount = 1;
-    sessionsData.cmdAuthsCount = 1;
-    sessionsData.cmdAuths[0] = &session_data;
-
-    uint16_t data_offset = 0;
-
-    while (size > 0) {
-        uint16_t bytes_to_read = size;
-
-        TPM2B_MAX_NV_BUFFER nv_data = {.size=0};
-
-        ret = Tss2_Sys_NV_Read(sapi_context,
-                               index,
-                               index,
-                               &sessionsData,
-                               bytes_to_read,
-                               data_offset,
-                               &nv_data,
-                               &sessionsDataOut);
-
-        if (ret != TSS2_RC_SUCCESS) {
-            enftun_log_error("Error reading from NVRAM\n");
-            goto finish;
-        }
-
-        size -= nv_data.size;
-
-        memcpy(out + data_offset, nv_data.buffer, nv_data.size);
-        data_offset += nv_data.size;
-    }
-
-finish:
-    Tss2_Sys_Finalize(sapi_context);
-    free(sapi_context);
-
-    if (ret == TSS2_RC_SUCCESS) {
-        return 0;
-    } else {
-        return TPM_ERROR;
-    }
 }

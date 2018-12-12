@@ -23,7 +23,7 @@ if(BUILD_XTT)
     add_definitions(-DUSE_TPM)
     add_definitions(-DUSE_XTT)
     find_package(sodium REQUIRED QUIET 1.0.11)
-    find_package(xtt COMPONENTS tpm REQUIRED QUIET 0.9.1)
+    find_package(xtt COMPONENTS tpm REQUIRED QUIET 0.10.1)
 endif()
 
 set(ENFTUN_SRCS
