@@ -54,8 +54,6 @@ enftun_xtt_free(struct enftun_xtt* xtt)
     return 0;
 }
 
-static int connect_to_server(const char *ip, char *port, int mark);
-
 static int initialize_certs(struct xtt_server_root_certificate_context* saved_cert,
                             xtt_certificate_root_id* saved_root_id,
                             xtt_root_certificate* root_certificate);
@@ -90,7 +88,7 @@ static int save_credentials(struct xtt_client_handshake_context *ctx,
                             const char* longterm_private_key_out_file);
 
 int
-enftun_xtt_handshake(const char *server_ip,
+enftun_xtt_handshake(const char **server_hosts,
                      const char *server_port,
                      int mark,
                      const char *tcti,
@@ -103,8 +101,8 @@ enftun_xtt_handshake(const char *server_ip,
                      const char *basename_in,
                      struct enftun_xtt* xtt)
 {
+    struct enftun_tcp sock;
     int init_daa_ret = -1;
-    int socket = -1;
     int ret = 0;
 
     xtt_certificate_root_id saved_root_id = {.data = {0}};
@@ -196,9 +194,8 @@ enftun_xtt_handshake(const char *server_ip,
     }
 
     // 2) Make TCP connection to server.
-    enftun_log_info("Connecting to server at %s:%s ...\n", server_ip, server_port);
-    socket = connect_to_server(server_ip, (char*)server_port, mark);
-    if (socket < 0) {
+    ret = enftun_tcp_connect_any(&sock, mark, server_hosts, (char*) server_port);
+    if (ret < 0) {
         ret = 1;
         goto finish;
     }
@@ -217,7 +214,7 @@ enftun_xtt_handshake(const char *server_ip,
     }
 
     // 4) Run the identity-provisioning handshake with the server.
-    ret = do_handshake_client(socket,
+    ret = do_handshake_client(sock.fd,
                               &requested_client_id,
                               &group_ctx,
                               &ctx,
@@ -234,8 +231,7 @@ enftun_xtt_handshake(const char *server_ip,
     }
 
 finish:
-    if (socket > 0)
-        close(socket);
+    enftun_tcp_close(&sock);
     xtt_free_tpm_context(&xtt->tpm_ctx);
     if (0 == ret) {
         return 0;
@@ -318,57 +314,6 @@ int read_in_from_TPM(struct xtt_tpm_context *tpm_ctx,
 
 finish:
     return nvram_ret;
-}
-
-
-static
-int connect_to_server(const char *server_host, char *port, int mark)
-{
-    struct addrinfo *serverinfo;
-    struct addrinfo hints = {.ai_protocol = IPPROTO_TCP};
-
-    if (0 != getaddrinfo(server_host, port, &hints, &serverinfo)) {
-        enftun_log_error("Error resolving server host '%s:%s'\n", server_host, port);
-        return -1;
-    }
-
-    struct addrinfo *addr = NULL;
-    int sock_ret = -1;
-    for (addr=serverinfo; addr!=NULL; addr=addr->ai_next) {
-        sock_ret = socket(addr->ai_family, SOCK_STREAM, addr->ai_protocol);
-        if (sock_ret == -1) {
-            enftun_log_debug("Error opening client socket, trying next address\n");
-            continue;
-        }
-
-        if (mark > 0)
-        {
-            if (setsockopt(sock_ret, SOL_SOCKET, SO_MARK, &mark, sizeof(mark)) < 0)
-            {
-                enftun_log_debug("Failed to set mark %d: %s\n", mark, strerror(errno));
-                close(sock_ret);
-                continue;
-            }
-        }
-
-
-        if (connect(sock_ret, addr->ai_addr, addr->ai_addrlen) < 0) {
-            enftun_log_debug("Error connecting to server, trying next address\n");
-            close(sock_ret);
-            continue;
-        }
-
-        break;
-    }
-
-    freeaddrinfo(serverinfo);
-
-    if (NULL == addr) {
-        enftun_log_error("Unable to connect to server\n");
-        return -1;
-    }
-
-    return sock_ret;
 }
 
 static
