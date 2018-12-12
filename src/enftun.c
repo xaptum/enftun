@@ -109,7 +109,7 @@ enftun_tunnel(struct enftun_context* ctx)
     int rc;
 
     rc = enftun_channel_init(&ctx->tlschan, &enftun_tls_ops, &ctx->tls,
-                             &ctx->loop, ctx->tls.fd);
+                             &ctx->loop, ctx->tls.sock.fd);
     if (rc < 0)
         goto out;
 

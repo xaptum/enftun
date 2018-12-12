@@ -26,19 +26,20 @@
 
 #include "channel.h"
 #include "packet.h"
+#include "tcp.h"
 
 struct enftun_tls
 {
-    int mark;           // mark to apply to tunnel packets. 0 to disable
+    int mark;               // mark to apply to tunnel packets. 0 to disable
 
-    int fd;             // file descriptor for the underlying TCP socket
+    struct enftun_tcp sock; // the underlying TCP socket
 
-    SSL_CTX *ctx;       // the openSSL context
-    SSL *ssl;           // the openSSL connection
+    SSL_CTX *ctx;           // the openSSL context
+    SSL *ssl;               // the openSSL connection
 
-    BIO *bio;           // openSSL BIO socket wrapper
+    BIO *bio;               // openSSL BIO socket wrapper
 
-    int need_provision; // Whether or not XTT provisioning is required
+    int need_provision;     // Whether or not XTT provisioning is required
 };
 
 extern struct enftun_channel_ops enftun_tls_ops;

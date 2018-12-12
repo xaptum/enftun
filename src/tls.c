@@ -24,9 +24,6 @@
 #include "log.h"
 #include "tls.h"
 
-#define get_sin_addr(addr) \
-    (&((struct sockaddr_in*)addr->ai_addr)->sin_addr)
-
 struct enftun_channel_ops enftun_tls_ops =
 {
    .read    = (int  (*)(void*, struct enftun_packet*)) enftun_tls_read_packet,
@@ -121,9 +118,10 @@ enftun_tls_handshake(struct enftun_tls* tls)
         goto free_ssl;
     }
 
-    if (!SSL_set_fd(tls->ssl, tls->fd))
+    if (!SSL_set_fd(tls->ssl, tls->sock.fd))
     {
-        enftun_log_ssl_error("Failed to set SSL file descriptor (%d):", tls->fd);
+        enftun_log_ssl_error("Failed to set SSL file descriptor (%d):",
+                             tls->sock.fd);
         goto free_ssl;
     }
 
@@ -166,120 +164,19 @@ enftun_tls_handshake(struct enftun_tls* tls)
     return rc;
 }
 
-static
-int attempt_connect_addr(int* fd, int mark, struct addrinfo* addr,
-                         const char* host, const char* port)
-{
-    char ip[45];
-    int rc;
-
-    inet_ntop(addr->ai_family, get_sin_addr(addr), ip, sizeof(ip));
-    enftun_log_debug("Attempting to connect to %s at [%s]:%s\n", host, ip, port);
-
-    if ((*fd = socket(addr->ai_family, SOCK_STREAM, addr->ai_protocol)) < 0)
-    {
-        enftun_log_debug("Failed to create socket: %s\n", strerror(errno));
-        rc = -errno;
-        goto out;
-    }
-
-    if (mark > 0)
-    {
-        if ((rc = setsockopt(*fd, SOL_SOCKET, SO_MARK, &mark, sizeof(mark))) < 0)
-        {
-            enftun_log_debug("Failed to set mark %d: %s\n", mark, strerror(errno));
-            rc = -errno;
-            goto close_fd;
-        }
-    }
-
-    if ((rc = connect(*fd, addr->ai_addr, addr->ai_addrlen)) < 0)
-    {
-        enftun_log_debug("Failed to connect to [%s]:%s: %s\n",
-                         ip, port, strerror(errno));
-        rc = -errno;
-        goto close_fd;
-    }
-
-    enftun_log_info("Connected to [%s]:%s\n", ip, port);
-    goto out;
-
- close_fd:
-    close(*fd);
-    *fd = 0;
-
- out:
-    return rc;
-}
-
-static
-int
-attempt_connect_host(int* fd, int mark,
-                     const char* host, const char *port)
-{
-    int rc;
-    struct addrinfo *addr_h, *addr, hints;
-
-    memset(&hints, 0, sizeof(hints));
-    hints.ai_family   = AF_UNSPEC;
-    hints.ai_socktype = SOCK_STREAM;
-    hints.ai_protocol = IPPROTO_TCP;
-    hints.ai_flags    = AI_PASSIVE;
-
-    rc = getaddrinfo(host, port, &hints, &addr_h);
-    if (rc < 0)
-    {
-        enftun_log_error("Cannot resolve %s:%s: %s\n", host, port, gai_strerror(rc));
-        rc = -1;
-        goto out;
-    }
-
-    for (addr=addr_h; addr!=NULL; addr=addr->ai_next)
-    {
-        rc = attempt_connect_addr(fd, mark, addr, host, port);
-        if (rc == 0)
-            break;
-    }
-
-    freeaddrinfo(addr_h);
-
- out:
-    return rc;
-}
-
-static
-int attempt_connect_hosts(int* fd, int mark,
-                          const char** hosts, const char *port)
-{
-    int rc;
-    const char* host;
-
-    for (host=*hosts; host!=NULL; host=*++hosts)
-    {
-        rc = attempt_connect_host(fd, mark, host, port);
-        if (rc == 0)
-            break;
-    }
-
-    return rc;
-}
-
 int
 enftun_tls_connect(struct enftun_tls* tls, int mark,
                    const char** hosts, const char *port)
 {
     int rc;
 
-    rc = attempt_connect_hosts(&tls->fd, mark, hosts, port);
+    rc = enftun_tcp_connect_any(&tls->sock, mark, hosts, port);
     if (rc < 0)
         goto out;
 
     rc = enftun_tls_handshake(tls);
     if (rc < 0)
-    {
-        close(tls->fd);
-        tls->fd = 0;
-    }
+        enftun_tcp_close(&tls->sock);
 
  out:
     return rc;
@@ -307,9 +204,7 @@ enftun_tls_disconnect(struct enftun_tls* tls)
         }
     }
 
-    if (tls->fd)
-        close(tls->fd);
-
+    enftun_tcp_close(&tls->sock);
     SSL_free(tls->ssl);
 
     return 0;
