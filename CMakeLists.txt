@@ -39,6 +39,7 @@ set(ENFTUN_SRCS
     src/log.c
     src/options.c
     src/packet.c
+    src/tcp.c
     src/tls.c
     src/tun.c
     )
