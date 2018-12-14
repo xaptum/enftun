@@ -121,7 +121,7 @@ enftun_tcp_connect_any(struct enftun_tcp* tcp,
                        int mark,
                        const char** hosts, const char *port)
 {
-    int rc;
+    int rc = 0;
     const char* host;
 
     for (host=*hosts; host!=NULL; host=*++hosts)
