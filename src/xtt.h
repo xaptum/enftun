@@ -38,7 +38,7 @@ int
 enftun_xtt_free(struct enftun_xtt* xtt);
 
 int
-enftun_xtt_handshake(const char *server_host,
+enftun_xtt_handshake(const char **server_hosts,
                      const char *server_port,
                      int mark,
                      const char *tcti,
