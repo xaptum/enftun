@@ -24,9 +24,9 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 
-#include <linux/if.h>
 #include <linux/if_tun.h>
-#include <linux/ipv6.h>
+#include <net/if.h>
+#include <netinet/in.h>
 
 #include "exec.h"
 #include "ip.h"
