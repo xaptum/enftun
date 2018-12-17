@@ -26,6 +26,11 @@ if(BUILD_XTT)
     find_package(xtt COMPONENTS tpm REQUIRED QUIET 0.10.1)
 endif()
 
+add_compile_options(-std=c99 -Wall -Wextra -Wno-missing-field-initializers)
+set(CMAKE_C_FLAGS_RELWITHSANITIZE "${CMAKE_C_FLAGS_RELWITHSANITIZE} -O2 -g -fsanitize=address,undefined -fsanitize=unsigned-integer-overflow")
+set(CMAKE_C_FLAGS_DEV "${CMAKE_C_FLAGS_RELEASE} -Werror")
+set(CMAKE_C_FLAGS_DEVDEBUG "${CMAKE_C_FLAGS_DEBUG} -Werror")
+
 set(ENFTUN_SRCS
     src/cert.c
     src/chain.c
