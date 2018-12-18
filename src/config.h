@@ -30,6 +30,7 @@ struct enftun_config
     const char* conf_file;
 
     const char* ip_path;
+    int ip_set;
 
     const char* dev;
     const char* dev_node;

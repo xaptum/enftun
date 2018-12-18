@@ -77,6 +77,7 @@ enftun_config_init(struct enftun_config* config)
     config_init(&config->cfg);
 
     config->ip_path = "/bin/ip";
+    config->ip_set = 1; // true
 
     config->dev = "enf0";
     config->dev_node = "/dev/net/tun";
@@ -152,6 +153,7 @@ enftun_config_parse(struct enftun_config* config, const char* file)
 
     /* Platform settings */
     config_lookup_string(cfg, "tun.ip_path", &config->ip_path);
+    config_lookup_bool(cfg, "tun.ip_set", &config->ip_set);
 
     /* TUN settings */
     config_lookup_string(cfg, "tun.dev", &config->dev);
@@ -193,6 +195,8 @@ enftun_config_print(struct enftun_config* config, const char* key)
     /* Platform settings */
     if (strcmp(key, "tun.ip_path") == 0)
         fprintf(stdout, "%s\n", config->ip_path);
+    else if (strcmp(key, "tun.ip_set") == 0)
+        fprintf(stdout, "%s\n", config->ip_set ? "true" : "false");
     /* TUN settings */
     else if (strcmp(key, "tun.dev") == 0)
         fprintf(stdout, "%s\n", config->dev);
