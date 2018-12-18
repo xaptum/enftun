@@ -206,7 +206,7 @@ enftun_connect(struct enftun_context* ctx)
                               ctx->config.dev_node)) < 0)
         goto close_tls;
 
-    if ((rc = enftun_tun_set_ip6(&ctx->tun,
+    if (ctx->config.ip_set && (rc = enftun_tun_set_ip6(&ctx->tun,
                                  ctx->config.ip_path, &ctx->ipv6)) < 0)
         goto close_tun;
 
