@@ -1,5 +1,7 @@
 # ENFTUN - Xaptum ENF Tunnel Client
 
+[![Build Status](https://travis-ci.org/xaptum/enftun.svg?branch=master)](https://travis-ci.org/xaptum/enftun)
+
 `enftun` is a tunnel client for connecting to the Xaptum Edge Network Fabric (ENF).
 
 ## Installation
@@ -54,12 +56,19 @@ cmake --build . --target install
 
 The following CMake configuration options are supported.
 
-| Option               | Values         | Default    | Description                                |
-|----------------------|----------------|------------|--------------------------------------------|
-| CMAKE_BUILD_TYPE     | Release        |            | With full optimizations.                   |
-|                      | Debug          |            | With debug symbols.                        |
-|                      | RelWithDebInfo |            | With full optimizations and debug symbols. |
-| CMAKE_INSTALL_PREFIX | <string>       | /usr/local | The directory to install the library in.   |
+| Option               | Values         | Default    | Description                                            |
+|----------------------|----------------|------------|--------------------------------------------------------|
+| CMAKE_BUILD_TYPE     | Release        |            | With full optimizations.                               |
+|                      | Debug          |            | With debug symbols.                                    |
+|                      | RelWithDebInfo |            | With full optimizations and debug symbols.             |
+|                      | Dev            |            | With warnings treated as errors and full optimizations.|
+|                      | DevDebug       |            | With warnings treated as errors and debug symbols.     |
+| CMAKE_INSTALL_PREFIX | <string>       | /usr/local | The directory to install the library in.               |
+| BUILD_CACERT         | ON, OFF        | ON         | Install the the ENF ca cert                            |
+| BUILD_EXAMPLE        | ON, OFF        | ON         | Build and install example configs                      |
+| BUILD_SYSTEMD        | ON, OFF        | ON         | Build with systemd support                             |
+| BUILD_TEST           | ON, OFF        | ON         | Build tests                                            |
+| BUILD_XTT            | ON, OFF        | ON         | Build with XTT support                                 |
 
 ## Usage
 
