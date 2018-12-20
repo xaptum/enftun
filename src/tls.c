@@ -28,7 +28,8 @@ struct enftun_channel_ops enftun_tls_ops =
 {
    .read    = (int  (*)(void*, struct enftun_packet*)) enftun_tls_read_packet,
    .write   = (int  (*)(void*, struct enftun_packet*)) enftun_tls_write_packet,
-   .prepare = (void (*)(void*, struct enftun_packet*)) enftun_tls_prepare_packet
+   .prepare = (void (*)(void*, struct enftun_packet*)) enftun_tls_prepare_packet,
+   .pending = (int  (*)(void*)) enftun_tls_pending
 };
 
 int
@@ -268,6 +269,12 @@ size_to_read(struct enftun_packet* pkt)
 
     /* read body */
     return ntohs(*(uint16_t*)pkt->data) - (pkt->size - 2);
+}
+
+int
+enftun_tls_pending(struct enftun_tls* tls)
+{
+    return SSL_pending(tls->ssl);
 }
 
 int
