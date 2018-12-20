@@ -130,8 +130,9 @@ class Connection(object):
 
     def send_packet(self, ip):
         print(ip)
-        buf = bytes(ip)
-        self._sock.send(struct.pack('!H', len(buf)))
+        body = bytes(ip)
+        head = struct.pack('!H', len(body))
+        buf = head + body
         self._sock.send(buf)
 
     def handle_packet(self, ip):
