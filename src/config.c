@@ -77,6 +77,7 @@ enftun_config_init(struct enftun_config* config)
     config_init(&config->cfg);
 
     config->ip_path = "/bin/ip";
+    config->ip_set = 1; // true
 
     config->dev = "enf0";
     config->dev_node = "/dev/net/tun";
@@ -101,6 +102,7 @@ enftun_config_init(struct enftun_config* config)
     config->xtt_device = "/dev/tpm0";
     config->xtt_socket_host = "localhost";
     config->xtt_socket_port = "2321";
+    config->xtt_basename = NULL;
 
     return 0;
 }
@@ -151,6 +153,7 @@ enftun_config_parse(struct enftun_config* config, const char* file)
 
     /* Platform settings */
     config_lookup_string(cfg, "tun.ip_path", &config->ip_path);
+    config_lookup_bool(cfg, "tun.ip_set", &config->ip_set);
 
     /* TUN settings */
     config_lookup_string(cfg, "tun.dev", &config->dev);
@@ -180,6 +183,7 @@ enftun_config_parse(struct enftun_config* config, const char* file)
         config_lookup_string(cfg, "identity.xtt.device", &config->xtt_device);
         config_lookup_string(cfg, "identity.xtt.socket_host", &config->xtt_socket_host);
         config_lookup_string(cfg, "identity.xtt.socket_port", &config->xtt_socket_port);
+        config_lookup_string(cfg, "identity.xtt.basename", &config->xtt_basename);
     }
 
     return 0;
@@ -191,6 +195,8 @@ enftun_config_print(struct enftun_config* config, const char* key)
     /* Platform settings */
     if (strcmp(key, "tun.ip_path") == 0)
         fprintf(stdout, "%s\n", config->ip_path);
+    else if (strcmp(key, "tun.ip_set") == 0)
+        fprintf(stdout, "%s\n", config->ip_set ? "true" : "false");
     /* TUN settings */
     else if (strcmp(key, "tun.dev") == 0)
         fprintf(stdout, "%s\n", config->dev);
@@ -232,6 +238,8 @@ enftun_config_print(struct enftun_config* config, const char* key)
         fprintf(stdout, "%s\n", config->xtt_socket_host);
     else if (strcmp(key, "identity.xtt.socket_port") == 0)
         fprintf(stdout, "%s\n", config->xtt_socket_port);
+    else if (strcmp(key, "identity.xtt.basename") == 0)
+        fprintf(stdout, "%s\n", config->xtt_basename);
     else
     {
         fprintf(stderr, "%s not found\n", key);

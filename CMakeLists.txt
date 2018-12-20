@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.1 FATAL_ERROR)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
 project(enftun
-  VERSION 0.2.1
+  VERSION 0.3.0
   LANGUAGES C
 )
 
@@ -23,8 +23,13 @@ if(BUILD_XTT)
     add_definitions(-DUSE_TPM)
     add_definitions(-DUSE_XTT)
     find_package(sodium REQUIRED QUIET 1.0.11)
-    find_package(xtt COMPONENTS tpm REQUIRED QUIET 0.9.1)
+    find_package(xtt COMPONENTS tpm REQUIRED QUIET 0.10.1)
 endif()
+
+add_compile_options(-std=c99 -Wall -Wextra -Wno-missing-field-initializers)
+set(CMAKE_C_FLAGS_RELWITHSANITIZE "${CMAKE_C_FLAGS_RELWITHSANITIZE} -O2 -g -fsanitize=address,undefined -fsanitize=unsigned-integer-overflow")
+set(CMAKE_C_FLAGS_DEV "${CMAKE_C_FLAGS_RELEASE} -Werror")
+set(CMAKE_C_FLAGS_DEVDEBUG "${CMAKE_C_FLAGS_DEBUG} -Werror")
 
 set(ENFTUN_SRCS
     src/cert.c
@@ -39,6 +44,7 @@ set(ENFTUN_SRCS
     src/log.c
     src/options.c
     src/packet.c
+    src/tcp.c
     src/tls.c
     src/tun.c
     )

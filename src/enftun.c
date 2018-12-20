@@ -109,7 +109,7 @@ enftun_tunnel(struct enftun_context* ctx)
     int rc;
 
     rc = enftun_channel_init(&ctx->tlschan, &enftun_tls_ops, &ctx->tls,
-                             &ctx->loop, ctx->tls.fd);
+                             &ctx->loop, ctx->tls.sock.fd);
     if (rc < 0)
         goto out;
 
@@ -160,7 +160,7 @@ enftun_provision(struct enftun_context* ctx)
         goto err;
     }
 
-    rc = enftun_xtt_handshake(ctx->config.remote_hosts[0],
+    rc = enftun_xtt_handshake(ctx->config.remote_hosts,
                               ctx->config.xtt_remote_port,
                               ctx->config.fwmark,
                               ctx->config.xtt_tcti,
@@ -170,6 +170,7 @@ enftun_provision(struct enftun_context* ctx)
                               ctx->config.xtt_socket_host,
                               ctx->config.xtt_socket_port,
                               ctx->config.remote_ca_cert_file,
+                              ctx->config.xtt_basename,
                               &xtt);
 
     if (0 != rc)
@@ -205,7 +206,7 @@ enftun_connect(struct enftun_context* ctx)
                               ctx->config.dev_node)) < 0)
         goto close_tls;
 
-    if ((rc = enftun_tun_set_ip6(&ctx->tun,
+    if (ctx->config.ip_set && (rc = enftun_tun_set_ip6(&ctx->tun,
                                  ctx->config.ip_path, &ctx->ipv6)) < 0)
         goto close_tun;
 

@@ -30,6 +30,7 @@ struct enftun_config
     const char* conf_file;
 
     const char* ip_path;
+    int ip_set;
 
     const char* dev;
     const char* dev_node;
@@ -52,6 +53,7 @@ struct enftun_config
     const char* xtt_device;
     const char* xtt_socket_host;
     const char* xtt_socket_port;
+    const char* xtt_basename;
 
 };
 

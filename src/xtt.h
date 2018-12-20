@@ -27,14 +27,9 @@
 struct enftun_xtt
 {
     const char *suitespec;
-    unsigned int tcti_context_buffer_s_len;
-    unsigned char* tcti_context_buffer_s;
+    struct xtt_tpm_context tpm_ctx;
+    struct xtt_tpm_params tpm_params;
 };
-
-typedef enum {
-    XTT_TCTI_SOCKET,
-    XTT_TCTI_DEVICE,
-} xtt_tcti_type;
 
 int
 enftun_xtt_init(struct enftun_xtt* xtt);
@@ -43,7 +38,7 @@ int
 enftun_xtt_free(struct enftun_xtt* xtt);
 
 int
-enftun_xtt_handshake(const char *server_host,
+enftun_xtt_handshake(const char **server_hosts,
                      const char *server_port,
                      int mark,
                      const char *tcti,
@@ -53,6 +48,7 @@ enftun_xtt_handshake(const char *server_host,
                      const char *socket_host,
                      const char *socket_port,
                      const char *ca_cert_file,
+                     const char *basename,
                      struct enftun_xtt* xtt);
 
 #endif // ENFTUN_XTT_H

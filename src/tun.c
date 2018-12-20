@@ -24,9 +24,9 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 
-#include <linux/if.h>
 #include <linux/if_tun.h>
-#include <linux/ipv6.h>
+#include <net/if.h>
+#include <netinet/in.h>
 
 #include "exec.h"
 #include "ip.h"
@@ -38,7 +38,8 @@ struct enftun_channel_ops enftun_tun_ops =
 {
    .read    = (int (*)(void*, struct enftun_packet*)) enftun_tun_read_packet,
    .write   = (int (*)(void*, struct enftun_packet*)) enftun_tun_write_packet,
-   .prepare = NULL
+   .prepare = NULL,
+   .pending = NULL
 };
 
 int

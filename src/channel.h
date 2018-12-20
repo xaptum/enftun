@@ -49,6 +49,7 @@ struct enftun_channel_ops
     int  (*read)(void* ctx, struct enftun_packet* pkt);
     int  (*write)(void* ctx, struct enftun_packet* pkt);
     void (*prepare)(void* ctx, struct enftun_packet* pkt);
+    int  (*pending)(void* ctx);
 };
 
 struct enftun_channel
