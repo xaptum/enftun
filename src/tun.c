@@ -38,7 +38,8 @@ struct enftun_channel_ops enftun_tun_ops =
 {
    .read    = (int (*)(void*, struct enftun_packet*)) enftun_tun_read_packet,
    .write   = (int (*)(void*, struct enftun_packet*)) enftun_tun_write_packet,
-   .prepare = NULL
+   .prepare = NULL,
+   .pending = NULL
 };
 
 int

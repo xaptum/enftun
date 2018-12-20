@@ -66,6 +66,7 @@ static
 void
 update_poll(struct enftun_channel* chan)
 {
+    // Update our events mask
     if (enftun_list_empty(&chan->rxqueue))
         chan->events &= ~UV_READABLE;
     else
@@ -76,7 +77,16 @@ update_poll(struct enftun_channel* chan)
     else
         chan->events |= UV_WRITABLE;
 
-    uv_poll_start(&chan->poll, chan->events, on_poll);
+    // If reading and the channel has pending data already consumed
+    // from the TCP socket, we must trigger the read directly.  This
+    // happens with OpenSSL, since it must read full TLS records from
+    // the TCP socket and internally buffer anything not yet requested
+    // by the application.
+    if ((chan->events & UV_READABLE) &&
+        chan->ops->pending && chan->ops->pending(chan->ops_context))
+        on_poll(&chan->poll, 0, UV_READABLE);
+    else
+        uv_poll_start(&chan->poll, chan->events, on_poll);
 }
 
 int
