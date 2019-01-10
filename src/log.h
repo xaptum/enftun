@@ -22,19 +22,19 @@
 void
 enftun_log(const char* format, ...);
 
-#define enftun_log_debug(format, ...) enftun_log("<7>" format, ##__VA_ARGS__);
-#define enftun_log_info(format, ...)  enftun_log("<6>" format, ##__VA_ARGS__);
-#define enftun_log_warn(format, ...)  enftun_log("<4>" format, ##__VA_ARGS__);
-#define enftun_log_error(format, ...) enftun_log("<3>" format, ##__VA_ARGS__);
+#define enftun_log_debug(format, ...) enftun_log("<7>" format, ##__VA_ARGS__)
+#define enftun_log_info(format, ...)  enftun_log("<6>" format, ##__VA_ARGS__)
+#define enftun_log_warn(format, ...)  enftun_log("<4>" format, ##__VA_ARGS__)
+#define enftun_log_error(format, ...) enftun_log("<3>" format, ##__VA_ARGS__)
 
 void
 enftun_log_ssl(unsigned long err, const char* format, ...);
 
-#define __enftun_log_ssl(format, ...) enftun_log_ssl(ERR_get_error(), format, ##__VA_ARGS__);
+#define __enftun_log_ssl(format, ...) enftun_log_ssl(ERR_get_error(), format, ##__VA_ARGS__)
 
-#define enftun_log_ssl_debug(format, ...) __enftun_log_ssl("<7>" format, ##__VA_ARGS__);
-#define enftun_log_ssl_info(format, ...)  __enftun_log_ssl("<6>" format, ##__VA_ARGS__);
-#define enftun_log_ssl_warn(format, ...)  __enftun_log_ssl("<4>" format, ##__VA_ARGS__);
-#define enftun_log_ssl_error(format, ...) __enftun_log_ssl("<3>" format, ##__VA_ARGS__);
+#define enftun_log_ssl_debug(format, ...) __enftun_log_ssl("<7>" format, ##__VA_ARGS__)
+#define enftun_log_ssl_info(format, ...)  __enftun_log_ssl("<6>" format, ##__VA_ARGS__)
+#define enftun_log_ssl_warn(format, ...)  __enftun_log_ssl("<4>" format, ##__VA_ARGS__)
+#define enftun_log_ssl_error(format, ...) __enftun_log_ssl("<3>" format, ##__VA_ARGS__)
 
 #endif // ENFTUN_LOG_H
