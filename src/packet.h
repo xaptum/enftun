@@ -63,10 +63,10 @@ enftun_packet_insert_head(struct enftun_packet* pkt, size_t len);
 void*
 enftun_packet_insert_tail(struct enftun_packet* pkt, size_t len);
 
-void
+void*
 enftun_packet_remove_head(struct enftun_packet* pkt, size_t len);
 
-void
+void*
 enftun_packet_remove_tail(struct enftun_packet* pkt, size_t len);
 
 
