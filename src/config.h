@@ -47,6 +47,8 @@ struct enftun_config
     const char** prefixes;
     const char** trusted_ifaces;
 
+    int ra_period; /* router advertisement period in ms */
+
     int xtt_enable;
     const char* xtt_remote_port;
     const char* xtt_tcti;
