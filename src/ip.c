@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Xaptum, Inc.
+ * Copyright 2018-2019 Xaptum, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
+#include "ip.h"
+
 #include <stdio.h>
 #include <string.h>
 
 #include <arpa/inet.h>
-
-#include "ip.h"
 
 const struct in6_addr ip6_all_nodes = {
     .s6_addr = { // ff02::1

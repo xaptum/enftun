@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Xaptum, Inc.
+ * Copyright 2018-2019 Xaptum, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,20 +33,6 @@ extern const struct in6_addr ip6_all_routers;
 extern const struct in6_addr ip6_default;
 
 extern const struct in6_addr ip6_self;
-
-#pragma pack(push, 1)
-struct ipv6_header
-{
-    uint8_t  priority  : 4,
-             version   : 4;
-    uint8_t  flow_label[3];
-    uint16_t payload_length;
-    uint8_t  next_header;
-    uint8_t  hop_limit;
-    struct in6_addr src;
-    struct in6_addr dst;
-};
-#pragma pack(pop)
 
 static inline
 int ipv6_equal(const struct in6_addr* a, const struct in6_addr* b)
