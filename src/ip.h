@@ -19,9 +19,20 @@
 #ifndef ENFTUN_IP_H
 #define ENFTUN_IP_H
 
-#include <netinet/in.h>
+#include <netinet/ip6.h>
 #include <stdint.h>
 #include <string.h>
+
+#ifndef IPV6_VERSION
+#define IPV6_VERSION 0x60
+#define IPV6_VERSION_MASK 0xf0
+#endif
+
+extern const struct in6_addr ip6_all_nodes;
+extern const struct in6_addr ip6_all_routers;
+extern const struct in6_addr ip6_default;
+
+extern const struct in6_addr ip6_self;
 
 #pragma pack(push, 1)
 struct ipv6_header
