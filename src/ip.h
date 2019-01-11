@@ -44,4 +44,8 @@ int ip6_prefix_str(const struct in6_addr* addr,
                    const int prefix, char* dst,
                    size_t size);
 
+int ip6_prefix(const char* str,
+               struct in6_addr* prefix,
+               uint8_t* prefixlen);
+
 #endif // ENFTUN_IP_H
