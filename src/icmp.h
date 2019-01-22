@@ -41,7 +41,7 @@ struct nd_opt_route_info {/* route info */
     u_int8_t    nd_opt_rti_flags;
     u_int32_t   nd_opt_rti_lifetime;
     /* prefix follows */
-} __packed;
+};
 #endif
 
 struct nd_opt_mtu*
