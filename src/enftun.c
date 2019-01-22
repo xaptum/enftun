@@ -90,7 +90,7 @@ chain_egress_filter(struct enftun_chain* chain,
 {
     struct enftun_context* ctx = (struct enftun_context*) chain->data;
 
-    if (enftun_ndp_handle_rs(&ctx->ndp, pkt))
+    if (enftun_ndp_handle_packet(&ctx->ndp, pkt))
         return 1;
 
     if (!enftun_is_ipv6(pkt))

@@ -58,6 +58,6 @@ int
 enftun_ndp_stop(struct enftun_ndp* ndp);
 
 int
-enftun_ndp_handle_rs(struct enftun_ndp* ndp, struct enftun_packet* pkt);
+enftun_ndp_handle_packet(struct enftun_ndp* ndp, struct enftun_packet* pkt);
 
 #endif // ENFTUN_NDP_H

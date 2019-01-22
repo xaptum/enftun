@@ -58,8 +58,8 @@ send_ra(struct enftun_ndp* ndp)
     ndp->ra_inflight = true;
 
     enftun_packet_reset(&ndp->ra_pkt);
-    icmp6_make_nd_ra(&ndp->ra_pkt, &ip6_self, &ip6_all_nodes,
-                     ndp->routes, 3 * ndp->ra_period);
+    enftun_icmp6_nd_ra(&ndp->ra_pkt, &ip6_self, &ip6_all_nodes,
+                       ndp->routes, 3 * ndp->ra_period);
 
     enftun_crb_write(&ndp->ra_crb, ndp->chan);
 
@@ -130,12 +130,24 @@ enftun_ndp_stop(struct enftun_ndp* ndp)
 }
 
 int
-enftun_ndp_handle_rs(struct enftun_ndp* ndp, struct enftun_packet* pkt)
+enftun_ndp_handle_packet(struct enftun_ndp* ndp, struct enftun_packet* pkt)
 {
-    if (icmp6_is_nd_rs(pkt)) {
-        schedule_ra(ndp);
-        return 1;
-    }
+    ENFTUN_SAVE_INIT(pkt);
 
+    // Verify that this an IP packet addressed to us
+    struct ip6_hdr* iph =
+        enftun_ip6_pull_if_dest(pkt, &ip6_all_routers);
+    if (!iph)
+        goto pass;
+
+    struct nd_router_solicit* rs = enftun_icmp6_nd_rs_pull(pkt, iph);
+    if (!rs)
+        goto pass;
+
+    schedule_ra(ndp);
+    return 1;
+
+ pass:
+    ENFTUN_RESTORE(pkt);
     return 0;
 }

@@ -44,14 +44,22 @@ struct nd_opt_route_info {/* route info */
 } __packed;
 #endif
 
-bool
-icmp6_is_nd_rs(struct enftun_packet* pkt);
+struct nd_opt_mtu*
+enftun_icmp6_nd_mtu(struct enftun_packet* pkt);
 
-int
-icmp6_make_nd_ra(struct enftun_packet* pkt,
-                 const struct in6_addr* src,
-                 const struct in6_addr* dst,
-                 const char** routes,
-                 int lifetime);
+struct nd_opt_route_info*
+enftun_icmp6_nd_route_info(struct enftun_packet* pkt,
+                           struct in6_addr* pfx, uint8_t pfxlen,
+                           uint32_t lifetime);
+
+struct nd_router_advert*
+enftun_icmp6_nd_ra(struct enftun_packet* pkt,
+                const struct in6_addr* src,
+                const struct in6_addr* dst,
+                const char** routes,
+                   int lifetime);
+
+struct nd_router_solicit*
+enftun_icmp6_nd_rs_pull(struct enftun_packet* pkt, struct ip6_hdr* iph);
 
 #endif // ENFTUN_ICMP_H
