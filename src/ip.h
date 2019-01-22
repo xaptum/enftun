@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Xaptum, Inc.
+ * Copyright 2018-2019 Xaptum, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,23 +19,20 @@
 #ifndef ENFTUN_IP_H
 #define ENFTUN_IP_H
 
-#include <netinet/in.h>
+#include <netinet/ip6.h>
 #include <stdint.h>
 #include <string.h>
 
-#pragma pack(push, 1)
-struct ipv6_header
-{
-    uint8_t  priority  : 4,
-             version   : 4;
-    uint8_t  flow_label[3];
-    uint16_t payload_length;
-    uint8_t  next_header;
-    uint8_t  hop_limit;
-    struct in6_addr src;
-    struct in6_addr dst;
-};
-#pragma pack(pop)
+#ifndef IPV6_VERSION
+#define IPV6_VERSION 0x60
+#define IPV6_VERSION_MASK 0xf0
+#endif
+
+extern const struct in6_addr ip6_all_nodes;
+extern const struct in6_addr ip6_all_routers;
+extern const struct in6_addr ip6_default;
+
+extern const struct in6_addr ip6_self;
 
 static inline
 int ipv6_equal(const struct in6_addr* a, const struct in6_addr* b)
@@ -46,5 +43,9 @@ int ipv6_equal(const struct in6_addr* a, const struct in6_addr* b)
 int ip6_prefix_str(const struct in6_addr* addr,
                    const int prefix, char* dst,
                    size_t size);
+
+int ip6_prefix(const char* str,
+               struct in6_addr* prefix,
+               uint8_t* prefixlen);
 
 #endif // ENFTUN_IP_H

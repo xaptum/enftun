@@ -20,32 +20,32 @@
 #include "ip.h"
 #include "log.h"
 
-#define IPV6_HEADER_INIT(header, packet) \
-    struct ipv6_header* header = (struct ipv6_header*) packet->data
+#define IP6_HEADER(hdr, pkt) \
+    struct ip6_hdr* hdr = (struct ip6_hdr*) pkt->data
 
 int
 enftun_is_ipv6(struct enftun_packet* pkt)
 {
-    IPV6_HEADER_INIT(hdr, pkt);
+    IP6_HEADER(hdr, pkt);
 
-    if (pkt->size < sizeof(struct ipv6_header))
+    if (pkt->size < sizeof(struct ip6_hdr))
     {
         enftun_log_debug("enftun_is_ipv6: packet smaller than IPv6 header (%d < %d)\n",
-                         pkt->size, sizeof(struct ipv6_header));
+                         pkt->size, sizeof(struct ip6_hdr));
         return 0;
     }
 
-    if (hdr->version != 6)
+    if ((hdr->ip6_vfc & IPV6_VERSION_MASK) != IPV6_VERSION)
     {
         enftun_log_debug("enftun_is_ipv6: header version is not 6 (%d != %d)\n",
-                         hdr->version, 6);
+                         (hdr->ip6_vfc >> 4), 6);
         return 0;
     }
 
-    if (ntohs(hdr->payload_length) != pkt->size - sizeof(*hdr))
+    if (ntohs(hdr->ip6_plen) != pkt->size - sizeof(*hdr))
     {
-        enftun_log_debug("enftun_is_ipv6: payload length does not match received (%d != %d\n",
-                         ntohs(hdr->payload_length), pkt->size - sizeof(*hdr));
+        enftun_log_debug("enftun_is_ipv6: payload length does not match received (%d != %d)\n",
+                         ntohs(hdr->ip6_plen), pkt->size - sizeof(*hdr));
         return 0;
     }
 
@@ -55,13 +55,13 @@ enftun_is_ipv6(struct enftun_packet* pkt)
 int
 enftun_has_src_ip(struct enftun_packet* pkt, struct in6_addr* addr)
 {
-    IPV6_HEADER_INIT(hdr, pkt);
+    IP6_HEADER(hdr, pkt);
 
-    if (!ipv6_equal(&hdr->src, addr))
+    if (!ipv6_equal(&hdr->ip6_src, addr))
     {
         char actual[45], expected[45];
         inet_ntop(AF_INET6, addr, expected, sizeof(expected));
-        inet_ntop(AF_INET6, &hdr->src, actual, sizeof(actual));
+        inet_ntop(AF_INET6, &hdr->ip6_src, actual, sizeof(actual));
 
         enftun_log_debug("enftun_has_src_ip: %s != %s\n", expected, actual);
         return 0;
@@ -73,6 +73,6 @@ enftun_has_src_ip(struct enftun_packet* pkt, struct in6_addr* addr)
 int
 enftun_has_dst_ip(struct enftun_packet* pkt, struct in6_addr* addr)
 {
-    IPV6_HEADER_INIT(hdr, pkt);
-    return ipv6_equal(&hdr->dst, addr);
+    IP6_HEADER(hdr, pkt);
+    return ipv6_equal(&hdr->ip6_dst, addr);
 }

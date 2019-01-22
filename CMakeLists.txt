@@ -40,8 +40,10 @@ set(ENFTUN_SRCS
     src/enftun.c
     src/exec.c
     src/filter.c
+    src/icmp.c
     src/ip.c
     src/log.c
+    src/ndp.c
     src/options.c
     src/packet.c
     src/tcp.c

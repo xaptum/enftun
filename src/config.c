@@ -96,6 +96,8 @@ enftun_config_init(struct enftun_config* config)
 
     config->trusted_ifaces = calloc(2, sizeof(char*));
 
+    config->ra_period = 10 * 60 * 1000; // milliseconds
+
     config->xtt_enable = 0;
     config->xtt_remote_port = "444";
     config->xtt_tcti = "device";
@@ -169,6 +171,7 @@ enftun_config_parse(struct enftun_config* config, const char* file)
     config_lookup_int(cfg, "route.table", &config->table);
     lookup_string_array(cfg, "route.prefixes", &config->prefixes);
     lookup_string_array(cfg, "route.trusted_interfaces", &config->trusted_ifaces);
+    config_lookup_int(cfg, "route.ra_period", &config->ra_period);
 
     /* Identity settings */
     config_lookup_string(cfg, "identity.cert_file", &config->cert_file);
@@ -220,6 +223,8 @@ enftun_config_print(struct enftun_config* config, const char* key)
         print_joined(config->prefixes, " ");
     else if (strcmp(key, "route.trusted_interfaces") == 0)
         print_joined(config->trusted_ifaces, " ");
+    else if (strcmp(key, "route.ra_period") == 0)
+        fprintf(stdout, "%d\n", config->ra_period);
     /* Identity settings */
     else if (strcmp(key, "identity.cert_file") == 0)
         fprintf(stdout, "%s\n", config->cert_file);

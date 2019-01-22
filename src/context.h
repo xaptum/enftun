@@ -25,6 +25,7 @@
 #include "chain.h"
 #include "channel.h"
 #include "config.h"
+#include "ndp.h"
 #include "options.h"
 #include "tls.h"
 #include "tun.h"
@@ -45,6 +46,8 @@ struct enftun_context
 
     struct enftun_chain ingress;
     struct enftun_chain egress;
+
+    struct enftun_ndp ndp;
 
     uv_loop_t loop;
 
