@@ -35,6 +35,7 @@ set(ENFTUN_SRCS
     src/cert.c
     src/chain.c
     src/channel.c
+    src/cksum.c
     src/config.c
     src/context.c
     src/enftun.c

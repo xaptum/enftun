@@ -34,6 +34,13 @@ extern const struct in6_addr ip6_default;
 
 extern const struct in6_addr ip6_self;
 
+/**
+ * Computes the checksum for common transport (layer 3) protocols like
+ * TCP, UDP, and ICMPv6.
+ */
+uint16_t
+ip6_l3_cksum(struct ip6_hdr* nh, void* payload);
+
 static inline
 int ipv6_equal(const struct in6_addr* a, const struct in6_addr* b)
 {

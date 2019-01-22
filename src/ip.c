@@ -23,6 +23,8 @@
 
 #include <arpa/inet.h>
 
+#include "cksum.h"
+
 const struct in6_addr ip6_all_nodes = {
     .s6_addr = { // ff02::1
         0xFF, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -50,6 +52,32 @@ const struct in6_addr ip6_self = {
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01
     }
 };
+
+uint16_t
+ip6_l3_cksum(struct ip6_hdr* nh, void* payload)
+{
+    // IPv6 pseudo-header
+    struct {
+        struct in6_addr src;
+        struct in6_addr dst;
+        uint16_t plen;
+        uint8_t zero[3];
+        uint8_t nxt;
+    } ph = {
+        .src  = nh->ip6_src,
+        .dst  = nh->ip6_dst,
+        .plen = nh->ip6_plen,
+        .zero = { 0, 0 , 0 },
+        .nxt  = nh->ip6_nxt,
+    };
+
+    uint16_t csum[2] = {
+        ~in_cksum(&ph, sizeof(ph)),
+        ~in_cksum(payload, ntohs(nh->ip6_plen))
+    };
+
+    return in_cksum(csum, sizeof(csum));
+}
 
 int ip6_prefix_str(const struct in6_addr* addr,
                    const int prefix, char* dst,
