@@ -35,7 +35,7 @@
 extern const struct in6_addr ip6_all_nodes;
 extern const struct in6_addr ip6_all_routers;
 extern const struct in6_addr ip6_default;
-
+extern const struct in6_addr ip6_all_dhcp_relay_agents_and_servers;
 extern const struct in6_addr ip6_self;
 
 /**
