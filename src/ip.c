@@ -152,3 +152,161 @@ ip6_prefix(const char* str,
 
     return 0;
 }
+
+struct ip6_hdr*
+enftun_ip6_header(struct enftun_packet* pkt,
+                  uint8_t nxt, uint8_t hops,
+                  const struct in6_addr* src,
+                  const struct in6_addr* dst)
+{
+    struct ip6_hdr* nh = enftun_packet_insert_head(pkt, sizeof(*nh));
+    if (!nh)
+        return NULL;
+
+    nh->ip6_vfc  = IPV6_VERSION;
+    nh->ip6_plen = htons(pkt->size - sizeof(*nh));
+    nh->ip6_nxt  = nxt;
+    nh->ip6_hlim = hops;
+    nh->ip6_src  = *src;
+    nh->ip6_dst  = *dst;
+
+    return nh;
+}
+
+struct ip6_hdr*
+enftun_udp6_header(struct enftun_packet* pkt,
+                   uint8_t hops,
+                   const struct in6_addr* src,
+                   const struct in6_addr* dst,
+                   uint16_t sport, uint16_t dport)
+{
+    struct udphdr* th = enftun_packet_insert_head(pkt, sizeof(*th));
+    if (!th)
+        return NULL;
+
+    th->uh_sport = htons(sport);
+    th->uh_dport = htons(dport);
+    th->uh_ulen  = htons(pkt->size);
+    th->uh_sum   = 0; // set after the IP header
+
+    struct ip6_hdr* nh = enftun_ip6_header(pkt, IPPROTO_UDP, hops, src, dst);
+    if (!nh)
+        return NULL;
+
+    th->uh_sum = ip6_l3_cksum(nh, th);
+
+    return nh;
+}
+
+struct ip6_hdr*
+enftun_ip6_pull(struct enftun_packet* pkt)
+{
+    ENFTUN_SAVE_INIT(pkt);
+
+    // Have enough data for header
+    struct ip6_hdr* iph = enftun_packet_remove_head(pkt, sizeof(*iph));
+    if (!iph)
+        goto err;
+
+    // Is version 6
+    if (IPV6_VERSION != (iph->ip6_vfc & IPV6_VERSION_MASK))
+        goto err;
+
+    // Have right amount of data for payload
+    if (pkt->size != ntohs(iph->ip6_plen))
+        goto err;
+
+    return iph;
+
+ err:
+    ENFTUN_RESTORE(pkt);
+    return NULL;
+}
+
+struct ip6_hdr*
+enftun_ip6_pull_if_dest(struct enftun_packet* pkt,
+                        const struct in6_addr* dst)
+{
+    ENFTUN_SAVE_INIT(pkt);
+
+    struct ip6_hdr* iph = enftun_ip6_pull(pkt);
+    if (!iph)
+        goto err;
+
+    // Has right destination IP
+    if (0 != memcmp(&iph->ip6_dst, dst, sizeof(*dst)))
+        goto err;
+
+    return iph;
+
+ err:
+    ENFTUN_RESTORE(pkt);
+    return NULL;
+}
+
+struct ip6_hdr*
+enftun_udp6_pull(struct enftun_packet* pkt)
+{
+    ENFTUN_SAVE_INIT(pkt);
+
+    // Has IPv6 packet
+    struct ip6_hdr* iph = enftun_ip6_pull(pkt);
+    if (!iph)
+        goto err;
+
+    // Is UDP packet
+    if (IPPROTO_UDP != iph->ip6_nxt)
+        goto err;
+
+    struct udphdr* udph = enftun_packet_remove_head(pkt, sizeof(*udph));
+    if (!udph)
+        goto err;
+
+    // Have right amount of data for payload
+    if (pkt->size + sizeof(*udph) != ntohs(udph->len))
+        goto err;
+
+    // Is checksum valid
+    if (0 != ip6_l3_cksum(iph, udph))
+        goto err;
+
+    return iph;
+
+ err:
+    ENFTUN_RESTORE(pkt);
+    return NULL;
+}
+
+struct ip6_hdr*
+enftun_udp6_pull_if_dest(struct enftun_packet* pkt,
+                         const struct in6_addr* dst,
+                         uint16_t sport,
+                         uint16_t dport)
+{
+    ENFTUN_SAVE_INIT(pkt);
+
+    // Is valid UDP packet
+    struct ip6_hdr* iph = enftun_udp6_pull(pkt);
+    if (!iph)
+        goto err;
+
+    struct udphdr* udph = (void*)iph + sizeof(*iph);
+
+    // Has right destination IP
+    if (0 != memcmp(&iph->ip6_dst, dst, sizeof(*dst)))
+        goto err;
+
+    // Has right destination port
+    if (dport != ntohs(udph->uh_dport))
+        goto err;
+
+    // Has right source port
+    if (sport != ntohs(udph->uh_sport))
+        goto err;
+
+    return iph;
+
+    err:
+        ENFTUN_RESTORE(pkt);
+        return NULL;
+}
