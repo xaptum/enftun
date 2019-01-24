@@ -16,40 +16,13 @@
 
 #include "icmp.h"
 
+#include <stdint.h>
+
+#include <netinet/in.h>
+
+#include "cksum.h"
 #include "ip.h"
 #include "log.h"
-
-static
-uint16_t
-icmp6_cksum(struct ip6_hdr* nh, struct icmp6_hdr* th)
-{
-    uint32_t sum = 0;
-    uint16_t* w;
-    int i;
-
-    // IPv6 pseudo-header
-    //   - src and dst
-    w = (uint16_t*) &nh->ip6_src;
-    for (i = 0; i < 16; ++i)
-        sum += *w++;
-    sum += nh->ip6_plen;
-    sum += htons(nh->ip6_nxt);
-
-    // ICMP payload
-    w = (uint16_t*) th;
-    for (i = ntohs(nh->ip6_plen); i > 1; i -= 2)
-    {
-        sum += *w++;
-    }
-
-    if (i == 1)
-        sum += (uint16_t) *(uint8_t*)w;
-
-    while (sum >> 16)
-        sum = (sum >> 16) + (sum & 0xFFFF);
-
-    return (uint16_t) ~sum;
-}
 
 bool
 icmp6_is_nd_rs(struct enftun_packet* pkt)
@@ -73,7 +46,7 @@ icmp6_is_nd_rs(struct enftun_packet* pkt)
                     &ip6_all_routers,
                     sizeof(ip6_all_routers)))                  return false;
 
-    if (0 != icmp6_cksum(&rs->ip6, &rs->icmp6.nd_rs_hdr))      return false;
+    if (0 != ip6_l3_cksum(&rs->ip6, &rs->icmp6.nd_rs_hdr))     return false;
 
     return true;
 }
@@ -158,7 +131,7 @@ icmp6_make_nd_ra(struct enftun_packet* pkt,
     nh->ip6_plen = htons(pkt->size - sizeof(*nh));
 
     // update checksum
-    th->nd_ra_cksum = icmp6_cksum(nh, &th->nd_ra_hdr);
+    th->nd_ra_cksum = ip6_l3_cksum(nh, &th->nd_ra_hdr);
 
     return 0;
 
