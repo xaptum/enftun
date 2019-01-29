@@ -37,6 +37,12 @@ struct enftun_packet
     size_t size;
 };
 
+struct enftun_packet_state
+{
+    uint8_t* data;
+    uint8_t* tail;
+};
+
 static inline
 size_t
 enftun_packet_headroom(struct enftun_packet* pkt)
@@ -51,8 +57,23 @@ enftun_packet_tailroom(struct enftun_packet* pkt)
     return (pkt->end - pkt->tail);
 }
 
+#define ENFTUN_SAVE_INIT(pkt)                        \
+    struct enftun_packet_state _enftun_save_state;   \
+    enftun_packet_save(pkt, &_enftun_save_state);    \
+
+#define ENFTUN_RESTORE(pkt)                          \
+    enftun_packet_restore(pkt, &_enftun_save_state); \
+
 void
 enftun_packet_reset(struct enftun_packet* pkt);
+
+void
+enftun_packet_save(struct enftun_packet* pkt,
+                   struct enftun_packet_state* st);
+
+void
+enftun_packet_restore(struct enftun_packet* pkt,
+                      struct enftun_packet_state* st);
 
 void
 enftun_packet_reserve_head(struct enftun_packet* pkt, size_t len);
@@ -68,6 +89,5 @@ enftun_packet_remove_head(struct enftun_packet* pkt, size_t len);
 
 void*
 enftun_packet_remove_tail(struct enftun_packet* pkt, size_t len);
-
 
 #endif // ENFTUN_PACKET_H
