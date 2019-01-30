@@ -54,9 +54,10 @@ enftun_icmp6_nd_route_info(struct enftun_packet* pkt,
 
 struct nd_router_advert*
 enftun_icmp6_nd_ra(struct enftun_packet* pkt,
-                const struct in6_addr* src,
-                const struct in6_addr* dst,
-                const char** routes,
+                   const struct in6_addr* src,
+                   const struct in6_addr* dst,
+                   const struct in6_addr* network, uint16_t prefix,
+                   const char** other_routes,
                    int lifetime);
 
 struct nd_router_solicit*

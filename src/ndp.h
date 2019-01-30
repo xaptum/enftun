@@ -29,6 +29,8 @@
 struct enftun_ndp
 {
     struct enftun_channel* chan;
+
+    struct in6_addr network;
     const char** routes;
     int ra_period;
 
@@ -45,6 +47,7 @@ int
 enftun_ndp_init(struct enftun_ndp* ndp,
                 struct enftun_channel *chan,
                 uv_loop_t* loop,
+                const struct in6_addr* ipv6,
                 const char** routes,
                 int ra_period);
 

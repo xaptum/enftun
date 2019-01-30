@@ -102,7 +102,8 @@ struct nd_router_advert*
 enftun_icmp6_nd_ra(struct enftun_packet* pkt,
                    const struct in6_addr* src,
                    const struct in6_addr* dst,
-                   const char** routes,
+                   const struct in6_addr* network, uint16_t prefix,
+                   const char** other_routes,
                    int lifetime)
 {
     enftun_ip6_reserve(pkt);
@@ -124,8 +125,11 @@ enftun_icmp6_nd_ra(struct enftun_packet* pkt,
     if (!mh)
         goto err;
 
+    if (NULL == enftun_icmp6_nd_route_info(pkt, network, prefix, lifetime))
+        goto err;
+
     const char* route;
-    for (route=*routes; route!=NULL; route=*++routes)
+    for (route=*other_routes; route!=NULL; route=*++other_routes)
     {
         struct in6_addr prefix;
         uint8_t prefixlen;
