@@ -67,7 +67,7 @@ ip6_l3_cksum(struct ip6_hdr* nh, void* payload)
     struct {
         struct in6_addr src;
         struct in6_addr dst;
-        uint16_t plen;
+        uint32_t plen;
         uint8_t zero[3];
         uint8_t nxt;
     } ph = {
