@@ -21,6 +21,7 @@
 
 #include "channel.h"
 #include "context.h"
+#include "dhcp.h"
 #include "filter.h"
 #include "log.h"
 #include "ndp.h"
@@ -90,7 +91,10 @@ chain_egress_filter(struct enftun_chain* chain,
 {
     struct enftun_context* ctx = (struct enftun_context*) chain->data;
 
-    if (enftun_ndp_handle_rs(&ctx->ndp, pkt))
+    if (enftun_ndp_handle_packet(&ctx->ndp, pkt))
+        return 1;
+
+    if (enftun_dhcp_handle_packet(&ctx->dhcp, pkt))
         return 1;
 
     if (!enftun_is_ipv6(pkt))
@@ -139,10 +143,17 @@ enftun_tunnel(struct enftun_context* ctx)
     if (rc < 0)
         goto free_egress;
 
+    rc = enftun_dhcp_init(&ctx->dhcp, &ctx->tunchan, &ctx->ipv6);
+    if (rc < 0)
+        goto free_ndp;
+
     start_all(ctx);
 
     uv_run(&ctx->loop, UV_RUN_DEFAULT);
 
+    enftun_dhcp_free(&ctx->dhcp);
+
+ free_ndp:
     enftun_ndp_free(&ctx->ndp);
 
  free_egress:

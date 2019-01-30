@@ -38,6 +38,8 @@ set(ENFTUN_SRCS
     src/cksum.c
     src/config.c
     src/context.c
+    src/dhcp.c
+    src/dhcp_msgs.c
     src/enftun.c
     src/exec.c
     src/filter.c

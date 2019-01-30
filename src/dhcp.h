@@ -16,48 +16,40 @@
 
 #pragma once
 
-#ifndef ENFTUN_NDP_H
-#define ENFTUN_NDP_H
+#ifndef ENFTUN_DHCP_H
+#define ENFTUN_DHCP_H
 
 #include <stdbool.h>
 
-#include <uv.h>
+#include <netinet/in.h>
 
 #include "channel.h"
 #include "packet.h"
 
-struct enftun_ndp
+struct enftun_dhcp
 {
     struct enftun_channel* chan;
-    const char** routes;
-    int ra_period;
 
-    uv_timer_t timer;
+    uint8_t duid[16];
 
-    struct enftun_packet ra_pkt;
-    struct enftun_crb ra_crb;
+    struct in6_addr ipv6;
 
-    bool ra_inflight;
-    bool ra_scheduled;
+    struct enftun_packet pkt;
+    struct enftun_crb crb;
+
+    bool inflight;
 };
 
 int
-enftun_ndp_init(struct enftun_ndp* ndp,
-                struct enftun_channel *chan,
-                uv_loop_t* loop,
-                const char** routes,
-                int ra_period);
+enftun_dhcp_init(struct enftun_dhcp* dchp,
+                 struct enftun_channel *chan,
+                 const struct in6_addr* ipv6);
 
 int
-enftun_ndp_free(struct enftun_ndp* ndp);
+enftun_dhcp_free(struct enftun_dhcp* dhcp);
 
 int
-enftun_ndp_start(struct enftun_ndp* ndp);
+enftun_dhcp_handle_packet(struct enftun_dhcp* dhcp,
+                          struct enftun_packet* pkt);
 
-int
-enftun_ndp_stop(struct enftun_ndp* ndp);
-
-int
-enftun_ndp_handle_packet(struct enftun_ndp* ndp, struct enftun_packet* pkt);
-
-#endif // ENFTUN_NDP_H
+#endif // ENFTUN_DHCP_H

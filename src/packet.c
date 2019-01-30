@@ -57,10 +57,7 @@ void*
 enftun_packet_insert_head(struct enftun_packet* pkt, size_t len)
 {
     if (len > enftun_packet_headroom(pkt))
-    {
-        enftun_log_error("enftun_packet_insert_head: insufficient headroom\n");
         return NULL;
-    }
 
     pkt->data -= len;
     pkt->size += len;
@@ -72,10 +69,7 @@ void*
 enftun_packet_insert_tail(struct enftun_packet* pkt, size_t len)
 {
     if (len > enftun_packet_tailroom(pkt))
-    {
-        enftun_log_error("enftun_packet_insert_tail: insufficient tailroom\n");
         return NULL;
-    }
 
     void* old = pkt->tail;
 
@@ -89,10 +83,7 @@ void*
 enftun_packet_remove_head(struct enftun_packet* pkt, size_t len)
 {
     if (len > pkt->size)
-    {
-        enftun_log_error("enftun_packet_remove_head: insufficient data\n");
         return NULL;
-    }
 
     void* old = pkt->data;
 
@@ -106,13 +97,34 @@ void*
 enftun_packet_remove_tail(struct enftun_packet* pkt, size_t len)
 {
     if (len > pkt->size)
-    {
-        enftun_log_error("enftun_packet_remove_tail: insufficient data\n");
         return NULL;
-    }
 
     pkt->tail -= len;
     pkt->size -= len;
 
     return pkt->tail;
+}
+
+void
+enftun_packet_save(struct enftun_packet* pkt, struct enftun_packet_state* st)
+{
+    st->data = pkt->data;
+    st->tail = pkt->tail;
+}
+
+void
+enftun_packet_restore(struct enftun_packet* pkt, struct enftun_packet_state* st)
+{
+    if (st->data < pkt->head || st->data > pkt->end ||
+        st->tail < pkt->head || st->tail > pkt->end ||
+        st->data > st->tail)
+    {
+        enftun_log_error("enftun_packet_restore: invalid packet state\n");
+        exit(-EINVAL);
+    }
+
+    pkt->data = st->data;
+    pkt->tail = st->tail;
+
+    pkt->size = pkt->tail - pkt->data;
 }
