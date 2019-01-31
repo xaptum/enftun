@@ -70,7 +70,7 @@ enftun_icmp6_nd_mtu(struct enftun_packet* pkt)
 
 struct nd_opt_route_info*
 enftun_icmp6_nd_route_info(struct enftun_packet* pkt,
-                           struct in6_addr* pfx, uint8_t pfxlen,
+                           const struct in6_addr* pfx, uint8_t pfxlen,
                            uint32_t lifetime)
 {
     ENFTUN_SAVE_INIT(pkt);
@@ -88,7 +88,7 @@ enftun_icmp6_nd_route_info(struct enftun_packet* pkt,
     ri->nd_opt_rti_prefixlen = pfxlen;
     ri->nd_opt_rti_flags = ND_RA_FLAG_PRF_HIGH;
     ri->nd_opt_rti_lifetime = htonl(lifetime);
-    memcpy(ri_pfx, &pfx, 16);
+    memcpy(ri_pfx, pfx, 16);
 
     return ri;
 
@@ -102,7 +102,8 @@ struct nd_router_advert*
 enftun_icmp6_nd_ra(struct enftun_packet* pkt,
                    const struct in6_addr* src,
                    const struct in6_addr* dst,
-                   const char** routes,
+                   const struct in6_addr* network, uint16_t prefix,
+                   const char** other_routes,
                    int lifetime)
 {
     enftun_ip6_reserve(pkt);
@@ -124,8 +125,11 @@ enftun_icmp6_nd_ra(struct enftun_packet* pkt,
     if (!mh)
         goto err;
 
+    if (NULL == enftun_icmp6_nd_route_info(pkt, network, prefix, lifetime))
+        goto err;
+
     const char* route;
-    for (route=*routes; route!=NULL; route=*++routes)
+    for (route=*other_routes; route!=NULL; route=*++other_routes)
     {
         struct in6_addr prefix;
         uint8_t prefixlen;

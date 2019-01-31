@@ -139,7 +139,8 @@ enftun_tunnel(struct enftun_context* ctx)
         goto free_ingress;
 
     rc = enftun_ndp_init(&ctx->ndp, &ctx->tunchan, &ctx->loop,
-                         ctx->config.prefixes, ctx->config.ra_period);
+                         &ctx->ipv6, ctx->config.prefixes,
+                         ctx->config.ra_period);
     if (rc < 0)
         goto free_egress;
 

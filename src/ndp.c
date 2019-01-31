@@ -59,7 +59,7 @@ send_ra(struct enftun_ndp* ndp)
 
     enftun_packet_reset(&ndp->ra_pkt);
     enftun_icmp6_nd_ra(&ndp->ra_pkt, &ip6_self, &ip6_all_nodes,
-                       ndp->routes, 3 * ndp->ra_period);
+                       &ndp->network, 64, ndp->routes, 3 * ndp->ra_period);
 
     enftun_crb_write(&ndp->ra_crb, ndp->chan);
 
@@ -81,12 +81,16 @@ int
 enftun_ndp_init(struct enftun_ndp* ndp,
                 struct enftun_channel* chan,
                 uv_loop_t* loop,
+                const struct in6_addr* ipv6,
                 const char** routes,
                 int ra_period)
 {
     int rc;
 
     ndp->chan = chan;
+
+    memset(&ndp->network, 0, sizeof(ndp->network));
+    memcpy(&ndp->network, ipv6, 8);
     ndp->routes = routes;
     ndp->ra_period = ra_period;
 
