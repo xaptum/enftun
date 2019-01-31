@@ -88,7 +88,7 @@ enftun_icmp6_nd_route_info(struct enftun_packet* pkt,
     ri->nd_opt_rti_prefixlen = pfxlen;
     ri->nd_opt_rti_flags = ND_RA_FLAG_PRF_HIGH;
     ri->nd_opt_rti_lifetime = htonl(lifetime);
-    memcpy(ri_pfx, &pfx, 16);
+    memcpy(ri_pfx, pfx, 16);
 
     return ri;
 
