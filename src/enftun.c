@@ -222,6 +222,12 @@ enftun_connect(struct enftun_context* ctx)
     if ((rc = enftun_context_ipv6_from_cert(ctx, ctx->config.cert_file)) < 0)
         goto out;
 
+    if (ctx->config.ip_file)
+    {
+        if ((rc = enftun_context_ipv6_write_to_file(ctx, ctx->config.ip_file)) < 0)
+            goto out;
+    }
+
     if ((rc = enftun_tls_connect(&ctx->tls,
                                  ctx->config.fwmark,
                                  ctx->config.remote_hosts,
