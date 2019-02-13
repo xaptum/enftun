@@ -88,6 +88,8 @@ enftun_config_init(struct enftun_config* config)
     config->remote_port = "443";
     config->remote_ca_cert_file = "/etc/enftun/enf.cacert.pem";
 
+    config->ip_file = NULL;
+
     config->fwmark = 363;
     config->table = 2097;
 
@@ -176,6 +178,7 @@ enftun_config_parse(struct enftun_config* config, const char* file)
     /* Identity settings */
     config_lookup_string(cfg, "identity.cert_file", &config->cert_file);
     config_lookup_string(cfg, "identity.key_file", &config->key_file);
+    config_lookup_string(cfg, "identity.ip_file", &config->ip_file);
 
     /* XTT settings */
     if (NULL != config_lookup(cfg, "identity.xtt"))
@@ -230,6 +233,8 @@ enftun_config_print(struct enftun_config* config, const char* key)
         fprintf(stdout, "%s\n", config->cert_file);
     else if (strcmp(key, "identity.key_file") == 0)
         fprintf(stdout, "%s\n", config->key_file);
+    else if (strcmp(key, "identity.ip_file") == 0)
+        fprintf(stdout, "%s\n", config->ip_file);
     /* XTT settings */
     else if (strcmp(key, "identity.xtt.enable") == 0)
         fprintf(stdout, "%d\n", config->xtt_enable);

@@ -41,6 +41,7 @@ struct enftun_config
 
     const char* cert_file;
     const char* key_file;
+    const char* ip_file;
 
     int fwmark;
     int table;
