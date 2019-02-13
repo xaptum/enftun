@@ -66,5 +66,8 @@ enftun_context_free(struct enftun_context* ctx);
 int
 enftun_context_ipv6_from_cert(struct enftun_context* ctx, const char* cert);
 
+int
+enftun_context_ipv6_write_to_file(struct enftun_context* ctx, const char* file);
+
 
 #endif // ENFTUN_CONTEXT_H

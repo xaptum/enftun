@@ -14,9 +14,11 @@
  * limitations under the License.
  */
 
+#include "context.h"
+
+#include <stdio.h>
 #include <string.h>
 
-#include "context.h"
 #include "cert.h"
 #include "log.h"
 
@@ -122,6 +124,40 @@ enftun_context_ipv6_from_cert(struct enftun_context* ctx, const char* file)
         rc = -1;
         goto out;
     }
+
+ out:
+    return rc;
+}
+
+int
+enftun_context_ipv6_write_to_file(struct enftun_context* ctx, const char* file)
+{
+    int rc;
+
+    FILE *f = fopen(file, "w");
+    if (NULL == f)
+    {
+        enftun_log_warn("Unable to open file %s\n", file);
+        rc = -1;
+        goto out;
+    }
+
+    if (fputs(ctx->ipv6_str, f) == EOF)
+    {
+        enftun_log_warn("Failed to write to file %s\n", file);
+        rc = -1;
+        goto out;
+    }
+
+    if (fputs("\n", f) == EOF)
+    {
+        enftun_log_warn("Failed to write to file %s\n", file);
+        rc = -1;
+        goto out;
+    }
+
+    fclose(f);
+    rc = 0;
 
  out:
     return rc;
