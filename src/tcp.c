@@ -41,7 +41,7 @@ do_connect(struct enftun_tcp* tcp, int mark,
     int rc;
 
     inet_ntop(addr->ai_family, get_sin_addr(addr), ip, sizeof(ip));
-    port = get_sin_port(addr);
+    port = ntohs(get_sin_port(addr));
 
     enftun_log_debug("TCP: connecting to [%s]:%d\n", ip, port);
 
