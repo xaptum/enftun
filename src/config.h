@@ -41,11 +41,14 @@ struct enftun_config
 
     const char* cert_file;
     const char* key_file;
+    const char* ip_file;
 
     int fwmark;
     int table;
     const char** prefixes;
     const char** trusted_ifaces;
+
+    int ra_period; /* router advertisement period in ms */
 
     int xtt_enable;
     const char* xtt_remote_port;

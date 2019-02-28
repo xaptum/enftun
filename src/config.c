@@ -88,6 +88,8 @@ enftun_config_init(struct enftun_config* config)
     config->remote_port = "443";
     config->remote_ca_cert_file = "/etc/enftun/enf.cacert.pem";
 
+    config->ip_file = NULL;
+
     config->fwmark = 363;
     config->table = 2097;
 
@@ -95,6 +97,8 @@ enftun_config_init(struct enftun_config* config)
     config->prefixes[0] = "default";
 
     config->trusted_ifaces = calloc(2, sizeof(char*));
+
+    config->ra_period = 10 * 60 * 1000; // milliseconds
 
     config->xtt_enable = 0;
     config->xtt_remote_port = "444";
@@ -169,10 +173,12 @@ enftun_config_parse(struct enftun_config* config, const char* file)
     config_lookup_int(cfg, "route.table", &config->table);
     lookup_string_array(cfg, "route.prefixes", &config->prefixes);
     lookup_string_array(cfg, "route.trusted_interfaces", &config->trusted_ifaces);
+    config_lookup_int(cfg, "route.ra_period", &config->ra_period);
 
     /* Identity settings */
     config_lookup_string(cfg, "identity.cert_file", &config->cert_file);
     config_lookup_string(cfg, "identity.key_file", &config->key_file);
+    config_lookup_string(cfg, "identity.ip_file", &config->ip_file);
 
     /* XTT settings */
     if (NULL != config_lookup(cfg, "identity.xtt"))
@@ -220,11 +226,15 @@ enftun_config_print(struct enftun_config* config, const char* key)
         print_joined(config->prefixes, " ");
     else if (strcmp(key, "route.trusted_interfaces") == 0)
         print_joined(config->trusted_ifaces, " ");
+    else if (strcmp(key, "route.ra_period") == 0)
+        fprintf(stdout, "%d\n", config->ra_period);
     /* Identity settings */
     else if (strcmp(key, "identity.cert_file") == 0)
         fprintf(stdout, "%s\n", config->cert_file);
     else if (strcmp(key, "identity.key_file") == 0)
         fprintf(stdout, "%s\n", config->key_file);
+    else if (strcmp(key, "identity.ip_file") == 0)
+        fprintf(stdout, "%s\n", config->ip_file);
     /* XTT settings */
     else if (strcmp(key, "identity.xtt.enable") == 0)
         fprintf(stdout, "%d\n", config->xtt_enable);

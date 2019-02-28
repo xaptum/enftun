@@ -197,6 +197,6 @@ enftun_tun_write_packet(struct enftun_tun* tun, struct enftun_packet* pkt)
     if (rc < 0)
         return rc;
 
-    enftun_packet_remove_tail(pkt, rc);
+    enftun_packet_remove_head(pkt, rc);
     return 0;
 }

@@ -25,6 +25,8 @@
 #include "chain.h"
 #include "channel.h"
 #include "config.h"
+#include "dhcp.h"
+#include "ndp.h"
 #include "options.h"
 #include "tls.h"
 #include "tun.h"
@@ -46,6 +48,9 @@ struct enftun_context
     struct enftun_chain ingress;
     struct enftun_chain egress;
 
+    struct enftun_dhcp dhcp;
+    struct enftun_ndp ndp;
+
     uv_loop_t loop;
 
     struct in6_addr ipv6;
@@ -60,6 +65,9 @@ enftun_context_free(struct enftun_context* ctx);
 
 int
 enftun_context_ipv6_from_cert(struct enftun_context* ctx, const char* cert);
+
+int
+enftun_context_ipv6_write_to_file(struct enftun_context* ctx, const char* file);
 
 
 #endif // ENFTUN_CONTEXT_H

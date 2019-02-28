@@ -21,8 +21,10 @@
 
 #include "channel.h"
 #include "context.h"
+#include "dhcp.h"
 #include "filter.h"
 #include "log.h"
+#include "ndp.h"
 #include "tls.h"
 #ifdef USE_XTT
 #include "xtt.h"
@@ -36,6 +38,7 @@ start_all(struct enftun_context* ctx)
 {
     enftun_chain_start(&ctx->ingress, chain_complete);
     enftun_chain_start(&ctx->egress, chain_complete);
+    enftun_ndp_start(&ctx->ndp);
 
     enftun_log_info("Started.\n");
 }
@@ -44,6 +47,7 @@ static
 void
 stop_all(struct enftun_context* ctx)
 {
+    enftun_ndp_stop(&ctx->ndp);
     enftun_chain_stop(&ctx->ingress);
     enftun_chain_stop(&ctx->egress);
 
@@ -87,6 +91,12 @@ chain_egress_filter(struct enftun_chain* chain,
 {
     struct enftun_context* ctx = (struct enftun_context*) chain->data;
 
+    if (enftun_ndp_handle_packet(&ctx->ndp, pkt))
+        return 1;
+
+    if (enftun_dhcp_handle_packet(&ctx->dhcp, pkt))
+        return 1;
+
     if (!enftun_is_ipv6(pkt))
     {
         enftun_log_debug("DROP [ egress]: invalid IPv6 packet\n");
@@ -125,13 +135,29 @@ enftun_tunnel(struct enftun_context* ctx)
 
     rc = enftun_chain_init(&ctx->egress, &ctx->tunchan, &ctx->tlschan, ctx,
                            chain_egress_filter);
-    if (rc <0)
+    if (rc < 0)
         goto free_ingress;
+
+    rc = enftun_ndp_init(&ctx->ndp, &ctx->tunchan, &ctx->loop,
+                         &ctx->ipv6, ctx->config.prefixes,
+                         ctx->config.ra_period);
+    if (rc < 0)
+        goto free_egress;
+
+    rc = enftun_dhcp_init(&ctx->dhcp, &ctx->tunchan, &ctx->ipv6);
+    if (rc < 0)
+        goto free_ndp;
 
     start_all(ctx);
 
     uv_run(&ctx->loop, UV_RUN_DEFAULT);
 
+    enftun_dhcp_free(&ctx->dhcp);
+
+ free_ndp:
+    enftun_ndp_free(&ctx->ndp);
+
+ free_egress:
     enftun_chain_free(&ctx->egress);
 
  free_ingress:
@@ -195,6 +221,12 @@ enftun_connect(struct enftun_context* ctx)
     int rc = 0;
     if ((rc = enftun_context_ipv6_from_cert(ctx, ctx->config.cert_file)) < 0)
         goto out;
+
+    if (ctx->config.ip_file)
+    {
+        if ((rc = enftun_context_ipv6_write_to_file(ctx, ctx->config.ip_file)) < 0)
+            goto out;
+    }
 
     if ((rc = enftun_tls_connect(&ctx->tls,
                                  ctx->config.fwmark,
