@@ -18,7 +18,10 @@
 #include <netdb.h>
 #include <string.h>
 #include <unistd.h>
+
 #include <arpa/inet.h>
+#include <netinet/in.h>
+#include <netinet/tcp.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 
@@ -37,7 +40,7 @@ do_connect(struct enftun_tcp* tcp, int mark,
            struct addrinfo* addr)
 {
     char ip[45];
-    int port;
+    int opt, port;
     int rc;
 
     inet_ntop(addr->ai_family, get_sin_addr(addr), ip, sizeof(ip));
@@ -47,7 +50,7 @@ do_connect(struct enftun_tcp* tcp, int mark,
 
     if ((tcp->fd = socket(addr->ai_family, SOCK_STREAM, addr->ai_protocol)) < 0)
     {
-        enftun_log_debug("TCP: Failed to create socket: %s\n", strerror(errno));
+        enftun_log_error("TCP: Failed to create socket: %s\n", strerror(errno));
         rc = -errno;
         goto out;
     }
@@ -56,15 +59,47 @@ do_connect(struct enftun_tcp* tcp, int mark,
     {
         if ((rc = setsockopt(tcp->fd, SOL_SOCKET, SO_MARK, &mark, sizeof(mark))) < 0)
         {
-            enftun_log_debug("TCP: Failed to set mark %d: %s\n", mark, strerror(errno));
+            enftun_log_error("TCP: Failed to set mark %d: %s\n", mark, strerror(errno));
             rc = -errno;
             goto close_fd;
         }
     }
 
+    opt = 1;
+    if ((rc = setsockopt(tcp->fd, SOL_SOCKET, SO_KEEPALIVE, &opt, sizeof(opt))) < 0)
+    {
+        enftun_log_error("TCP: Failed to enable keepalives: %s\n", strerror(errno));
+        rc = -errno;
+        goto close_fd;
+    }
+
+    opt = 5 * 60;
+    if ((rc = setsockopt(tcp->fd, SOL_TCP, TCP_KEEPIDLE, &opt, sizeof(opt))) < 0)
+    {
+        enftun_log_error("TCP: Failed to enable keepalive time: %s\n", strerror(errno));
+        rc = -errno;
+        goto close_fd;
+    }
+
+    opt = 6;
+    if ((rc = setsockopt(tcp->fd, SOL_TCP, TCP_KEEPCNT, &opt, sizeof(opt))) < 0)
+    {
+        enftun_log_error("TCP: Failed to enable keepalive probes: %s\n", strerror(errno));
+        rc = -errno;
+        goto close_fd;
+    }
+
+    opt = 10;
+    if ((rc = setsockopt(tcp->fd, SOL_TCP, TCP_KEEPINTVL, &opt, sizeof(opt))) < 0)
+    {
+        enftun_log_error("TCP: Failed to enable keepalive interval: %s\n", strerror(errno));
+        rc = -errno;
+        goto close_fd;
+    }
+
     if ((rc = connect(tcp->fd, addr->ai_addr, addr->ai_addrlen)) < 0)
     {
-        enftun_log_debug("TCP: Failed to connect to [%s]:%d: %s\n",
+        enftun_log_error("TCP: Failed to connect to [%s]:%d: %s\n",
                          ip, port, strerror(errno));
         rc = -errno;
         goto close_fd;
