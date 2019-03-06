@@ -19,6 +19,17 @@
 
 static
 void
+do_complete_crb(struct enftun_crb *crb, int status)
+{
+    enftun_list_delete(&crb->entry);
+    crb->channel = NULL;
+
+    crb->status = status;
+    crb->complete(crb);
+}
+
+static
+void
 do_op(struct enftun_channel* chan,
       struct enftun_list* queue,
       int (*op)(void* ctx, struct enftun_packet* pkt))
@@ -35,11 +46,19 @@ do_op(struct enftun_channel* chan,
     if (rc == -EAGAIN)
         return;
 
-    enftun_list_delete(&crb->entry);
-    crb->channel = NULL;
+    do_complete_crb(crb, rc);
+}
 
-    crb->status = rc;
-    crb->complete(crb);
+static void
+cancel_queue(struct enftun_list* queue, int status)
+{
+    struct enftun_crb *crb;
+
+    while (!enftun_list_empty(queue))
+    {
+        crb = (struct enftun_crb*) queue->next;
+        do_complete_crb(crb, status);
+    }
 }
 
 static void update_poll(struct enftun_channel* chan);
@@ -51,7 +70,11 @@ on_poll(uv_poll_t* poll, int status, int events)
     struct enftun_channel* chan = (struct enftun_channel*) poll->data;
 
     if (status < 0)
+    {
+        cancel_queue(&chan->rxqueue, status);
+        cancel_queue(&chan->txqueue, status);
         return;
+    }
 
     if (events & UV_READABLE)
         do_op(chan, &chan->rxqueue, chan->ops->read);
