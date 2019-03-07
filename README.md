@@ -13,10 +13,12 @@ also be built from source.
 
 ``` bash
 # Install the Xaptum API repo GPG signing key.
-apt-key adv --keyserver keyserver.ubuntu.com --recv-keys c615bfaa7fe1b4ca
+sudo apt-get install dirmngr
+sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys c615bfaa7fe1b4ca
 
 # Add the repository to your APT sources
-echo "deb http://dl.bintray.com/xaptum/deb stretch main" > /etc/apt/sources.list.d/xaptum.list
+echo "deb http://dl.bintray.com/xaptum/deb stretch main" | sudo tee /etc/apt/sources.list.d/xaptum.list
+sudo apt-get update
 
 # Install the library.
 sudo apt-get install enftun
