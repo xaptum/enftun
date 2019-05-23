@@ -173,7 +173,7 @@ enftun_xtt_handshake(const char **server_hosts,
         goto finish;
     }
 
-    ret = xtt_save_to_file(tls_root_cert, tls_len, ca_cert_file);
+    ret = xtt_save_cert_to_file(tls_root_cert, tls_len, ca_cert_file);
     if (ret < 0) {
         return SAVE_TO_FILE_ERROR;
     }
@@ -532,18 +532,14 @@ int save_credentials(struct xtt_client_handshake_context *ctx,
         enftun_log_error("Error creating X509 certificate\n");
         return CERT_CREATION_ERROR;
     }
-    write_ret = xtt_save_to_file(cert_buf, sizeof(cert_buf), longterm_cert_out_file);
+    write_ret = xtt_save_cert_to_file(cert_buf, sizeof(cert_buf), longterm_cert_out_file);
     if(write_ret < 0){
         return SAVE_TO_FILE_ERROR;
     }
 
-    unsigned char asn1_priv_buf[XTT_ASN1_PRIVATE_KEY_LENGTH] = {0};
-    if (0 != xtt_asn1_from_ecdsap256_private_key(&my_longterm_private_key, &my_longterm_key, asn1_priv_buf, sizeof(asn1_priv_buf))) {
-        enftun_log_error("Error creating ASN.1 private key\n");
-        return 1;
-    }
-    write_ret = xtt_save_to_file(asn1_priv_buf, sizeof(asn1_priv_buf), longterm_private_key_out_file);
+    write_ret = xtt_write_ecdsap256_keypair(&my_longterm_key, &my_longterm_private_key, longterm_private_key_out_file);
     if(write_ret < 0) {
+        enftun_log_error("Error creating ASN.1 private key\n");
         return SAVE_TO_FILE_ERROR;
     }
 
