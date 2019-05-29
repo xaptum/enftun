@@ -47,6 +47,7 @@ set(ENFTUN_SRCS
     src/ip.c
     src/log.c
     src/ndp.c
+    src/netlink.c
     src/options.c
     src/packet.c
     src/tcp.c

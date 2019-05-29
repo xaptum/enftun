@@ -25,12 +25,14 @@
 #include "filter.h"
 #include "log.h"
 #include "ndp.h"
+#include "netlink.h"
 #include "tls.h"
 #ifdef USE_XTT
 #include "xtt.h"
 #endif
 
 static void chain_complete(struct enftun_chain* chain, int status);
+static void netlink_on_change(struct enftun_netlink* nl);
 
 static
 void
@@ -39,6 +41,7 @@ start_all(struct enftun_context* ctx)
     enftun_chain_start(&ctx->ingress, chain_complete);
     enftun_chain_start(&ctx->egress, chain_complete);
     enftun_ndp_start(&ctx->ndp);
+    enftun_netlink_start(&ctx->nl, netlink_on_change);
 
     enftun_log_info("Started.\n");
 }
@@ -47,6 +50,7 @@ static
 void
 stop_all(struct enftun_context* ctx)
 {
+    enftun_netlink_stop(&ctx->nl);
     enftun_ndp_stop(&ctx->ndp);
     enftun_chain_stop(&ctx->ingress);
     enftun_chain_stop(&ctx->egress);
@@ -60,6 +64,14 @@ chain_complete(struct enftun_chain* chain, int status __attribute__((unused)))
 {
     struct enftun_context* ctx = (struct enftun_context*) chain->data;
     stop_all(ctx);
+}
+
+static
+void
+netlink_on_change(struct enftun_netlink* nl)
+{
+    struct enftun_context* ctx = (struct enftun_context*) nl->data;
+    (void)ctx;
 }
 
 static
@@ -148,10 +160,17 @@ enftun_tunnel(struct enftun_context* ctx)
     if (rc < 0)
         goto free_ndp;
 
+    rc = enftun_netlink_init(&ctx->nl, &ctx->loop, ctx, ctx->tun.name);
+    if (rc < 0)
+        goto free_dhcp;
+
     start_all(ctx);
 
     uv_run(&ctx->loop, UV_RUN_DEFAULT);
 
+    enftun_netlink_free(&ctx->nl);
+
+ free_dhcp:
     enftun_dhcp_free(&ctx->dhcp);
 
  free_ndp:
