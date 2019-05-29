@@ -30,11 +30,11 @@ parse_rtattr(struct rtattr* tb[], int max, struct rtattr* rta, int len)
 {
     memset(tb, 0, sizeof(struct rtattr*)* (max + 1));
 
-    while (RTA_OK(rta, len)) {  // while not end of the message
+    while (RTA_OK(rta, len)) {          // while not end of the message
         if (rta->rta_type <= max) {
-            tb[rta->rta_type] = rta; // read attr
+            tb[rta->rta_type] = rta;    // read attr
         }
-        rta = RTA_NEXT(rta,len);    // get next attr
+        rta = RTA_NEXT(rta,len);        // get next attr
     }
 }
 
@@ -75,6 +75,9 @@ handle_addr_change(struct enftun_netlink* nl, struct nlmsghdr* nl_message)
         enftun_log_error("Cannot get interface's name\n");
         return -1;
     }
+
+    if (0 == strcmp(if_name, nl->tun_name))
+        goto ignore_interface_addr;
 
     char if_address[256];
     struct ifaddrmsg* if_addr;
@@ -119,6 +122,9 @@ handle_link_change(struct enftun_netlink* nl, struct nlmsghdr* nl_message)
         enftun_log_error("Cannot get interface's name\n");
         return -1;
     }
+
+    if (0 == strcmp(if_name, nl->tun_name))
+        goto ignore_interface_link;
 
     // get interface state
     char* if_up_flag;
