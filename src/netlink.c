@@ -40,7 +40,8 @@ parse_rtattr(struct rtattr* tb[], int max, struct rtattr* rta, int len)
 
 static
 char*
-get_if_name(struct nlmsghdr* nl_message) {
+get_if_name(struct nlmsghdr* nl_message)
+{
     struct ifinfomsg* if_info;
     struct rtattr* tb[IFLA_MAX + 1];
 
@@ -52,6 +53,49 @@ get_if_name(struct nlmsghdr* nl_message) {
         return (char*)RTA_DATA(tb[IFLA_IFNAME]);
     }
     return NULL;
+}
+
+static
+char*
+get_if_addr(struct nlmsghdr* nl_message, char* if_address, int len)
+{
+    struct ifaddrmsg* if_addr;
+    struct rtattr* tba[IFA_MAX+1];
+
+    if_addr = (struct ifaddrmsg*)NLMSG_DATA(nl_message);
+
+    parse_rtattr(tba, IFA_MAX, IFA_RTA(if_addr), nl_message->nlmsg_len);
+
+    if (tba[IFA_LOCAL]) {
+        inet_ntop(AF_INET, RTA_DATA(tba[IFA_LOCAL]), if_address, len);
+    } else {
+        enftun_log_error("Cannot get local address\n");
+    }
+
+    return if_address;
+}
+
+static
+char*
+get_if_status(struct nlmsghdr* nl_message)
+{
+    struct ifinfomsg* if_info;
+
+    if_info = (struct ifinfomsg*) NLMSG_DATA(nl_message);
+
+    if (if_info->ifi_flags & IFF_UP) {
+        if (if_info->ifi_flags & IFF_RUNNING) {
+            return (char*)"UP RUNNING";
+        } else {
+            return (char*)"UP NOT RUNNING";
+        }
+    } else {
+        if (if_info->ifi_flags & IFF_RUNNING) {
+            return (char*)"DOWN RUNNING";
+        } else {
+            return (char*)"DOWN NOT RUNNING";
+        }
+    }
 }
 
 static
@@ -79,21 +123,11 @@ handle_addr_change(struct enftun_netlink* nl, struct nlmsghdr* nl_message)
     if (0 == strcmp(if_name, nl->tun_name))
         goto ignore_interface_addr;
 
+    // get interface address
     char if_address[256];
-    struct ifaddrmsg* if_addr;
-    struct rtattr* tba[IFA_MAX+1];
+    char* addr_ptr = if_address;
 
-    if_addr = (struct ifaddrmsg*)NLMSG_DATA(nl_message);
-
-    parse_rtattr(tba, IFA_MAX, IFA_RTA(if_addr), nl_message->nlmsg_len);
-
-    // get IP address
-    if (tba[IFA_LOCAL]) {
-        inet_ntop(AF_INET, RTA_DATA(tba[IFA_LOCAL]), if_address, sizeof(if_address));
-    } else {
-        enftun_log_error("Cannot get local address\n");
-        return -1;
-    }
+    addr_ptr = get_if_addr(nl_message, if_address, sizeof(if_address));
 
     switch (nl_message->nlmsg_type) {
         case RTM_DELADDR:
@@ -102,7 +136,7 @@ handle_addr_change(struct enftun_netlink* nl, struct nlmsghdr* nl_message)
             break;
 
         case RTM_NEWADDR:
-            enftun_log_info("Interface %s: new address was assigned: %s\n", if_name, if_address);
+            enftun_log_info("Interface %s: new address was assigned: %s\n", if_name, addr_ptr);
             nl->on_change(nl);
             break;
     }
@@ -127,23 +161,7 @@ handle_link_change(struct enftun_netlink* nl, struct nlmsghdr* nl_message)
         goto ignore_interface_link;
 
     // get interface state
-    char* if_up_flag;
-    char* if_run_flag;
-    struct ifinfomsg* if_info;
-
-    if_info = (struct ifinfomsg*) NLMSG_DATA(nl_message);
-
-    if (if_info->ifi_flags & IFF_UP) {
-        if_up_flag = (char*)"UP";
-    } else {
-        if_up_flag = (char*)"DOWN";
-    }
-
-    if (if_info->ifi_flags & IFF_RUNNING) {
-        if_run_flag = (char*)"RUNNING";
-    } else {
-        if_run_flag = (char*)"NOT RUNNING";
-    }
+    char* if_status_flag = get_if_status(nl_message);
 
     switch (nl_message->nlmsg_type) {
         case RTM_DELLINK:
@@ -152,7 +170,7 @@ handle_link_change(struct enftun_netlink* nl, struct nlmsghdr* nl_message)
             break;
 
         case RTM_NEWLINK:
-            enftun_log_info("New network interface %s, state: %s %s\n", if_name, if_up_flag, if_run_flag);
+            enftun_log_info("New network interface %s, state: %s\n", if_name, if_status_flag);
             nl->on_change(nl);
             break;
     }
