@@ -113,7 +113,7 @@ int
 handle_addr_change(struct enftun_netlink* nl, struct nlmsghdr* nl_message)
 {
     // get interface name
-    char* if_name = (char*) "";
+    char* if_name = NULL;
     if_name = get_if_name(nl_message);
     if (if_name == NULL) {
         enftun_log_error("Cannot get interface's name\n");
@@ -150,7 +150,7 @@ int
 handle_link_change(struct enftun_netlink* nl, struct nlmsghdr* nl_message)
 {
     //get interface name
-    char* if_name = (char*) "";
+    char* if_name = NULL;
     if_name = get_if_name(nl_message);
     if (if_name == NULL){
         enftun_log_error("Cannot get interface's name\n");
@@ -179,10 +179,10 @@ ignore_interface_link:
     return 0;
 }
 
+static
 int
-enftun_netlink_loop(struct enftun_netlink* nl)
+read_messages(struct enftun_netlink* nl)
 {
-    (void) nl;
     ssize_t bytes_in_msg = recvmsg(nl->fd, &nl->msg, MSG_DONTWAIT);
     if (bytes_in_msg < 0 || (nl->msg.msg_namelen != sizeof(nl->sock_addr))) {
         return -1;
@@ -230,11 +230,11 @@ on_poll(uv_poll_t* handle, int status, int events)
     if (status < 0)
         return;
     if (0 == status)
-        enftun_netlink_loop(nl);
+        read_messages(nl);
 }
 
 int
-enftun_netlink_init(struct enftun_netlink* nl, uv_loop_t* loop, void* ctx, char* tun_name)
+enftun_netlink_connect(struct enftun_netlink* nl, uv_loop_t* loop, void* ctx, char* tun_name)
 {
     nl->fd = socket(AF_NETLINK, SOCK_RAW, NETLINK_ROUTE);
     if (nl->fd < 0) {
@@ -271,9 +271,22 @@ enftun_netlink_init(struct enftun_netlink* nl, uv_loop_t* loop, void* ctx, char*
 }
 
 int
-enftun_netlink_free(struct enftun_netlink* nl)
+enftun_netlink_close(struct enftun_netlink* nl)
 {
     close(nl->fd);
+    return 0;
+}
+
+
+int
+enftun_netlink_init()
+{
+    return 0;
+}
+
+int
+enftun_netlink_free()
+{
     return 0;
 }
 

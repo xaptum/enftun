@@ -160,17 +160,10 @@ enftun_tunnel(struct enftun_context* ctx)
     if (rc < 0)
         goto free_ndp;
 
-    rc = enftun_netlink_init(&ctx->nl, &ctx->loop, ctx, ctx->tun.name);
-    if (rc < 0)
-        goto free_dhcp;
-
     start_all(ctx);
 
     uv_run(&ctx->loop, UV_RUN_DEFAULT);
 
-    enftun_netlink_free(&ctx->nl);
-
- free_dhcp:
     enftun_dhcp_free(&ctx->dhcp);
 
  free_ndp:
@@ -247,11 +240,15 @@ enftun_connect(struct enftun_context* ctx)
             goto out;
     }
 
+    if ((rc = enftun_netlink_connect(&ctx->nl, &ctx->loop, ctx, (char *)ctx->config.dev)) < 0)
+        goto out;
+
+
     if ((rc = enftun_tls_connect(&ctx->tls,
                                  ctx->config.fwmark,
                                  ctx->config.remote_hosts,
                                  ctx->config.remote_port)) < 0)
-        goto out;
+        goto close_netlink;
 
     if ((rc = enftun_tun_open(&ctx->tun, ctx->config.dev,
                               ctx->config.dev_node)) < 0)
@@ -268,6 +265,9 @@ enftun_connect(struct enftun_context* ctx)
 
  close_tls:
     enftun_tls_disconnect(&ctx->tls);
+
+ close_netlink:
+    enftun_netlink_close(&ctx->nl);
 
  out:
     return rc;

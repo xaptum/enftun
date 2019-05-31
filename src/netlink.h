@@ -46,13 +46,16 @@ struct enftun_netlink
 };
 
 int
-enftun_netlink_loop(struct enftun_netlink* nl);
+enftun_netlink_connect(struct enftun_netlink* nl, uv_loop_t* loop, void* ctx, char* tun_name);
 
 int
-enftun_netlink_init(struct enftun_netlink* nl, uv_loop_t* loop, void* ctx, char* tun_name);
+enftun_netlink_close(struct enftun_netlink* nl);
 
 int
-enftun_netlink_free(struct enftun_netlink* nl);
+enftun_netlink_init();
+
+int
+enftun_netlink_free();
 
 int
 enftun_netlink_start(struct enftun_netlink* nl,
