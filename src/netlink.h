@@ -43,10 +43,12 @@ struct enftun_netlink
     enftun_netlink_on_change on_change;
 
     char* tun_name;
+
+    int (*handle_on_change)(void* netlink);
 };
 
 int
-enftun_netlink_connect(struct enftun_netlink* nl, uv_loop_t* loop, void* ctx, char* tun_name);
+enftun_netlink_connect(struct enftun_netlink* nl, void* ctx, char* tun_name);
 
 int
 enftun_netlink_close(struct enftun_netlink* nl);

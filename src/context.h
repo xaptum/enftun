@@ -25,6 +25,7 @@
 #include "chain.h"
 #include "channel.h"
 #include "config.h"
+#include "conn_state.h"
 #include "dhcp.h"
 #include "ndp.h"
 #include "netlink.h"
@@ -53,6 +54,7 @@ struct enftun_context
     struct enftun_ndp ndp;
 
     struct enftun_netlink nl;
+    struct enftun_nl_conn_state conn_state;
 
     uv_loop_t loop;
 

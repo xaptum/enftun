@@ -219,22 +219,8 @@ read_messages(struct enftun_netlink* nl)
     return 0;
 }
 
-static
-void
-on_poll(uv_poll_t* handle, int status, int events)
-{
-    (void) status;
-    (void) events;
-    struct enftun_netlink* nl = handle->data;
-
-    if (status < 0)
-        return;
-    if (0 == status)
-        read_messages(nl);
-}
-
 int
-enftun_netlink_connect(struct enftun_netlink* nl, uv_loop_t* loop, void* ctx, char* tun_name)
+enftun_netlink_connect(struct enftun_netlink* nl, void* ctx, char* tun_name)
 {
     nl->fd = socket(AF_NETLINK, SOCK_RAW, NETLINK_ROUTE);
     if (nl->fd < 0) {
@@ -255,6 +241,8 @@ enftun_netlink_connect(struct enftun_netlink* nl, uv_loop_t* loop, void* ctx, ch
     nl->msg.msg_iov = &nl->io_vector;
     nl->msg.msg_iovlen = 1;
 
+    nl->handle_on_change = (int (*)(void*))read_messages;
+
     if (bind(nl->fd, (struct sockaddr*)&nl->sock_addr, sizeof(struct sockaddr_nl)) < 0) {
         close(nl->fd);
         return -1;
@@ -265,7 +253,7 @@ enftun_netlink_connect(struct enftun_netlink* nl, uv_loop_t* loop, void* ctx, ch
     nl->data = ctx;
 
     nl->poll.data = nl;
-    int rc = uv_poll_init(loop, &nl->poll, nl->fd);
+    int rc = 0;
 
     return rc;
 }
@@ -293,17 +281,14 @@ enftun_netlink_free()
 int
 enftun_netlink_start(struct enftun_netlink* nl, enftun_netlink_on_change on_change)
 {
-    int rc;
     nl->on_change = on_change;
-    rc = uv_poll_start(&nl->poll, UV_READABLE, on_poll);
 
-    return rc;
+    return 0;
 }
 
 int
 enftun_netlink_stop(struct enftun_netlink* nl)
 {
-    int rc = uv_poll_stop(&nl->poll);
-
-    return rc;
+    (void) nl;
+    return 0;
 }

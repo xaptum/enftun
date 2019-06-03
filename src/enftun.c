@@ -20,6 +20,7 @@
 #include <unistd.h>
 
 #include "channel.h"
+#include "conn_state.h"
 #include "context.h"
 #include "dhcp.h"
 #include "filter.h"
@@ -41,6 +42,7 @@ start_all(struct enftun_context* ctx)
     enftun_chain_start(&ctx->ingress, chain_complete);
     enftun_chain_start(&ctx->egress, chain_complete);
     enftun_ndp_start(&ctx->ndp);
+    enftun_conn_state_start(&ctx->conn_state);
     enftun_netlink_start(&ctx->nl, netlink_on_change);
 
     enftun_log_info("Started.\n");
@@ -51,6 +53,7 @@ void
 stop_all(struct enftun_context* ctx)
 {
     enftun_netlink_stop(&ctx->nl);
+    enftun_conn_state_stop(&ctx->conn_state);
     enftun_ndp_stop(&ctx->ndp);
     enftun_chain_stop(&ctx->ingress);
     enftun_chain_stop(&ctx->egress);
@@ -160,10 +163,21 @@ enftun_tunnel(struct enftun_context* ctx)
     if (rc < 0)
         goto free_ndp;
 
+    rc = enftun_conn_state_init(&ctx->conn_state, &ctx->loop, ctx->nl.fd,
+                                (void*)&ctx->nl, ctx->nl.handle_on_change);
+    if (rc < 0){
+            goto free_dhcp;
+    }
+
+
+
     start_all(ctx);
 
     uv_run(&ctx->loop, UV_RUN_DEFAULT);
 
+    enftun_conn_state_free(&ctx->conn_state);
+
+ free_dhcp:
     enftun_dhcp_free(&ctx->dhcp);
 
  free_ndp:
@@ -240,7 +254,7 @@ enftun_connect(struct enftun_context* ctx)
             goto out;
     }
 
-    if ((rc = enftun_netlink_connect(&ctx->nl, &ctx->loop, ctx, (char *)ctx->config.dev)) < 0)
+    if ((rc = enftun_netlink_connect(&ctx->nl, ctx, (char *)ctx->config.dev)) < 0)
         goto out;
 
 

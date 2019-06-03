@@ -37,6 +37,7 @@ set(ENFTUN_SRCS
     src/channel.c
     src/cksum.c
     src/config.c
+    src/conn_state.c
     src/context.c
     src/dhcp.c
     src/dhcp_msgs.c
