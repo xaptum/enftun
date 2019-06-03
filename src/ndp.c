@@ -130,6 +130,9 @@ enftun_ndp_stop(struct enftun_ndp* ndp)
 {
     uv_timer_stop(&ndp->timer);
 
+    if (ndp->ra_inflight)
+        enftun_crb_cancel(&ndp->ra_crb);
+
     return 0;
 }
 
