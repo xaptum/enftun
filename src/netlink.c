@@ -44,6 +44,7 @@ get_if_name(struct nlmsghdr* nl_message)
 {
     struct ifinfomsg* if_info;
     struct rtattr* tb[IFLA_MAX + 1];
+    char if_name_6[IF_NAMESIZE];
 
     if_info = (struct ifinfomsg*) NLMSG_DATA(nl_message);
 
@@ -51,7 +52,10 @@ get_if_name(struct nlmsghdr* nl_message)
 
     if (tb[IFLA_IFNAME]) {
         return (char*)RTA_DATA(tb[IFLA_IFNAME]);
+    } else {
+        return if_indextoname(if_info->ifi_index, if_name_6);
     }
+
     return NULL;
 }
 
@@ -66,11 +70,18 @@ get_if_addr(struct nlmsghdr* nl_message, char* if_address, int len)
 
     parse_rtattr(tba, IFA_MAX, IFA_RTA(if_addr), nl_message->nlmsg_len);
 
-    if (tba[IFA_LOCAL]) {
-        inet_ntop(AF_INET, RTA_DATA(tba[IFA_LOCAL]), if_address, len);
+    if (AF_INET == if_addr->ifa_family) {
+        if (tba[IFA_LOCAL]) {
+            inet_ntop(AF_INET, RTA_DATA(tba[IFA_LOCAL]), if_address, len);
+    }
+    } else if (AF_INET6 == if_addr->ifa_family) {
+        if (tba[IFA_ADDRESS]) {
+            inet_ntop(AF_INET6, RTA_DATA(tba[IFA_ADDRESS]), if_address, len);
     } else {
         enftun_log_error("Cannot get local address\n");
     }
+}
+
 
     return if_address;
 }
@@ -114,6 +125,7 @@ handle_addr_change(struct enftun_netlink* nl, struct nlmsghdr* nl_message)
 {
     // get interface name
     char* if_name = NULL;
+
     if_name = get_if_name(nl_message);
     if (if_name == NULL) {
         enftun_log_error("Cannot get interface's name\n");
@@ -233,7 +245,7 @@ enftun_netlink_connect(struct enftun_netlink* nl, void* ctx, char* tun_name)
     memset(&nl->sock_addr, 0, sizeof(struct sockaddr_nl));
 
     nl->sock_addr.nl_family = AF_NETLINK;
-    nl->sock_addr.nl_groups = RTMGRP_LINK | RTMGRP_IPV4_IFADDR | RTMGRP_IPV4_ROUTE;
+    nl->sock_addr.nl_groups = RTMGRP_LINK | RTMGRP_IPV4_IFADDR | RTMGRP_IPV4_ROUTE | RTMGRP_IPV6_IFADDR | RTMGRP_IPV6_ROUTE;
     nl->sock_addr.nl_pid = getpid();
 
     nl->msg.msg_name = &nl->sock_addr;
