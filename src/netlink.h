@@ -24,43 +24,17 @@
 
 #include <uv.h>
 
-struct enftun_netlink;
-
-typedef void (*enftun_netlink_on_change)(struct enftun_netlink* nl);
-
 struct enftun_netlink
 {
     int fd;
-    uv_poll_t poll;
-
     struct sockaddr_nl sock_addr;
-
-    int tcp_fd;
-    struct addrinfo local_addr;
-
-    void* data;
-    enftun_netlink_on_change on_network_change;
-
-    int (*on_poll)(void* netlink);
 };
 
 int
-enftun_netlink_connect(struct enftun_netlink* nl, void* ctx);
+enftun_netlink_connect(struct enftun_netlink* nl);
 
 int
 enftun_netlink_close(struct enftun_netlink* nl);
 
-int
-enftun_netlink_init();
-
-int
-enftun_netlink_free();
-
-int
-enftun_netlink_start(struct enftun_netlink* nl,
-                     enftun_netlink_on_change on_change);
-
-int
-enftun_netlink_stop(struct enftun_netlink* nl);
 
 #endif // ENFTUN_NETLINK_H

@@ -28,7 +28,6 @@
 #include "conn_state.h"
 #include "dhcp.h"
 #include "ndp.h"
-#include "netlink.h"
 #include "options.h"
 #include "tls.h"
 #include "tun.h"
@@ -53,8 +52,7 @@ struct enftun_context
     struct enftun_dhcp dhcp;
     struct enftun_ndp ndp;
 
-    struct enftun_netlink nl;
-    struct enftun_nl_conn_state conn_state;
+    struct enftun_conn_state conn_state;
 
     uv_loop_t loop;
 

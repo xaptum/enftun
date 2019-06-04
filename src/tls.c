@@ -167,8 +167,7 @@ enftun_tls_handshake(struct enftun_tls* tls)
 
 int
 enftun_tls_connect(struct enftun_tls* tls, int mark,
-                   const char** hosts, const char *port,
-                   struct addrinfo* local_addr, int* tcp_fd)
+                   const char** hosts, const char *port)
 {
     int rc;
 
@@ -180,8 +179,6 @@ enftun_tls_connect(struct enftun_tls* tls, int mark,
     if (rc < 0)
         enftun_tcp_close(&tls->sock);
 
-    *local_addr = tls->sock.local_addr;
-    *tcp_fd = tls->sock.fd;
  out:
     return rc;
 }

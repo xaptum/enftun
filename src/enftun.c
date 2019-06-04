@@ -26,14 +26,13 @@
 #include "filter.h"
 #include "log.h"
 #include "ndp.h"
-#include "netlink.h"
 #include "tls.h"
 #ifdef USE_XTT
 #include "xtt.h"
 #endif
 
 static void chain_complete(struct enftun_chain* chain, int status);
-static void netlink_on_change(struct enftun_netlink* nl);
+static void trigger_reconnect(struct enftun_conn_state* conn_state);
 
 static
 void
@@ -42,8 +41,6 @@ start_all(struct enftun_context* ctx)
     enftun_chain_start(&ctx->ingress, chain_complete);
     enftun_chain_start(&ctx->egress, chain_complete);
     enftun_ndp_start(&ctx->ndp);
-    enftun_conn_state_start(&ctx->conn_state);
-    enftun_netlink_start(&ctx->nl, netlink_on_change);
 
     enftun_log_info("Started.\n");
 }
@@ -52,12 +49,10 @@ static
 void
 stop_all(struct enftun_context* ctx)
 {
-    enftun_netlink_stop(&ctx->nl);
     enftun_conn_state_stop(&ctx->conn_state);
     enftun_ndp_stop(&ctx->ndp);
     enftun_chain_stop(&ctx->ingress);
     enftun_chain_stop(&ctx->egress);
-
     enftun_log_info("Stopped.\n");
 }
 
@@ -71,9 +66,9 @@ chain_complete(struct enftun_chain* chain, int status __attribute__((unused)))
 
 static
 void
-netlink_on_change(struct enftun_netlink* nl)
+trigger_reconnect(struct enftun_conn_state* conn_state)
 {
-    struct enftun_context* ctx = (struct enftun_context*) nl->data;
+    struct enftun_context* ctx = (struct enftun_context*) conn_state->data;
     stop_all(ctx);
 }
 
@@ -163,21 +158,10 @@ enftun_tunnel(struct enftun_context* ctx)
     if (rc < 0)
         goto free_ndp;
 
-    rc = enftun_conn_state_init(&ctx->conn_state, &ctx->loop, ctx->nl.fd,
-                                (void*)&ctx->nl, ctx->nl.on_poll);
-    if (rc < 0){
-            goto free_dhcp;
-    }
-
-
-
     start_all(ctx);
 
     uv_run(&ctx->loop, UV_RUN_DEFAULT);
 
-    enftun_conn_state_free(&ctx->conn_state);
-
- free_dhcp:
     enftun_dhcp_free(&ctx->dhcp);
 
  free_ndp:
@@ -254,17 +238,16 @@ enftun_connect(struct enftun_context* ctx)
             goto out;
     }
 
-    if ((rc = enftun_netlink_connect(&ctx->nl, ctx)) < 0)
+    if ((rc = enftun_conn_state_start(&ctx->conn_state, trigger_reconnect,
+                                      &ctx->loop, (void*)ctx)) < 0)
         goto out;
 
 
     if ((rc = enftun_tls_connect(&ctx->tls,
                                  ctx->config.fwmark,
                                  ctx->config.remote_hosts,
-                                 ctx->config.remote_port,
-                                 &ctx->nl.local_addr,
-                                 &ctx->nl.tcp_fd)) < 0)
-        goto close_netlink;
+                                 ctx->config.remote_port)) < 0)
+        goto close_conn_state;
 
     if ((rc = enftun_tun_open(&ctx->tun, ctx->config.dev,
                               ctx->config.dev_node)) < 0)
@@ -276,14 +259,15 @@ enftun_connect(struct enftun_context* ctx)
 
     rc = enftun_tunnel(ctx);
 
+ close_conn_state:
+    enftun_conn_state_close(&ctx->conn_state);
+
  close_tun:
     enftun_tun_close(&ctx->tun);
 
  close_tls:
     enftun_tls_disconnect(&ctx->tls);
 
- close_netlink:
-    enftun_netlink_close(&ctx->nl);
 
  out:
     return rc;

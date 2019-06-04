@@ -21,7 +21,6 @@
 
 #include "cert.h"
 #include "log.h"
-#include "netlink.h"
 
 /**
  * Adds missing colons back into IPv6 string.
@@ -66,20 +65,13 @@ enftun_context_init(struct enftun_context* ctx)
     if (rc < 0)
         goto free_tls;
 
-    rc = enftun_netlink_init();
-    if (rc < 0)
-        goto free_tun;
-
     rc = uv_loop_init(&ctx->loop);
     if (rc < 0)
-        goto free_netlink;
+        goto free_tun;
 
     memset(ctx->ipv6_str, 0, sizeof(ctx->ipv6_str));
 
     return 0;
-
- free_netlink:
-    enftun_netlink_free();
 
  free_tun:
     enftun_tun_free(&ctx->tun);
