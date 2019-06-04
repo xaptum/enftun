@@ -24,8 +24,8 @@
 
 #include <arpa/inet.h>
 #include <net/if.h>
-#include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/types.h>
 
 #include "log.h"
 
@@ -50,7 +50,7 @@ enftun_udp_connect_addr(struct enftun_udp* udp, struct sockaddr* connect_addr)
     }
 
     socklen_t length = MAX_SOCKADDR_LEN;
-    rc = getsockname(udp->fd, &udp->local_addr, &length);
+    rc               = getsockname(udp->fd, &udp->local_addr, &length);
     if (0 != rc)
     {
         close(udp->fd);

@@ -45,7 +45,7 @@ struct enftun_ndp
 
 int
 enftun_ndp_init(struct enftun_ndp* ndp,
-                struct enftun_channel *chan,
+                struct enftun_channel* chan,
                 uv_loop_t* loop,
                 const struct in6_addr* ipv6,
                 const char** routes,

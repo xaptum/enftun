@@ -19,9 +19,9 @@
 #ifndef ENFTUN_ICMP_H
 #define ENFTUN_ICMP_H
 
-#include <stdbool.h>
-#include <netinet/ip6.h>
 #include <netinet/icmp6.h>
+#include <netinet/ip6.h>
+#include <stdbool.h>
 
 #include "packet.h"
 
@@ -34,12 +34,13 @@
 #ifndef ND_OPT_ROUTE_INFO
 #define ND_OPT_ROUTE_INFO 24
 
-struct nd_opt_route_info {/* route info */
-    u_int8_t    nd_opt_rti_type;
-    u_int8_t    nd_opt_rti_len;
-    u_int8_t    nd_opt_rti_prefixlen;
-    u_int8_t    nd_opt_rti_flags;
-    u_int32_t   nd_opt_rti_lifetime;
+struct nd_opt_route_info
+{ /* route info */
+    u_int8_t nd_opt_rti_type;
+    u_int8_t nd_opt_rti_len;
+    u_int8_t nd_opt_rti_prefixlen;
+    u_int8_t nd_opt_rti_flags;
+    u_int32_t nd_opt_rti_lifetime;
     /* prefix follows */
 };
 #endif
@@ -49,14 +50,16 @@ enftun_icmp6_nd_mtu(struct enftun_packet* pkt);
 
 struct nd_opt_route_info*
 enftun_icmp6_nd_route_info(struct enftun_packet* pkt,
-                           const struct in6_addr* pfx, uint8_t pfxlen,
+                           const struct in6_addr* pfx,
+                           uint8_t pfxlen,
                            uint32_t lifetime);
 
 struct nd_router_advert*
 enftun_icmp6_nd_ra(struct enftun_packet* pkt,
                    const struct in6_addr* src,
                    const struct in6_addr* dst,
-                   const struct in6_addr* network, uint16_t prefix,
+                   const struct in6_addr* network,
+                   uint16_t prefix,
                    const char** other_routes);
 
 struct nd_router_solicit*

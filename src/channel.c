@@ -17,9 +17,8 @@
 #include "channel.h"
 #include "log.h"
 
-static
-void
-do_complete_crb(struct enftun_crb *crb, int status)
+static void
+do_complete_crb(struct enftun_crb* crb, int status)
 {
     enftun_list_delete(&crb->entry);
     crb->channel = NULL;
@@ -28,13 +27,12 @@ do_complete_crb(struct enftun_crb *crb, int status)
     crb->complete(crb);
 }
 
-static
-void
+static void
 do_op(struct enftun_channel* chan,
       struct enftun_list* queue,
       int (*op)(void* ctx, struct enftun_packet* pkt))
 {
-    struct enftun_crb *crb;
+    struct enftun_crb* crb;
     int rc;
 
     if (enftun_list_empty(queue))
@@ -52,7 +50,7 @@ do_op(struct enftun_channel* chan,
 static void
 cancel_queue(struct enftun_list* queue, int status)
 {
-    struct enftun_crb *crb;
+    struct enftun_crb* crb;
 
     while (!enftun_list_empty(queue))
     {
@@ -61,10 +59,10 @@ cancel_queue(struct enftun_list* queue, int status)
     }
 }
 
-static void update_poll(struct enftun_channel* chan);
+static void
+update_poll(struct enftun_channel* chan);
 
-static
-void
+static void
 on_poll(uv_poll_t* poll, int status, int events)
 {
     struct enftun_channel* chan = (struct enftun_channel*) poll->data;
@@ -85,8 +83,7 @@ on_poll(uv_poll_t* poll, int status, int events)
     update_poll(chan);
 }
 
-static
-void
+static void
 update_poll(struct enftun_channel* chan)
 {
     // Update our events mask
@@ -105,8 +102,8 @@ update_poll(struct enftun_channel* chan)
     // happens with OpenSSL, since it must read full TLS records from
     // the TCP socket and internally buffer anything not yet requested
     // by the application.
-    if ((chan->events & UV_READABLE) &&
-        chan->ops->pending && chan->ops->pending(chan->ops_context))
+    if ((chan->events & UV_READABLE) && chan->ops->pending &&
+        chan->ops->pending(chan->ops_context))
         on_poll(&chan->poll, 0, UV_READABLE);
     else
         uv_poll_start(&chan->poll, chan->events, on_poll);
@@ -121,15 +118,15 @@ enftun_channel_init(struct enftun_channel* chan,
 {
     int rc;
 
-    chan->ops = ops;
+    chan->ops         = ops;
     chan->ops_context = ops_context;
 
     enftun_list_init(&chan->rxqueue);
     enftun_list_init(&chan->txqueue);
 
-    chan->events = 0;
+    chan->events    = 0;
     chan->poll.data = chan;
-    rc = uv_poll_init(loop, &chan->poll, fd);
+    rc              = uv_poll_init(loop, &chan->poll, fd);
 
     return rc;
 }

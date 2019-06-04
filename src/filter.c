@@ -20,8 +20,7 @@
 #include "ip.h"
 #include "log.h"
 
-#define IP6_HEADER(hdr, pkt) \
-    struct ip6_hdr* hdr = (struct ip6_hdr*) pkt->data
+#define IP6_HEADER(hdr, pkt) struct ip6_hdr* hdr = (struct ip6_hdr*) pkt->data
 
 int
 enftun_is_ipv6(struct enftun_packet* pkt)
@@ -30,8 +29,9 @@ enftun_is_ipv6(struct enftun_packet* pkt)
 
     if (pkt->size < sizeof(struct ip6_hdr))
     {
-        enftun_log_debug("enftun_is_ipv6: packet smaller than IPv6 header (%d < %d)\n",
-                         pkt->size, sizeof(struct ip6_hdr));
+        enftun_log_debug(
+            "enftun_is_ipv6: packet smaller than IPv6 header (%d < %d)\n",
+            pkt->size, sizeof(struct ip6_hdr));
         return 0;
     }
 
@@ -44,7 +44,8 @@ enftun_is_ipv6(struct enftun_packet* pkt)
 
     if (ntohs(hdr->ip6_plen) != pkt->size - sizeof(*hdr))
     {
-        enftun_log_debug("enftun_is_ipv6: payload length does not match received (%d != %d)\n",
+        enftun_log_debug("enftun_is_ipv6: payload length does not match "
+                         "received (%d != %d)\n",
                          ntohs(hdr->ip6_plen), pkt->size - sizeof(*hdr));
         return 0;
     }

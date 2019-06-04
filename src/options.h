@@ -43,6 +43,6 @@ enftun_options_free(struct enftun_options* opts);
 int
 enftun_options_parse_argv(struct enftun_options* opts,
                           const int argc,
-                          char *argv[]);
+                          char* argv[]);
 
 #endif // ENFTUN_OPTIONS_H

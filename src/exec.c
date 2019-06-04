@@ -22,7 +22,8 @@
 #include "exec.h"
 #include "log.h"
 
-int enftun_exec(const char* const argv[], const char* const envp[])
+int
+enftun_exec(const char* const argv[], const char* const envp[])
 {
     int status;
     pid_t pid;
@@ -32,7 +33,7 @@ int enftun_exec(const char* const argv[], const char* const envp[])
     /* child */
     if (pid == 0)
     {
-        execve(argv[0], (char*const*) &argv[0], (char*const*) envp);
+        execve(argv[0], (char* const*) &argv[0], (char* const*) envp);
         exit(127);
     }
 
@@ -41,9 +42,11 @@ int enftun_exec(const char* const argv[], const char* const envp[])
     {
         enftun_log_error("Failed to run program %s\n", argv[0]);
         return -1;
-    } else if (waitpid(pid, &status, 0) != pid)
+    }
+    else if (waitpid(pid, &status, 0) != pid)
     {
-        enftun_log_error("Failed to wait for program %s to complete\n", argv[0]);
+        enftun_log_error("Failed to wait for program %s to complete\n",
+                         argv[0]);
         return -1;
     }
 

@@ -23,9 +23,9 @@
 #include <openssl/x509.h>
 
 int
-enftun_cert_common_name_X509(X509 *cert, char* out, size_t out_len);
+enftun_cert_common_name_X509(X509* cert, char* out, size_t out_len);
 
 int
-enftun_cert_common_name_file(const char *file, char* out, size_t out_len);
+enftun_cert_common_name_file(const char* file, char* out, size_t out_len);
 
 #endif // ENFTUN_CERT_H

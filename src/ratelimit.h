@@ -21,7 +21,6 @@
 
 struct enftun_ratelimit
 {
-    
 };
 
 #endif // ENFTUN_RATELIMIT_H

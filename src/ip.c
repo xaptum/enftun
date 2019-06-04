@@ -26,45 +26,36 @@
 #include "cksum.h"
 
 const struct in6_addr ip6_all_nodes = {
-    .s6_addr = { // ff02::1
-        0xFF, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01
-    }
-};
+    .s6_addr = {// ff02::1
+                0xFF, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x01}};
 
 const struct in6_addr ip6_all_routers = {
-    .s6_addr = { // fe02::2
-        0xFF, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02
-    }
-};
+    .s6_addr = {// fe02::2
+                0xFF, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x02}};
 
 const struct in6_addr ip6_default = {
-    .s6_addr = { // ::
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-    }
-};
+    .s6_addr = {// ::
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00}};
 
 const struct in6_addr ip6_all_dhcp_relay_agents_and_servers = {
-    .s6_addr = { // ff02::1:2
-        0xFF, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x02
-    }
-};
+    .s6_addr = {// ff02::1:2
+                0xFF, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                0x00, 0x00, 0x00, 0x01, 0x00, 0x02}};
 
 const struct in6_addr ip6_self = {
-    .s6_addr = { // fe80::1
-        0xfe, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01
-    }
-};
+    .s6_addr = {// fe80::1
+                0xfe, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x01}};
 
 uint16_t
 ip6_l3_cksum(struct ip6_hdr* nh, void* payload)
 {
     // IPv6 pseudo-header
-    struct {
+    struct
+    {
         struct in6_addr src;
         struct in6_addr dst;
         uint32_t plen;
@@ -74,21 +65,21 @@ ip6_l3_cksum(struct ip6_hdr* nh, void* payload)
         .src  = nh->ip6_src,
         .dst  = nh->ip6_dst,
         .plen = nh->ip6_plen,
-        .zero = { 0, 0 , 0 },
+        .zero = {0, 0, 0},
         .nxt  = nh->ip6_nxt,
     };
 
-    uint16_t csum[2] = {
-        ~in_cksum(&ph, sizeof(ph)),
-        ~in_cksum(payload, ntohs(nh->ip6_plen))
-    };
+    uint16_t csum[2] = {~in_cksum(&ph, sizeof(ph)),
+                        ~in_cksum(payload, ntohs(nh->ip6_plen))};
 
     return in_cksum(csum, sizeof(csum));
 }
 
-int ip6_prefix_str(const struct in6_addr* addr,
-                   const int prefix, char* dst,
-                   size_t size)
+int
+ip6_prefix_str(const struct in6_addr* addr,
+               const int prefix,
+               char* dst,
+               size_t size)
 {
     int rc;
 
@@ -97,7 +88,8 @@ int ip6_prefix_str(const struct in6_addr* addr,
         return -1;
 
     int len = strlen(dst);
-    size -= len; dst += len;
+    size -= len;
+    dst += len;
 
     /* Print the slash */
     if (size < 2)
@@ -105,7 +97,8 @@ int ip6_prefix_str(const struct in6_addr* addr,
 
     dst[0] = '/';
     dst[1] = '\0';
-    size -= 1; dst += 1;
+    size -= 1;
+    dst += 1;
 
     /* Print the prefix */
     rc = snprintf(dst, size, "%d", prefix);
@@ -116,14 +109,12 @@ int ip6_prefix_str(const struct in6_addr* addr,
 }
 
 int
-ip6_prefix(const char* str,
-           struct in6_addr* prefix,
-           uint8_t* prefixlen)
+ip6_prefix(const char* str, struct in6_addr* prefix, uint8_t* prefixlen)
 {
     // Handle the special string "default"
     if (0 == strcmp(str, "default"))
     {
-        *prefix = ip6_default;
+        *prefix    = ip6_default;
         *prefixlen = 0;
         return 0;
     }
@@ -135,21 +126,21 @@ ip6_prefix(const char* str,
 
     // Parse characters after slash as prefixlen.
     // If no slash, use 128.
-    char *slash = strchr(buf, '/');
-    if ( slash )
+    char* slash = strchr(buf, '/');
+    if (slash)
     {
         *slash = 0;
 
-        char *beg = slash + 1;
-        char *end = NULL;
-        errno = 0;
-        long val = strtol(beg, &end, 10);
-        if (*beg != 0 && *end == 0 && errno != ERANGE &&
-            val >= 0 && val <= 128)
+        char* beg = slash + 1;
+        char* end = NULL;
+        errno     = 0;
+        long val  = strtol(beg, &end, 10);
+        if (*beg != 0 && *end == 0 && errno != ERANGE && val >= 0 && val <= 128)
             *prefixlen = val;
         else
             return -1;
-    } else
+    }
+    else
     {
         *prefixlen = 128;
     }
@@ -162,7 +153,8 @@ ip6_prefix(const char* str,
 
 struct ip6_hdr*
 enftun_ip6_header(struct enftun_packet* pkt,
-                  uint8_t nxt, uint8_t hops,
+                  uint8_t nxt,
+                  uint8_t hops,
                   const struct in6_addr* src,
                   const struct in6_addr* dst)
 {
@@ -185,7 +177,8 @@ enftun_udp6_header(struct enftun_packet* pkt,
                    uint8_t hops,
                    const struct in6_addr* src,
                    const struct in6_addr* dst,
-                   uint16_t sport, uint16_t dport)
+                   uint16_t sport,
+                   uint16_t dport)
 {
     struct udphdr* th = enftun_packet_insert_head(pkt, sizeof(*th));
     if (!th)
@@ -225,14 +218,13 @@ enftun_ip6_pull(struct enftun_packet* pkt)
 
     return iph;
 
- err:
+err:
     ENFTUN_RESTORE(pkt);
     return NULL;
 }
 
 struct ip6_hdr*
-enftun_ip6_pull_if_dest(struct enftun_packet* pkt,
-                        const struct in6_addr* dst)
+enftun_ip6_pull_if_dest(struct enftun_packet* pkt, const struct in6_addr* dst)
 {
     ENFTUN_SAVE_INIT(pkt);
 
@@ -246,7 +238,7 @@ enftun_ip6_pull_if_dest(struct enftun_packet* pkt,
 
     return iph;
 
- err:
+err:
     ENFTUN_RESTORE(pkt);
     return NULL;
 }
@@ -279,7 +271,7 @@ enftun_udp6_pull(struct enftun_packet* pkt)
 
     return iph;
 
- err:
+err:
     ENFTUN_RESTORE(pkt);
     return NULL;
 }
@@ -297,7 +289,7 @@ enftun_udp6_pull_if_dest(struct enftun_packet* pkt,
     if (!iph)
         goto err;
 
-    struct udphdr* udph = (void*)iph + sizeof(*iph);
+    struct udphdr* udph = (void*) iph + sizeof(*iph);
 
     // Has right destination IP
     if (0 != memcmp(&iph->ip6_dst, dst, sizeof(*dst)))
@@ -313,7 +305,7 @@ enftun_udp6_pull_if_dest(struct enftun_packet* pkt,
 
     return iph;
 
-    err:
-        ENFTUN_RESTORE(pkt);
-        return NULL;
+err:
+    ENFTUN_RESTORE(pkt);
+    return NULL;
 }

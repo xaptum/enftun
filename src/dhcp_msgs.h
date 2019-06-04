@@ -24,7 +24,8 @@
 #include "dhcp6_types.h"
 #include "packet.h"
 
-struct enftun_dhcp6_context {
+struct enftun_dhcp6_context
+{
     struct in6_addr* lladdr;
 
     uint8_t* xid;
@@ -39,8 +40,7 @@ struct enftun_dhcp6_context {
 };
 
 struct dhcp6_msg*
-enftun_dhcp6_parse(struct enftun_packet* pkt,
-                   struct enftun_dhcp6_context* ctx);
+enftun_dhcp6_parse(struct enftun_packet* pkt, struct enftun_dhcp6_context* ctx);
 
 struct dhcp6_msg*
 enftun_dhcp6_advertise(struct enftun_packet* pkt,
@@ -57,35 +57,36 @@ enftun_dhcp6_msg(struct enftun_packet* pkt, uint8_t type, const uint8_t* xid);
 
 struct dhcp6_option*
 enftun_dhcp6_clientid(struct enftun_packet* pkt,
-                      const uint8_t* duid, size_t duidlen);
+                      const uint8_t* duid,
+                      size_t duidlen);
 
 struct dhcp6_option*
 enftun_dhcp6_serverid(struct enftun_packet* pkt,
-                      const uint8_t* duid, size_t duidlen);
+                      const uint8_t* duid,
+                      size_t duidlen);
 
 struct dhcp6_option*
 enftun_dhcp6_ia_na_start(struct enftun_packet* pkt,
-                         uint32_t iaid, uint32_t t1, uint32_t t2);
+                         uint32_t iaid,
+                         uint32_t t1,
+                         uint32_t t2);
 
-static inline
-void
-enftun_dhcp6_ia_na_finish(struct enftun_packet* pkt,
-                          struct dhcp6_option* opt)
+static inline void
+enftun_dhcp6_ia_na_finish(struct enftun_packet* pkt, struct dhcp6_option* opt)
 {
-    opt->len = htons((void*)pkt->tail - (void*)opt - sizeof(*opt));
+    opt->len = htons((void*) pkt->tail - (void*) opt - sizeof(*opt));
 }
 
 struct dhcp6_option*
 enftun_dhcp6_iaaddr_start(struct enftun_packet* pkt,
                           const struct in6_addr* addr,
-                          uint32_t pltime, uint32_t vltime);
+                          uint32_t pltime,
+                          uint32_t vltime);
 
-static inline
-void
-enftun_dhcp6_iaaddr_finish(struct enftun_packet* pkt,
-                           struct dhcp6_option* opt)
+static inline void
+enftun_dhcp6_iaaddr_finish(struct enftun_packet* pkt, struct dhcp6_option* opt)
 {
-    opt->len = htons((void*)pkt->tail - (void*)opt - sizeof(*opt));
+    opt->len = htons((void*) pkt->tail - (void*) opt - sizeof(*opt));
 }
 
 #endif // ENFTUN_DHCP6_MSGS_H

@@ -28,8 +28,7 @@
 #include "memory.h"
 #include "packet.h"
 
-static
-void
+static void
 on_write(struct enftun_crb* crb)
 {
     struct enftun_dhcp* dhcp = crb->context;
@@ -40,8 +39,7 @@ on_write(struct enftun_crb* crb)
     dhcp->inflight = false;
 }
 
-static
-int
+static int
 prep_message(struct enftun_dhcp* dhcp)
 {
     if (dhcp->inflight)
@@ -53,8 +51,7 @@ prep_message(struct enftun_dhcp* dhcp)
     return 0;
 }
 
-static
-int
+static int
 send_message(struct enftun_dhcp* dhcp, const struct in6_addr* dst)
 {
     if (!enftun_udp6_header(&dhcp->pkt, 255, &ip6_self, dst, 547, 546))
@@ -66,9 +63,7 @@ send_message(struct enftun_dhcp* dhcp, const struct in6_addr* dst)
     return 0;
 }
 
-
-static
-void
+static void
 send_advertise(struct enftun_dhcp* dhcp, struct enftun_dhcp6_context* ctx)
 {
     ctx->sid    = dhcp->duid;
@@ -83,8 +78,7 @@ send_advertise(struct enftun_dhcp* dhcp, struct enftun_dhcp6_context* ctx)
     send_message(dhcp, ctx->lladdr);
 }
 
-static
-void
+static void
 send_reply(struct enftun_dhcp* dhcp, struct enftun_dhcp6_context* ctx)
 {
     ctx->sid    = dhcp->duid;
@@ -99,19 +93,15 @@ send_reply(struct enftun_dhcp* dhcp, struct enftun_dhcp6_context* ctx)
     send_message(dhcp, ctx->lladdr);
 }
 
-static
-bool
-handle_solicit(struct enftun_dhcp* dhcp,
-               struct enftun_dhcp6_context* ctx)
+static bool
+handle_solicit(struct enftun_dhcp* dhcp, struct enftun_dhcp6_context* ctx)
 {
     send_advertise(dhcp, ctx);
     return true;
 }
 
-static
-bool
-handle_request(struct enftun_dhcp* dhcp,
-               struct enftun_dhcp6_context* ctx)
+static bool
+handle_request(struct enftun_dhcp* dhcp, struct enftun_dhcp6_context* ctx)
 {
     if (!ctx->iaid)
         return false;
@@ -126,10 +116,8 @@ handle_request(struct enftun_dhcp* dhcp,
     return true;
 }
 
-static
-bool
-handle_confirm(struct enftun_dhcp* dhcp,
-               struct enftun_dhcp6_context* ctx)
+static bool
+handle_confirm(struct enftun_dhcp* dhcp, struct enftun_dhcp6_context* ctx)
 {
     if (!ctx->iaid)
         return false;
@@ -155,14 +143,13 @@ enftun_dhcp_init(struct enftun_dhcp* dhcp,
 
     dhcp->inflight = false;
 
-    dhcp->crb.context = dhcp;
-    dhcp->crb.packet = &dhcp->pkt;
+    dhcp->crb.context  = dhcp;
+    dhcp->crb.packet   = &dhcp->pkt;
     dhcp->crb.complete = on_write;
 
-    uint8_t default_duid[18] = {
-        0x00, 0x04, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
-        0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f
-    };
+    uint8_t default_duid[18] = {0x00, 0x04, 0x01, 0x02, 0x03, 0x04,
+                                0x05, 0x06, 0x07, 0x08, 0x09, 0x0a,
+                                0x0b, 0x0c, 0x0d, 0x0e, 0x0f};
 
     memcpy(dhcp->duid, default_duid, sizeof(dhcp->duid));
     memcpy(&dhcp->ipv6, ipv6, sizeof(dhcp->ipv6));
@@ -187,10 +174,8 @@ enftun_dhcp_handle_packet(struct enftun_dhcp* dhcp, struct enftun_packet* pkt)
     CLEAR(ctx);
 
     // Verify that this an UDP packet addressed to us
-    struct ip6_hdr* iph =
-        enftun_udp6_pull_if_dest(pkt,
-                                 &ip6_all_dhcp_relay_agents_and_servers,
-                                 546, 547);
+    struct ip6_hdr* iph = enftun_udp6_pull_if_dest(
+        pkt, &ip6_all_dhcp_relay_agents_and_servers, 546, 547);
     if (!iph)
         goto pass;
 
@@ -217,7 +202,7 @@ enftun_dhcp_handle_packet(struct enftun_dhcp* dhcp, struct enftun_packet* pkt)
 
     return 1;
 
- pass:
+pass:
     ENFTUN_RESTORE(pkt);
     return 0;
 }

@@ -26,7 +26,7 @@
 
 struct enftun_xtt
 {
-    const char *suitespec;
+    const char* suitespec;
     struct xtt_tpm_context tpm_ctx;
     struct xtt_tpm_params tpm_params;
 };
@@ -38,17 +38,17 @@ int
 enftun_xtt_free(struct enftun_xtt* xtt);
 
 int
-enftun_xtt_handshake(const char **server_hosts,
-                     const char *server_port,
+enftun_xtt_handshake(const char** server_hosts,
+                     const char* server_port,
                      int mark,
-                     const char *tcti,
-                     const char *device,
-                     const char *longterm_cert_file,
-                     const char *longterm_key_file,
-                     const char *socket_host,
-                     const char *socket_port,
-                     const char *ca_cert_file,
-                     const char *basename,
+                     const char* tcti,
+                     const char* device,
+                     const char* longterm_cert_file,
+                     const char* longterm_key_file,
+                     const char* socket_host,
+                     const char* socket_port,
+                     const char* ca_cert_file,
+                     const char* basename,
                      struct enftun_xtt* xtt);
 
 #endif // ENFTUN_XTT_H

@@ -45,29 +45,28 @@ extern const struct in6_addr ip6_self;
 uint16_t
 ip6_l3_cksum(struct ip6_hdr* nh, void* payload);
 
-static inline
-int ipv6_equal(const struct in6_addr* a, const struct in6_addr* b)
+static inline int
+ipv6_equal(const struct in6_addr* a, const struct in6_addr* b)
 {
     return memcmp(a, b, sizeof(struct in6_addr)) == 0;
 }
 
-int ip6_prefix_str(const struct in6_addr* addr,
-                   const int prefix, char* dst,
-                   size_t size);
+int
+ip6_prefix_str(const struct in6_addr* addr,
+               const int prefix,
+               char* dst,
+               size_t size);
 
-int ip6_prefix(const char* str,
-               struct in6_addr* prefix,
-               uint8_t* prefixlen);
+int
+ip6_prefix(const char* str, struct in6_addr* prefix, uint8_t* prefixlen);
 
-static inline
-void
+static inline void
 enftun_ip6_reserve(struct enftun_packet* pkt)
 {
     enftun_packet_reserve_head(pkt, sizeof(struct ip6_hdr));
 }
 
-static inline
-void
+static inline void
 enftun_udp6_reserve(struct enftun_packet* pkt)
 {
     enftun_ip6_reserve(pkt);
@@ -76,7 +75,8 @@ enftun_udp6_reserve(struct enftun_packet* pkt)
 
 struct ip6_hdr*
 enftun_ip6_header(struct enftun_packet* pkt,
-                  uint8_t nxt, uint8_t hops,
+                  uint8_t nxt,
+                  uint8_t hops,
                   const struct in6_addr* src,
                   const struct in6_addr* dst);
 
@@ -85,14 +85,14 @@ enftun_udp6_header(struct enftun_packet* pkt,
                    uint8_t hops,
                    const struct in6_addr* src,
                    const struct in6_addr* dst,
-                   uint16_t sport, uint16_t dport);
+                   uint16_t sport,
+                   uint16_t dport);
 
 struct ip6_hdr*
 enftun_ip6_pull(struct enftun_packet* pkt);
 
 struct ip6_hdr*
-enftun_ip6_pull_if_dest(struct enftun_packet* pkt,
-                        const struct in6_addr* dst);
+enftun_ip6_pull_if_dest(struct enftun_packet* pkt, const struct in6_addr* dst);
 
 struct ip6_hdr*
 enftun_udp6_pull(struct enftun_packet* pkt);

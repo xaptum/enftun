@@ -21,16 +21,15 @@
 
 #include <libconfig.h>
 
+#include "config.h"
 #include "log.h"
 #include "memory.h"
-#include "config.h"
 
 /**
  * Joins a null-terminated array of strings with the specified
  * separator and prints to stdout.
  */
-static
-void
+static void
 print_joined(const char** strs, const char* sep)
 {
     while (*strs != NULL)
@@ -51,8 +50,7 @@ print_joined(const char** strs, const char* sep)
  * The caller is responsible for free-ing value.  If value was
  * non-NULL when called, this method will free it.
  */
-static
-void
+static void
 lookup_string_array(config_t* cfg, const char* path, const char*** value)
 {
     config_setting_t* s = config_lookup(cfg, path);
@@ -61,7 +59,8 @@ lookup_string_array(config_t* cfg, const char* path, const char*** value)
 
     int cnt = config_setting_length(s);
 
-    if (*value) free(*value);
+    if (*value)
+        free(*value);
     *value = calloc(cnt + 1, sizeof(char*));
     for (int i = 0; i < cnt; i++)
     {
@@ -77,36 +76,36 @@ enftun_config_init(struct enftun_config* config)
     config_init(&config->cfg);
 
     config->ip_path = "/bin/ip";
-    config->ip_set = 1; // true
+    config->ip_set  = 1; // true
 
-    config->dev = "enf0";
+    config->dev      = "enf0";
     config->dev_node = "/dev/net/tun";
 
-    config->remote_hosts = calloc(3, sizeof(char*));
-    config->remote_hosts[0] = "23.147.128.112";
-    config->remote_hosts[1] = "2607:8f80:ffff::1";
-    config->remote_port = "443";
+    config->remote_hosts        = calloc(3, sizeof(char*));
+    config->remote_hosts[0]     = "23.147.128.112";
+    config->remote_hosts[1]     = "2607:8f80:ffff::1";
+    config->remote_port         = "443";
     config->remote_ca_cert_file = "/etc/enftun/enf.cacert.pem";
 
     config->ip_file = NULL;
 
     config->fwmark = 363;
-    config->table = 2097;
+    config->table  = 2097;
 
-    config->prefixes = calloc(2, sizeof(char*));
+    config->prefixes    = calloc(2, sizeof(char*));
     config->prefixes[0] = "default";
 
     config->trusted_ifaces = calloc(2, sizeof(char*));
 
     config->ra_period = 10 * 60 * 1000; // milliseconds
 
-    config->xtt_enable = 0;
+    config->xtt_enable      = 0;
     config->xtt_remote_port = "444";
-    config->xtt_tcti = "device";
-    config->xtt_device = "/dev/tpm0";
+    config->xtt_tcti        = "device";
+    config->xtt_device      = "/dev/tpm0";
     config->xtt_socket_host = "localhost";
     config->xtt_socket_port = "2321";
-    config->xtt_basename = NULL;
+    config->xtt_basename    = NULL;
 
     return 0;
 }
@@ -122,11 +121,10 @@ enftun_config_free(struct enftun_config* config)
     return 0;
 }
 
-static
-void
+static void
 log_config_read_error(struct enftun_config* config, const char* file)
 {
-    config_t *cfg = &config->cfg;
+    config_t* cfg = &config->cfg;
 
     if (!config_error_line(cfg))
     {
@@ -134,17 +132,15 @@ log_config_read_error(struct enftun_config* config, const char* file)
     }
     else
     {
-        enftun_log_error("Cannot parse config file %s at line %d - %s\n",
-                         file,
-                         config_error_line(cfg),
-                         config_error_text(cfg));
+        enftun_log_error("Cannot parse config file %s at line %d - %s\n", file,
+                         config_error_line(cfg), config_error_text(cfg));
     }
 }
 
 int
 enftun_config_parse(struct enftun_config* config, const char* file)
 {
-    config_t *cfg = &config->cfg;
+    config_t* cfg = &config->cfg;
 
     if (!file)
         return 0;
@@ -166,13 +162,15 @@ enftun_config_parse(struct enftun_config* config, const char* file)
     /* Remote settings */
     lookup_string_array(cfg, "remote.hosts", &config->remote_hosts);
     config_lookup_string(cfg, "remote.port", &config->remote_port);
-    config_lookup_string(cfg, "remote.ca_cert_file", &config->remote_ca_cert_file);
+    config_lookup_string(cfg, "remote.ca_cert_file",
+                         &config->remote_ca_cert_file);
 
     /* Route settings */
     config_lookup_int(cfg, "route.fwmark", &config->fwmark);
     config_lookup_int(cfg, "route.table", &config->table);
     lookup_string_array(cfg, "route.prefixes", &config->prefixes);
-    lookup_string_array(cfg, "route.trusted_interfaces", &config->trusted_ifaces);
+    lookup_string_array(cfg, "route.trusted_interfaces",
+                        &config->trusted_ifaces);
     config_lookup_int(cfg, "route.ra_period", &config->ra_period);
 
     /* Identity settings */
@@ -184,12 +182,16 @@ enftun_config_parse(struct enftun_config* config, const char* file)
     if (NULL != config_lookup(cfg, "identity.xtt"))
     {
         config->xtt_enable = 1;
-        config_lookup_string(cfg, "identity.xtt.remote_port", &config->xtt_remote_port);
+        config_lookup_string(cfg, "identity.xtt.remote_port",
+                             &config->xtt_remote_port);
         config_lookup_string(cfg, "identity.xtt.tcti", &config->xtt_tcti);
         config_lookup_string(cfg, "identity.xtt.device", &config->xtt_device);
-        config_lookup_string(cfg, "identity.xtt.socket_host", &config->xtt_socket_host);
-        config_lookup_string(cfg, "identity.xtt.socket_port", &config->xtt_socket_port);
-        config_lookup_string(cfg, "identity.xtt.basename", &config->xtt_basename);
+        config_lookup_string(cfg, "identity.xtt.socket_host",
+                             &config->xtt_socket_host);
+        config_lookup_string(cfg, "identity.xtt.socket_port",
+                             &config->xtt_socket_port);
+        config_lookup_string(cfg, "identity.xtt.basename",
+                             &config->xtt_basename);
     }
 
     return 0;

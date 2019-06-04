@@ -21,7 +21,7 @@
 
 #include <netinet/in.h>
 
-#define MAX_SOCKADDR_LEN    sizeof(struct sockaddr_in6)
+#define MAX_SOCKADDR_LEN sizeof(struct sockaddr_in6)
 
 struct enftun_tcp
 {
@@ -39,12 +39,15 @@ struct enftun_tcp
 
 int
 enftun_tcp_connect(struct enftun_tcp* tcp,
-                   int mark, const char* host, const char *port);
+                   int mark,
+                   const char* host,
+                   const char* port);
 
 int
 enftun_tcp_connect_any(struct enftun_tcp* tcp,
                        int mark,
-                       const char** hosts, const char *port);
+                       const char** hosts,
+                       const char* port);
 
 void
 enftun_tcp_close(struct enftun_tcp* tcp);

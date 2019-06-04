@@ -34,13 +34,14 @@ struct enftun_netlink
 };
 
 int
-enftun_netlink_read_message(struct enftun_netlink* nl, char* buf, size_t buflen);
+enftun_netlink_read_message(struct enftun_netlink* nl,
+                            char* buf,
+                            size_t buflen);
 
 int
 enftun_netlink_connect(struct enftun_netlink* nl);
 
 int
 enftun_netlink_close(struct enftun_netlink* nl);
-
 
 #endif // ENFTUN_NETLINK_H

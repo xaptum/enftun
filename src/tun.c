@@ -34,13 +34,11 @@
 #include "memory.h"
 #include "tun.h"
 
-struct enftun_channel_ops enftun_tun_ops =
-{
-   .read    = (int (*)(void*, struct enftun_packet*)) enftun_tun_read_packet,
-   .write   = (int (*)(void*, struct enftun_packet*)) enftun_tun_write_packet,
-   .prepare = NULL,
-   .pending = NULL
-};
+struct enftun_channel_ops enftun_tun_ops = {
+    .read    = (int (*)(void*, struct enftun_packet*)) enftun_tun_read_packet,
+    .write   = (int (*)(void*, struct enftun_packet*)) enftun_tun_write_packet,
+    .prepare = NULL,
+    .pending = NULL};
 
 int
 enftun_tun_init(struct enftun_tun* tun)
@@ -59,8 +57,7 @@ enftun_tun_free(struct enftun_tun* tun)
 }
 
 int
-enftun_tun_open(struct enftun_tun* tun,
-                const char* dev, const char* dev_node)
+enftun_tun_open(struct enftun_tun* tun, const char* dev, const char* dev_node)
 {
     struct ifreq ifr;
     int rc;
@@ -68,8 +65,7 @@ enftun_tun_open(struct enftun_tun* tun,
     if ((tun->fd = open(dev_node, O_RDWR)) < 0)
     {
         rc = errno;
-        enftun_log_error("Cannot open TUN dev %s: %s\n",
-                         dev_node,
+        enftun_log_error("Cannot open TUN dev %s: %s\n", dev_node,
                          strerror(rc));
         goto out;
     }
@@ -78,10 +74,9 @@ enftun_tun_open(struct enftun_tun* tun,
     ifr.ifr_flags = IFF_TUN | IFF_NO_PI;
     strncpy(ifr.ifr_name, dev, IFNAMSIZ);
 
-    if (ioctl(tun->fd, TUNSETIFF, (void *) &ifr) < 0)
+    if (ioctl(tun->fd, TUNSETIFF, (void*) &ifr) < 0)
     {
-        enftun_log_error("Cannot ioctl TUNSETIFF on dev %s: %s\n",
-                         dev,
+        enftun_log_error("Cannot ioctl TUNSETIFF on dev %s: %s\n", dev,
                          strerror(errno));
         rc = -errno;
         goto close;
@@ -91,8 +86,7 @@ enftun_tun_open(struct enftun_tun* tun,
 
     if (fcntl(tun->fd, F_SETFL, O_NONBLOCK) < 0)
     {
-        enftun_log_error("Cannot fcntl O_NONBLOCK on dev %s: %s\n",
-                         dev,
+        enftun_log_error("Cannot fcntl O_NONBLOCK on dev %s: %s\n", dev,
                          strerror(errno));
         rc = -errno;
         goto close;
@@ -100,8 +94,7 @@ enftun_tun_open(struct enftun_tun* tun,
 
     if (fcntl(tun->fd, F_SETFD, FD_CLOEXEC) < 0)
     {
-        enftun_log_error("Cannot fcntl FD_CLOEXEC on dev %s: %s\n",
-                         dev,
+        enftun_log_error("Cannot fcntl FD_CLOEXEC on dev %s: %s\n", dev,
                          strerror(errno));
         rc = -errno;
         goto close;
@@ -112,10 +105,10 @@ enftun_tun_open(struct enftun_tun* tun,
     rc = 0;
     goto out;
 
- close:
+close:
     close(tun->fd);
 
- out:
+out:
     return rc;
 }
 
@@ -130,16 +123,18 @@ enftun_tun_close(struct enftun_tun* tun)
 
 int
 enftun_tun_set_ip6(struct enftun_tun* tun,
-                   const char* ip_path, const struct in6_addr* ip6)
+                   const char* ip_path,
+                   const struct in6_addr* ip6)
 {
     int rc;
-    char addr[45+1+3+1]; // max addr + '/' + max prefix + null term
+    char addr[45 + 1 + 3 + 1]; // max addr + '/' + max prefix + null term
 
     if ((rc = ip6_prefix_str(ip6, 128, addr, sizeof(addr))) < 0)
         return rc;
 
-    const char* argv[] = { ip_path, "-6", "addr", "replace", addr, "dev", tun->name, 0 };
-    const char* envp[] = { 0 };
+    const char* argv[] = {ip_path, "-6",  "addr",    "replace",
+                          addr,    "dev", tun->name, 0};
+    const char* envp[] = {0};
 
     if ((rc = enftun_exec(argv, envp)) < 0)
     {
@@ -151,8 +146,7 @@ enftun_tun_set_ip6(struct enftun_tun* tun,
 }
 
 int
-enftun_tun_read(struct enftun_tun* tun,
-                uint8_t* buf, size_t len)
+enftun_tun_read(struct enftun_tun* tun, uint8_t* buf, size_t len)
 {
     int rc;
     if ((rc = read(tun->fd, buf, len)) < 0)
@@ -162,8 +156,7 @@ enftun_tun_read(struct enftun_tun* tun,
 }
 
 int
-enftun_tun_write(struct enftun_tun* tun,
-                 uint8_t* buf, size_t len)
+enftun_tun_write(struct enftun_tun* tun, uint8_t* buf, size_t len)
 {
     int rc;
     if ((rc = write(tun->fd, buf, len)) < 0)

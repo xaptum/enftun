@@ -26,8 +26,8 @@
 
 struct enftun_tun
 {
-    int fd;           // file descriptor for TUN device
-    char* name;       // name of the TUN dev, including unit number if any
+    int fd;     // file descriptor for TUN device
+    char* name; // name of the TUN dev, including unit number if any
 };
 
 extern struct enftun_channel_ops enftun_tun_ops;
@@ -39,23 +39,21 @@ int
 enftun_tun_free(struct enftun_tun* tun);
 
 int
-enftun_tun_open(struct enftun_tun* tun,
-                const char* dev, const char* dev_node);
+enftun_tun_open(struct enftun_tun* tun, const char* dev, const char* dev_node);
 
 int
 enftun_tun_close(struct enftun_tun* tun);
 
 int
 enftun_tun_set_ip6(struct enftun_tun* tun,
-                   const char* ip_path, const struct in6_addr* ip6);
+                   const char* ip_path,
+                   const struct in6_addr* ip6);
 
 int
-enftun_tun_read(struct enftun_tun* tun,
-                uint8_t* buf, size_t len);
+enftun_tun_read(struct enftun_tun* tun, uint8_t* buf, size_t len);
 
 int
-enftun_tun_write(struct enftun_tun* tun,
-                 uint8_t* buf, size_t len);
+enftun_tun_write(struct enftun_tun* tun, uint8_t* buf, size_t len);
 
 int
 enftun_tun_read_packet(struct enftun_tun* tun, struct enftun_packet* pkt);

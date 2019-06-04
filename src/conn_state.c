@@ -30,25 +30,25 @@
 #include "sockaddr.h"
 #include "udp.h"
 
-static
-int
+static int
 check_preferred_route(struct enftun_conn_state* conn_state)
 {
-    int rc = enftun_udp_connect_addr(&conn_state->udp, &conn_state->conn->sock.remote_addr);
+    int rc = enftun_udp_connect_addr(&conn_state->udp,
+                                     &conn_state->conn->sock.remote_addr);
     if (0 != rc)
         return rc;
 
     enftun_udp_close(&conn_state->udp);
 
-    rc = enftun_sockaddr_equal(&conn_state->udp.local_addr, &conn_state->conn->sock.local_addr);
+    rc = enftun_sockaddr_equal(&conn_state->udp.local_addr,
+                               &conn_state->conn->sock.local_addr);
     if (0 != rc)
         conn_state->reconnect_cb(conn_state);
 
     return rc;
 }
 
-static
-void
+static void
 on_poll(uv_poll_t* handle, int status, int events)
 {
     (void) events;
@@ -64,10 +64,11 @@ on_poll(uv_poll_t* handle, int status, int events)
 }
 
 int
-enftun_conn_state_start(struct enftun_conn_state* conn_state, struct enftun_tls* tls_conn)
+enftun_conn_state_start(struct enftun_conn_state* conn_state,
+                        struct enftun_tls* tls_conn)
 {
     conn_state->conn = tls_conn;
-    int rc = uv_poll_start(&conn_state->poll, UV_READABLE, on_poll);
+    int rc           = uv_poll_start(&conn_state->poll, UV_READABLE, on_poll);
     return rc;
 }
 
@@ -83,9 +84,9 @@ enftun_conn_state_prepare(struct enftun_conn_state* conn_state,
                           enftun_conn_state_reconnect cb,
                           void* cb_ctx)
 {
-    conn_state->poll.data = conn_state;
+    conn_state->poll.data    = conn_state;
     conn_state->reconnect_cb = cb;
-    conn_state->data = cb_ctx;
+    conn_state->data         = cb_ctx;
 
     enftun_netlink_connect(&conn_state->nl);
 
@@ -94,7 +95,6 @@ enftun_conn_state_prepare(struct enftun_conn_state* conn_state,
         return rc;
 
     return 0;
-
 }
 
 int
@@ -106,13 +106,13 @@ enftun_conn_state_close(struct enftun_conn_state* conn_state)
 int
 enftun_conn_state_init(struct enftun_conn_state* conn_state)
 {
-    (void)conn_state;
+    (void) conn_state;
     return 0;
 }
 
 int
 enftun_conn_state_free(struct enftun_conn_state* conn_state)
 {
-    (void)conn_state;
+    (void) conn_state;
     return 0;
 }
