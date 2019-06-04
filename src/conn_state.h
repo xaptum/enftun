@@ -44,4 +44,7 @@ enftun_conn_state_start(struct enftun_nl_conn_state* conn_state);
 int
 enftun_conn_state_stop(struct enftun_nl_conn_state* conn_state);
 
-#endif // ENFTUN_CONNECTION_STATE_H
+int
+connect_udp_socket(char* udp_address, int udp_length, struct addrinfo* connect_addr);
+
+#endif //ENFTUN_CONNECTION_STATE_H

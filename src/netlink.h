@@ -34,21 +34,18 @@ struct enftun_netlink
     uv_poll_t poll;
 
     struct sockaddr_nl sock_addr;
-    struct iovec io_vector;
 
-    char buffer[8192];
-    struct msghdr msg;
+    int tcp_fd;
+    struct addrinfo local_addr;
 
     void* data;
-    enftun_netlink_on_change on_change;
+    enftun_netlink_on_change on_network_change;
 
-    char* tun_name;
-
-    int (*handle_on_change)(void* netlink);
+    int (*on_poll)(void* netlink);
 };
 
 int
-enftun_netlink_connect(struct enftun_netlink* nl, void* ctx, char* tun_name);
+enftun_netlink_connect(struct enftun_netlink* nl, void* ctx);
 
 int
 enftun_netlink_close(struct enftun_netlink* nl);

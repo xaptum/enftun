@@ -22,6 +22,7 @@
 struct enftun_tcp
 {
     int fd; // file descriptor for the underlying TCP socket
+    struct addrinfo local_addr;
 };
 
 

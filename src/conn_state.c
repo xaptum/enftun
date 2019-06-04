@@ -15,8 +15,66 @@
  */
 
 #include "conn_state.h"
+
+#include <errno.h>
+#include <fcntl.h>
+#include <string.h>
+#include <unistd.h>
+
+#include <arpa/inet.h>
+#include <net/if.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
+
 #include "log.h"
 
+
+int
+connect_udp_socket(char* udp_address, int udp_length, struct addrinfo* connect_addr)
+{
+    int rc = 0;
+    struct sockaddr_in udp_sock_addr;
+    int udp_sockfd = -1;
+
+    switch(connect_addr->ai_family){
+        case AF_INET:
+            udp_sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+            break;
+        case AF_INET6:
+            udp_sockfd = socket(AF_INET6, SOCK_DGRAM, 0);
+            break;
+    }
+
+    if (udp_sockfd < 0) {
+        enftun_log_error("Could not create UDP socket. \n");
+    }
+
+    socklen_t udp_addr_len = sizeof(struct sockaddr_in);
+
+    memset(&udp_sock_addr, 0, udp_addr_len);
+    udp_sock_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    udp_sock_addr.sin_port = htons(0);
+    udp_sock_addr.sin_family = AF_INET;
+
+    rc = connect(udp_sockfd, connect_addr->ai_addr, connect_addr->ai_addrlen);
+    if (0 != rc){
+        close(udp_sockfd);
+        return -1;
+    }
+
+    rc = getsockname(udp_sockfd, (struct sockaddr*)&udp_sock_addr, &udp_addr_len);
+    if (0 != rc){
+        close(udp_sockfd);
+        return -1;
+    }
+
+    inet_ntop(AF_INET, (struct sockaddr_in*)&udp_sock_addr.sin_addr, udp_address, udp_length);
+
+    close(udp_sockfd);
+
+    return 0;
+
+}
 
 static
 void

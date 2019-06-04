@@ -145,7 +145,8 @@ enftun_tcp_connect(struct enftun_tcp* tcp,
             break;
     }
 
-    freeaddrinfo(addr_h);
+    if (addr != NULL)
+        tcp->local_addr = *addr;
 
  out:
     return rc;

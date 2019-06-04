@@ -74,7 +74,7 @@ void
 netlink_on_change(struct enftun_netlink* nl)
 {
     struct enftun_context* ctx = (struct enftun_context*) nl->data;
-    (void)ctx;
+    stop_all(ctx);
 }
 
 static
@@ -164,7 +164,7 @@ enftun_tunnel(struct enftun_context* ctx)
         goto free_ndp;
 
     rc = enftun_conn_state_init(&ctx->conn_state, &ctx->loop, ctx->nl.fd,
-                                (void*)&ctx->nl, ctx->nl.handle_on_change);
+                                (void*)&ctx->nl, ctx->nl.on_poll);
     if (rc < 0){
             goto free_dhcp;
     }
@@ -254,14 +254,16 @@ enftun_connect(struct enftun_context* ctx)
             goto out;
     }
 
-    if ((rc = enftun_netlink_connect(&ctx->nl, ctx, (char *)ctx->config.dev)) < 0)
+    if ((rc = enftun_netlink_connect(&ctx->nl, ctx)) < 0)
         goto out;
 
 
     if ((rc = enftun_tls_connect(&ctx->tls,
                                  ctx->config.fwmark,
                                  ctx->config.remote_hosts,
-                                 ctx->config.remote_port)) < 0)
+                                 ctx->config.remote_port,
+                                 &ctx->nl.local_addr,
+                                 &ctx->nl.tcp_fd)) < 0)
         goto close_netlink;
 
     if ((rc = enftun_tun_open(&ctx->tun, ctx->config.dev,
