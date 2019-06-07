@@ -103,8 +103,7 @@ enftun_icmp6_nd_ra(struct enftun_packet* pkt,
                    const struct in6_addr* src,
                    const struct in6_addr* dst,
                    const struct in6_addr* network, uint16_t prefix,
-                   const char** other_routes,
-                   int lifetime)
+                   const char** other_routes)
 {
     enftun_ip6_reserve(pkt);
 
@@ -125,7 +124,7 @@ enftun_icmp6_nd_ra(struct enftun_packet* pkt,
     if (!mh)
         goto err;
 
-    if (NULL == enftun_icmp6_nd_route_info(pkt, network, prefix, lifetime))
+    if (NULL == enftun_icmp6_nd_route_info(pkt, network, prefix, 0xffffffff))
         goto err;
 
     const char* route;
@@ -149,7 +148,7 @@ enftun_icmp6_nd_ra(struct enftun_packet* pkt,
         default:
             if (NULL == enftun_icmp6_nd_route_info(pkt,
                                                    &prefix, prefixlen,
-                                                   lifetime))
+                                                   0xffffffff))
             {
                 enftun_log_warn("ndp: router advertisment full, "
                                 "skipping route\n");

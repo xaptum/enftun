@@ -59,7 +59,7 @@ send_ra(struct enftun_ndp* ndp)
 
     enftun_packet_reset(&ndp->ra_pkt);
     enftun_icmp6_nd_ra(&ndp->ra_pkt, &ip6_self, &ip6_all_nodes,
-                       &ndp->network, 64, ndp->routes, 3 * ndp->ra_period);
+                       &ndp->network, 64, ndp->routes);
 
     enftun_crb_write(&ndp->ra_crb, ndp->chan);
 
