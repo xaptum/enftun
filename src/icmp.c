@@ -117,7 +117,7 @@ enftun_icmp6_nd_ra(struct enftun_packet* pkt,
     ra->nd_ra_cksum = 0; // computed below
     ra->nd_ra_curhoplimit = 0; // unspecified by this router
     ra->nd_ra_flags_reserved = ND_RA_FLAG_PRF_HIGH | ND_RA_FLAG_MANAGED;
-    ra->nd_ra_router_lifetime = htonl(0); // not a default router
+    ra->nd_ra_router_lifetime = htons(0); // will be set later if default router
     ra->nd_ra_reachable = htonl(0); // unspecified by this router
     ra->nd_ra_retransmit = htonl(0); // unspecified by this router
 
@@ -140,13 +140,22 @@ enftun_icmp6_nd_ra(struct enftun_packet* pkt,
             continue;
         }
 
-        if (NULL == enftun_icmp6_nd_route_info(pkt,
-                                               &prefix, prefixlen,
-                                               lifetime))
+        switch (prefixlen)
         {
-            enftun_log_warn("ndp: router advertisment full, "
-                            "skipping route\n");
-            continue;
+        case 0:
+            // default route
+            ra->nd_ra_router_lifetime = htons(9000); // max allowed by RFC4861
+            break;
+        default:
+            if (NULL == enftun_icmp6_nd_route_info(pkt,
+                                                   &prefix, prefixlen,
+                                                   lifetime))
+            {
+                enftun_log_warn("ndp: router advertisment full, "
+                                "skipping route\n");
+                continue;
+            }
+            break;
         }
     }
 
