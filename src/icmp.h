@@ -57,8 +57,7 @@ enftun_icmp6_nd_ra(struct enftun_packet* pkt,
                    const struct in6_addr* src,
                    const struct in6_addr* dst,
                    const struct in6_addr* network, uint16_t prefix,
-                   const char** other_routes,
-                   int lifetime);
+                   const char** other_routes);
 
 struct nd_router_solicit*
 enftun_icmp6_nd_rs_pull(struct enftun_packet* pkt, struct ip6_hdr* iph);
