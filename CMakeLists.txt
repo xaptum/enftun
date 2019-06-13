@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.1 FATAL_ERROR)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
+set(CMAKE_BUILD_TYPE Debug)
+
 project(enftun
   VERSION 0.4.1
   LANGUAGES C

@@ -29,6 +29,7 @@
 #include "tcp.h"
 
 #define get_sin_addr(addr) (&((struct sockaddr_in*) addr->ai_addr)->sin_addr)
+#define AF_XPT 44
 
 #define get_sin_port(addr) (((struct sockaddr_in*) addr->ai_addr)->sin_port)
 
@@ -44,7 +45,7 @@ do_connect(struct enftun_tcp* tcp, int mark, struct addrinfo* addr)
 
     enftun_log_debug("TCP: connecting to [%s]:%d\n", ip, port);
 
-    if ((tcp->fd = socket(addr->ai_family, SOCK_STREAM, addr->ai_protocol)) < 0)
+    if ((tcp->fd = socket(AF_XPT, SOCK_STREAM, addr->ai_protocol)) < 0)
     {
         enftun_log_error("TCP: Failed to create socket: %s\n", strerror(errno));
         rc = -errno;
