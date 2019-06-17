@@ -4,7 +4,8 @@ Documentation=https://github.com/xaptum/enftun
 After=enftun-setup@%i.service
 BindsTo=enftun-setup@%i.service
 After=network-online.target
-Wants=network-online.target
+Wants=network-online.target 
+Requires=xap-usb-gadget.service
 
 [Service]
 ExecStart=@CMAKE_INSTALL_FULL_BINDIR@/enftun -c %i.conf
