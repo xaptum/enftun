@@ -16,31 +16,12 @@
 
 #pragma once
 
-#ifndef ENFTUN_NETLINK_H
-#define ENFTUN_NETLINK_H
+#ifndef ENFTUN_SOCKADDR_H
+#define ENFTUN_SOCKADDR_H
 
-#include <linux/rtnetlink.h>
-#include <sys/socket.h>
-
-#include <uv.h>
-
-struct enftun_netlink
-{
-    int fd;
-    struct sockaddr_nl sock_addr;
-    struct iovec io_vector;
-
-    struct msghdr msg;
-};
+#include <netinet/in.h>
 
 int
-enftun_netlink_read_message(struct enftun_netlink* nl, char* buf, size_t buflen);
+enftun_sockaddr_equal(struct sockaddr* a, struct sockaddr* b);
 
-int
-enftun_netlink_connect(struct enftun_netlink* nl);
-
-int
-enftun_netlink_close(struct enftun_netlink* nl);
-
-
-#endif // ENFTUN_NETLINK_H
+#endif // ENFTUN_SOCKADDR_H

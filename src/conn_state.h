@@ -30,11 +30,11 @@ typedef void (*enftun_conn_state_reconnect)(struct enftun_conn_state* conn_state
 
 struct enftun_conn_state
 {
-    uv_poll_t poll;
+    enftun_conn_state_reconnect reconnect_cb;
     void* data;     // data for reconnect callback
-    struct enftun_netlink nl;
-    enftun_conn_state_reconnect reconnect;
 
+    uv_poll_t poll;
+    struct enftun_netlink nl;
     struct enftun_udp udp;
 };
 
@@ -46,10 +46,9 @@ enftun_conn_state_stop(struct enftun_conn_state* conn_state);
 
 int
 enftun_conn_state_prepare(struct enftun_conn_state* conn_state,
-                          enftun_conn_state_reconnect trigger_reconnect,
                           uv_loop_t* loop,
-                          void* ctx);
-
+                          enftun_conn_state_reconnect cb,
+                          void* cb_ctx);
 
 int
 enftun_conn_state_close(struct enftun_conn_state* conn_state);

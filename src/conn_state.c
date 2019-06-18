@@ -28,6 +28,7 @@
 
 #include "context.h"
 #include "log.h"
+#include "sockaddr.h"
 #include "udp.h"
 
 static
@@ -41,10 +42,9 @@ check_preferred_route(struct enftun_conn_state* conn_state)
 
     enftun_udp_close(&conn_state->udp);
 
-    rc = enftun_sockaddr_compare(&conn_state->udp.local_addr, &ctx->tls.sock.local_addr);
-    if (0 != rc) {
-        conn_state->reconnect(conn_state);
-    }
+    rc = enftun_sockaddr_equal(&conn_state->udp.local_addr, &ctx->tls.sock.local_addr);
+    if (0 != rc)
+        conn_state->reconnect_cb(conn_state);
 
     return rc;
 }
@@ -56,10 +56,13 @@ on_poll(uv_poll_t* handle, int status, int events)
     (void) events;
     struct enftun_conn_state* conn_state = handle->data;
 
+    char msg_buf[8192];
+
     if (status < 0)
         return;
-    if (0 == status){
-        enftun_netlink_read_message(&conn_state->nl);
+    if (0 == status)
+    {
+        enftun_netlink_read_message(&conn_state->nl, msg_buf, sizeof(msg_buf));
         check_preferred_route(conn_state);
     }
 }
@@ -79,12 +82,13 @@ enftun_conn_state_stop(struct enftun_conn_state* conn_state)
 
 int
 enftun_conn_state_prepare(struct enftun_conn_state* conn_state,
-                        enftun_conn_state_reconnect trigger_reconnect,
-                        uv_loop_t* loop, void* ctx)
+                          uv_loop_t* loop,
+                          enftun_conn_state_reconnect cb,
+                          void* cb_ctx)
 {
     conn_state->poll.data = conn_state;
-    conn_state->reconnect = trigger_reconnect;
-    conn_state->data = ctx;
+    conn_state->reconnect_cb = cb;
+    conn_state->data = cb_ctx;
 
     enftun_netlink_connect(&conn_state->nl);
 

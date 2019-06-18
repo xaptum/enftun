@@ -51,6 +51,7 @@ set(ENFTUN_SRCS
     src/netlink.c
     src/options.c
     src/packet.c
+    src/sockaddr.c
     src/tcp.c
     src/tls.c
     src/tun.c

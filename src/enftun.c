@@ -50,10 +50,10 @@ static
 void
 stop_all(struct enftun_context* ctx)
 {
-    enftun_conn_state_stop(&ctx->conn_state);
     enftun_ndp_stop(&ctx->ndp);
     enftun_chain_stop(&ctx->ingress);
     enftun_chain_stop(&ctx->egress);
+    enftun_conn_state_stop(&ctx->conn_state);
 
     enftun_log_info("Stopped.\n");
 }
@@ -160,17 +160,10 @@ enftun_tunnel(struct enftun_context* ctx)
     if (rc < 0)
         goto free_ndp;
 
-    rc = enftun_conn_state_init(&ctx->conn_state);
-    if (rc < 0)
-        goto free_dhcp;
-
     start_all(ctx);
 
     uv_run(&ctx->loop, UV_RUN_DEFAULT);
 
-    enftun_conn_state_free(&ctx->conn_state);
-
- free_dhcp:
     enftun_dhcp_free(&ctx->dhcp);
 
  free_ndp:
@@ -247,8 +240,8 @@ enftun_connect(struct enftun_context* ctx)
             goto out;
     }
 
-    if ((rc = enftun_conn_state_prepare(&ctx->conn_state, trigger_reconnect,
-                                      &ctx->loop, (void*)ctx)) < 0)
+    if ((rc = enftun_conn_state_prepare(&ctx->conn_state, &ctx->loop,
+                                        trigger_reconnect, (void*)ctx)) < 0)
         goto out;
 
 
@@ -262,14 +255,10 @@ enftun_connect(struct enftun_context* ctx)
                               ctx->config.dev_node)) < 0)
         goto close_tls;
 
-    if (ctx->config.ip_set && (rc = enftun_tun_set_ip6(&ctx->tun,
-                                 ctx->config.ip_path, &ctx->ipv6)) < 0)
+    if (ctx->config.ip_set && (rc = enftun_tun_set_ip6(&ctx->tun, ctx->config.ip_path, &ctx->ipv6)) < 0)
         goto close_tun;
 
     rc = enftun_tunnel(ctx);
-
- close_conn_state:
-    enftun_conn_state_close(&ctx->conn_state);
 
  close_tun:
     enftun_tun_close(&ctx->tun);
@@ -277,6 +266,8 @@ enftun_connect(struct enftun_context* ctx)
  close_tls:
     enftun_tls_disconnect(&ctx->tls);
 
+ close_conn_state:
+    enftun_conn_state_close(&ctx->conn_state);
 
  out:
     return rc;

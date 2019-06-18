@@ -21,11 +21,20 @@
 
 #include <netinet/in.h>
 
+#define MAX_SOCKADDR_LEN    sizeof(struct sockaddr_in6)
+
 struct enftun_udp
 {
     int fd; // file descriptor for the underlying UDP socket
-    struct sockaddr local_addr;
-    struct sockaddr remote_addr;
+    union {
+        struct sockaddr local_addr;
+        char _local_addr_pad[MAX_SOCKADDR_LEN];
+    };
+
+    union {
+        struct sockaddr remote_addr;
+        char _remote_addr_pad[MAX_SOCKADDR_LEN];
+    };
 };
 
 int

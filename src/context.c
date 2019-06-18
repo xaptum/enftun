@@ -19,6 +19,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "conn_state.h"
 #include "cert.h"
 #include "log.h"
 
@@ -57,9 +58,13 @@ enftun_context_init(struct enftun_context* ctx)
     if (rc < 0)
         goto free_options;
 
-    rc = enftun_tls_init(&ctx->tls);
+    rc = enftun_conn_state_init(&ctx->conn_state);
     if (rc < 0)
         goto free_config;
+
+    rc = enftun_tls_init(&ctx->tls);
+    if (rc < 0)
+        goto free_conn_state;
 
     rc = enftun_tun_init(&ctx->tun);
     if (rc < 0)
@@ -79,6 +84,9 @@ enftun_context_init(struct enftun_context* ctx)
  free_tls:
     enftun_tls_free(&ctx->tls);
 
+ free_conn_state:
+    enftun_conn_state_free(&ctx->conn_state);
+
  free_config:
     enftun_config_free(&ctx->config);
 
@@ -96,6 +104,8 @@ enftun_context_free(struct enftun_context* ctx)
 
     enftun_tun_free(&ctx->tun);
     enftun_tls_free(&ctx->tls);
+
+    enftun_conn_state_free(&ctx->conn_state);
 
     enftun_config_free(&ctx->config);
     enftun_options_free(&ctx->options);
