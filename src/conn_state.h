@@ -20,6 +20,7 @@
 #define ENFTUN_CONNECTION_STATE_H
 
 #include "netlink.h"
+#include "tls.h"
 #include "udp.h"
 
 #include <uv.h>
@@ -36,10 +37,12 @@ struct enftun_conn_state
     uv_poll_t poll;
     struct enftun_netlink nl;
     struct enftun_udp udp;
+
+    struct enftun_tls conn;
 };
 
 int
-enftun_conn_state_start(struct enftun_conn_state* conn_state);
+enftun_conn_state_start(struct enftun_conn_state* conn_state, struct enftun_tls tls_conn);
 
 int
 enftun_conn_state_stop(struct enftun_conn_state* conn_state);

@@ -38,7 +38,7 @@ static
 void
 start_all(struct enftun_context* ctx)
 {
-    enftun_conn_state_start(&ctx->conn_state);
+    enftun_conn_state_start(&ctx->conn_state, ctx->tls);
     enftun_chain_start(&ctx->ingress, chain_complete);
     enftun_chain_start(&ctx->egress, chain_complete);
     enftun_ndp_start(&ctx->ndp);

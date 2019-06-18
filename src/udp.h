@@ -38,9 +38,6 @@ struct enftun_udp
 };
 
 int
-enftun_sockaddr_compare(struct sockaddr* local_udp, struct sockaddr* local_tcp);
-
-int
 enftun_udp_connect_addr(struct enftun_udp* udp, struct sockaddr* addr);
 
 int

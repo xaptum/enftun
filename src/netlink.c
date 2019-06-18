@@ -33,7 +33,7 @@ enftun_netlink_read_message(struct enftun_netlink* nl, char* buf, size_t buflen)
     nl->io_vector.iov_base = NULL;
     nl->io_vector.iov_len = 0;
 
-    return 0;
+    return bytes_in_msg;
 }
 
 int

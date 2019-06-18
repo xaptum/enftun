@@ -31,7 +31,7 @@ enftun_sockaddr_equal(struct sockaddr* a, struct sockaddr* b)
             struct sockaddr_in *ina = (struct sockaddr_in*)a;
             struct sockaddr_in *inb = (struct sockaddr_in*)b;
 
-            if (ntohl(ina->sin_addr.s_addr) != ntohl(inb->sin_addr.s_addr))
+            if (ina->sin_addr.s_addr != inb->sin_addr.s_addr)
                 return -1;
             break;
         }
