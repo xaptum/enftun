@@ -22,9 +22,9 @@
 struct enftun_tcp
 {
     int fd; // file descriptor for the underlying TCP socket
-    struct addrinfo local_addr;
+    struct sockaddr local_addr;
+    struct sockaddr remote_addr;
 };
-
 
 int
 enftun_tcp_connect(struct enftun_tcp* tcp,

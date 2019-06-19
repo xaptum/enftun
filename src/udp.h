@@ -16,32 +16,25 @@
 
 #pragma once
 
-#ifndef ENFTUN_NETLINK_H
-#define ENFTUN_NETLINK_H
+#ifndef ENFTUN_UDP_H
+#define ENFTUN_UDP_H
 
-#include <linux/rtnetlink.h>
-#include <sys/socket.h>
+#include <netinet/in.h>
 
-#include <uv.h>
-
-struct enftun_netlink
+struct enftun_udp
 {
-    int fd;
-    struct sockaddr_nl sock_addr;
-    struct iovec io_vector;
-
-    char buffer[8192];
-    struct msghdr msg;
+    int fd; // file descriptor for the underlying UDP socket
+    struct sockaddr local_addr;
+    struct sockaddr remote_addr;
 };
 
 int
-enftun_netlink_read_message(struct enftun_netlink* nl);
+enftun_sockaddr_compare(struct sockaddr* local_udp, struct sockaddr* local_tcp);
 
 int
-enftun_netlink_connect(struct enftun_netlink* nl);
+enftun_udp_connect_addr(struct enftun_udp* udp, struct sockaddr* addr);
 
 int
-enftun_netlink_close(struct enftun_netlink* nl);
+enftun_udp_close(struct enftun_udp* udp);
 
-
-#endif // ENFTUN_NETLINK_H
+#endif //ENFTUN_UDP_H

@@ -20,6 +20,7 @@
 #define ENFTUN_CONNECTION_STATE_H
 
 #include "netlink.h"
+#include "udp.h"
 
 #include <uv.h>
 
@@ -30,21 +31,33 @@ typedef void (*enftun_conn_state_reconnect)(struct enftun_conn_state* conn_state
 struct enftun_conn_state
 {
     uv_poll_t poll;
-    void* data;
+    void* data;     // data for reconnect callback
     struct enftun_netlink nl;
     enftun_conn_state_reconnect reconnect;
+
+    struct enftun_udp udp;
 };
 
 int
-enftun_conn_state_start(struct enftun_conn_state* conn_state,
-                        enftun_conn_state_reconnect trigger_reconnect,
-                        uv_loop_t* loop,
-                        void* ctx);
+enftun_conn_state_start(struct enftun_conn_state* conn_state);
+
+int
+enftun_conn_state_stop(struct enftun_conn_state* conn_state);
+
+int
+enftun_conn_state_prepare(struct enftun_conn_state* conn_state,
+                          enftun_conn_state_reconnect trigger_reconnect,
+                          uv_loop_t* loop,
+                          void* ctx);
+
 
 int
 enftun_conn_state_close(struct enftun_conn_state* conn_state);
 
 int
-enftun_conn_state_stop(struct enftun_conn_state* conn_state);
+enftun_conn_state_init(struct enftun_conn_state* conn_state);
+
+int
+enftun_conn_state_free(struct enftun_conn_state* conn_state);
 
 #endif //ENFTUN_CONNECTION_STATE_H

@@ -145,8 +145,14 @@ enftun_tcp_connect(struct enftun_tcp* tcp,
             break;
     }
 
-    if (addr != NULL)
-        tcp->local_addr = *addr;
+    if (addr != NULL) {
+        tcp->remote_addr = *addr->ai_addr;
+
+        socklen_t length = sizeof(struct sockaddr);
+        getsockname(tcp->fd, &tcp->local_addr, &length);
+    }
+
+    freeaddrinfo(addr_h);
 
  out:
     return rc;

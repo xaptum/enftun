@@ -54,6 +54,7 @@ set(ENFTUN_SRCS
     src/tcp.c
     src/tls.c
     src/tun.c
+    src/udp.c
     )
 
 if(BUILD_XTT)

@@ -38,6 +38,7 @@ static
 void
 start_all(struct enftun_context* ctx)
 {
+    enftun_conn_state_start(&ctx->conn_state);
     enftun_chain_start(&ctx->ingress, chain_complete);
     enftun_chain_start(&ctx->egress, chain_complete);
     enftun_ndp_start(&ctx->ndp);
@@ -53,6 +54,7 @@ stop_all(struct enftun_context* ctx)
     enftun_ndp_stop(&ctx->ndp);
     enftun_chain_stop(&ctx->ingress);
     enftun_chain_stop(&ctx->egress);
+
     enftun_log_info("Stopped.\n");
 }
 
@@ -158,10 +160,17 @@ enftun_tunnel(struct enftun_context* ctx)
     if (rc < 0)
         goto free_ndp;
 
+    rc = enftun_conn_state_init(&ctx->conn_state);
+    if (rc < 0)
+        goto free_dhcp;
+
     start_all(ctx);
 
     uv_run(&ctx->loop, UV_RUN_DEFAULT);
 
+    enftun_conn_state_free(&ctx->conn_state);
+
+ free_dhcp:
     enftun_dhcp_free(&ctx->dhcp);
 
  free_ndp:
@@ -238,7 +247,7 @@ enftun_connect(struct enftun_context* ctx)
             goto out;
     }
 
-    if ((rc = enftun_conn_state_start(&ctx->conn_state, trigger_reconnect,
+    if ((rc = enftun_conn_state_prepare(&ctx->conn_state, trigger_reconnect,
                                       &ctx->loop, (void*)ctx)) < 0)
         goto out;
 

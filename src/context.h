@@ -40,6 +40,8 @@ struct enftun_context
     struct enftun_options options;
     struct enftun_config config;
 
+    struct enftun_conn_state conn_state;
+
     struct enftun_tls tls;
     struct enftun_tun tun;
 
@@ -51,8 +53,6 @@ struct enftun_context
 
     struct enftun_dhcp dhcp;
     struct enftun_ndp ndp;
-
-    struct enftun_conn_state conn_state;
 
     uv_loop_t loop;
 
