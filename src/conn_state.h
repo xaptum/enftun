@@ -38,11 +38,11 @@ struct enftun_conn_state
     struct enftun_netlink nl;
     struct enftun_udp udp;
 
-    struct enftun_tls conn;
+    struct enftun_tls* conn;
 };
 
 int
-enftun_conn_state_start(struct enftun_conn_state* conn_state, struct enftun_tls tls_conn);
+enftun_conn_state_start(struct enftun_conn_state* conn_state, struct enftun_tls* tls_conn);
 
 int
 enftun_conn_state_stop(struct enftun_conn_state* conn_state);

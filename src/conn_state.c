@@ -34,13 +34,13 @@ static
 int
 check_preferred_route(struct enftun_conn_state* conn_state)
 {
-    int rc = enftun_udp_connect_addr(&conn_state->udp, &conn_state->conn.sock.remote_addr);
+    int rc = enftun_udp_connect_addr(&conn_state->udp, &conn_state->conn->sock.remote_addr);
     if (0 != rc)
         return rc;
 
     enftun_udp_close(&conn_state->udp);
 
-    rc = enftun_sockaddr_equal(&conn_state->udp.local_addr, &conn_state->conn.sock.local_addr);
+    rc = enftun_sockaddr_equal(&conn_state->udp.local_addr, &conn_state->conn->sock.local_addr);
     if (0 != rc)
         conn_state->reconnect_cb(conn_state);
 
@@ -58,13 +58,13 @@ on_poll(uv_poll_t* handle, int status, int events)
 
     if (status < 0)
         return;
-        
+
     enftun_netlink_read_message(&conn_state->nl, msg_buf, sizeof(msg_buf));
     check_preferred_route(conn_state);
 }
 
 int
-enftun_conn_state_start(struct enftun_conn_state* conn_state, struct enftun_tls tls_conn)
+enftun_conn_state_start(struct enftun_conn_state* conn_state, struct enftun_tls* tls_conn)
 {
     conn_state->conn = tls_conn;
     int rc = uv_poll_start(&conn_state->poll, UV_READABLE, on_poll);
