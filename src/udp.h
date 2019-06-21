@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Xaptum, Inc.
+ * Copyright 2019 Xaptum, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,16 +16,16 @@
 
 #pragma once
 
-#ifndef ENFTUN_TCP_H
-#define ENFTUN_TCP_H
+#ifndef ENFTUN_UDP_H
+#define ENFTUN_UDP_H
 
 #include <netinet/in.h>
 
 #define MAX_SOCKADDR_LEN    sizeof(struct sockaddr_in6)
 
-struct enftun_tcp
+struct enftun_udp
 {
-    int fd; // file descriptor for the underlying TCP socket
+    int fd; // file descriptor for the underlying UDP socket
     union {
         struct sockaddr local_addr;
         char _local_addr_pad[MAX_SOCKADDR_LEN];
@@ -38,15 +38,9 @@ struct enftun_tcp
 };
 
 int
-enftun_tcp_connect(struct enftun_tcp* tcp,
-                   int mark, const char* host, const char *port);
+enftun_udp_connect_addr(struct enftun_udp* udp, struct sockaddr* addr);
 
 int
-enftun_tcp_connect_any(struct enftun_tcp* tcp,
-                       int mark,
-                       const char** hosts, const char *port);
+enftun_udp_close(struct enftun_udp* udp);
 
-void
-enftun_tcp_close(struct enftun_tcp* tcp);
-
-#endif
+#endif //ENFTUN_UDP_H

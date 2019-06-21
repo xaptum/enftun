@@ -37,6 +37,7 @@ set(ENFTUN_SRCS
     src/channel.c
     src/cksum.c
     src/config.c
+    src/conn_state.c
     src/context.c
     src/dhcp.c
     src/dhcp_msgs.c
@@ -47,11 +48,14 @@ set(ENFTUN_SRCS
     src/ip.c
     src/log.c
     src/ndp.c
+    src/netlink.c
     src/options.c
     src/packet.c
+    src/sockaddr.c
     src/tcp.c
     src/tls.c
     src/tun.c
+    src/udp.c
     )
 
 if(BUILD_XTT)

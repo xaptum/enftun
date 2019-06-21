@@ -25,6 +25,7 @@
 #include "chain.h"
 #include "channel.h"
 #include "config.h"
+#include "conn_state.h"
 #include "dhcp.h"
 #include "ndp.h"
 #include "options.h"
@@ -38,6 +39,8 @@ struct enftun_context
 {
     struct enftun_options options;
     struct enftun_config config;
+
+    struct enftun_conn_state conn_state;
 
     struct enftun_tls tls;
     struct enftun_tun tun;
