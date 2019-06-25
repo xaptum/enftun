@@ -38,7 +38,9 @@ struct enftun_udp
 };
 
 int
-enftun_udp_connect_addr(struct enftun_udp* udp, struct sockaddr* addr);
+enftun_udp_connect_addr(struct enftun_udp* udp,
+                        int mark,
+                        struct sockaddr* addr);
 
 int
 enftun_udp_close(struct enftun_udp* udp);

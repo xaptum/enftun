@@ -226,7 +226,8 @@ enftun_connect(struct enftun_context* ctx)
     }
 
     if ((rc = enftun_conn_state_prepare(&ctx->conn_state, &ctx->loop,
-                                        trigger_reconnect, (void*) ctx)) < 0)
+                                        trigger_reconnect, (void*) ctx,
+                                        ctx->config.fwmark)) < 0)
         goto out;
 
     if ((rc = enftun_tls_connect(&ctx->tls, ctx->config.fwmark,

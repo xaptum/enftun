@@ -33,7 +33,7 @@
 static int
 check_preferred_route(struct enftun_conn_state* conn_state)
 {
-    int rc = enftun_udp_connect_addr(&conn_state->udp,
+    int rc = enftun_udp_connect_addr(&conn_state->udp, conn_state->mark,
                                      &conn_state->conn->sock.remote_addr);
     if (0 != rc)
         return rc;
@@ -82,11 +82,13 @@ int
 enftun_conn_state_prepare(struct enftun_conn_state* conn_state,
                           uv_loop_t* loop,
                           enftun_conn_state_reconnect cb,
-                          void* cb_ctx)
+                          void* cb_ctx,
+                          int mark)
 {
     conn_state->poll.data    = conn_state;
     conn_state->reconnect_cb = cb;
     conn_state->data         = cb_ctx;
+    conn_state->mark         = mark;
 
     enftun_netlink_connect(&conn_state->nl);
 
