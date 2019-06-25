@@ -42,14 +42,13 @@ struct enftun_dhcp
 
 int
 enftun_dhcp_init(struct enftun_dhcp* dchp,
-                 struct enftun_channel *chan,
+                 struct enftun_channel* chan,
                  const struct in6_addr* ipv6);
 
 int
 enftun_dhcp_free(struct enftun_dhcp* dhcp);
 
 int
-enftun_dhcp_handle_packet(struct enftun_dhcp* dhcp,
-                          struct enftun_packet* pkt);
+enftun_dhcp_handle_packet(struct enftun_dhcp* dhcp, struct enftun_packet* pkt);
 
 #endif // ENFTUN_DHCP_H

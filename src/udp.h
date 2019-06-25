@@ -21,7 +21,7 @@
 
 #include <netinet/in.h>
 
-#define MAX_SOCKADDR_LEN    sizeof(struct sockaddr_in6)
+#define MAX_SOCKADDR_LEN sizeof(struct sockaddr_in6)
 
 struct enftun_udp
 {
@@ -43,4 +43,4 @@ enftun_udp_connect_addr(struct enftun_udp* udp, struct sockaddr* addr);
 int
 enftun_udp_close(struct enftun_udp* udp);
 
-#endif //ENFTUN_UDP_H
+#endif // ENFTUN_UDP_H

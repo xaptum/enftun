@@ -31,11 +31,12 @@
 #include "xtt.h"
 #endif
 
-static void chain_complete(struct enftun_chain* chain, int status);
-static void trigger_reconnect(struct enftun_conn_state* conn_state);
+static void
+chain_complete(struct enftun_chain* chain, int status);
+static void
+trigger_reconnect(struct enftun_conn_state* conn_state);
 
-static
-void
+static void
 start_all(struct enftun_context* ctx)
 {
     enftun_conn_state_start(&ctx->conn_state, &ctx->tls);
@@ -46,8 +47,7 @@ start_all(struct enftun_context* ctx)
     enftun_log_info("Started.\n");
 }
 
-static
-void
+static void
 stop_all(struct enftun_context* ctx)
 {
     enftun_ndp_stop(&ctx->ndp);
@@ -58,26 +58,22 @@ stop_all(struct enftun_context* ctx)
     enftun_log_info("Stopped.\n");
 }
 
-static
-void
+static void
 chain_complete(struct enftun_chain* chain, int status __attribute__((unused)))
 {
     struct enftun_context* ctx = (struct enftun_context*) chain->data;
     stop_all(ctx);
 }
 
-static
-void
+static void
 trigger_reconnect(struct enftun_conn_state* conn_state)
 {
     struct enftun_context* ctx = (struct enftun_context*) conn_state->data;
     stop_all(ctx);
 }
 
-static
-int
-chain_ingress_filter(struct enftun_chain* chain,
-                     struct enftun_packet* pkt)
+static int
+chain_ingress_filter(struct enftun_chain* chain, struct enftun_packet* pkt)
 {
     struct enftun_context* ctx = (struct enftun_context*) chain->data;
 
@@ -96,10 +92,8 @@ chain_ingress_filter(struct enftun_chain* chain,
     return 0;
 }
 
-static
-int
-chain_egress_filter(struct enftun_chain* chain,
-                    struct enftun_packet* pkt)
+static int
+chain_egress_filter(struct enftun_chain* chain, struct enftun_packet* pkt)
 {
     struct enftun_context* ctx = (struct enftun_context*) chain->data;
 
@@ -124,8 +118,7 @@ chain_egress_filter(struct enftun_chain* chain,
     return 0;
 }
 
-static
-int
+static int
 enftun_tunnel(struct enftun_context* ctx)
 {
     int rc;
@@ -150,9 +143,8 @@ enftun_tunnel(struct enftun_context* ctx)
     if (rc < 0)
         goto free_ingress;
 
-    rc = enftun_ndp_init(&ctx->ndp, &ctx->tunchan, &ctx->loop,
-                         &ctx->ipv6, ctx->config.prefixes,
-                         ctx->config.ra_period);
+    rc = enftun_ndp_init(&ctx->ndp, &ctx->tunchan, &ctx->loop, &ctx->ipv6,
+                         ctx->config.prefixes, ctx->config.ra_period);
     if (rc < 0)
         goto free_egress;
 
@@ -166,27 +158,26 @@ enftun_tunnel(struct enftun_context* ctx)
 
     enftun_dhcp_free(&ctx->dhcp);
 
- free_ndp:
+free_ndp:
     enftun_ndp_free(&ctx->ndp);
 
- free_egress:
+free_egress:
     enftun_chain_free(&ctx->egress);
 
- free_ingress:
+free_ingress:
     enftun_chain_free(&ctx->ingress);
 
- free_tunchan:
+free_tunchan:
     enftun_channel_free(&ctx->tunchan);
 
- free_tlschan:
+free_tlschan:
     enftun_channel_free(&ctx->tlschan);
 
- out:
+out:
     return rc;
 }
 
-static
-int
+static int
 enftun_provision(struct enftun_context* ctx)
 {
     (void) ctx;
@@ -198,36 +189,29 @@ enftun_provision(struct enftun_context* ctx)
         goto err;
     }
 
-    rc = enftun_xtt_handshake(ctx->config.remote_hosts,
-                              ctx->config.xtt_remote_port,
-                              ctx->config.fwmark,
-                              ctx->config.xtt_tcti,
-                              ctx->config.xtt_device,
-                              ctx->config.cert_file,
-                              ctx->config.key_file,
-                              ctx->config.xtt_socket_host,
-                              ctx->config.xtt_socket_port,
-                              ctx->config.remote_ca_cert_file,
-                              ctx->config.xtt_basename,
-                              &xtt);
+    rc = enftun_xtt_handshake(
+        ctx->config.remote_hosts, ctx->config.xtt_remote_port,
+        ctx->config.fwmark, ctx->config.xtt_tcti, ctx->config.xtt_device,
+        ctx->config.cert_file, ctx->config.key_file,
+        ctx->config.xtt_socket_host, ctx->config.xtt_socket_port,
+        ctx->config.remote_ca_cert_file, ctx->config.xtt_basename, &xtt);
 
     if (0 != rc)
     {
         enftun_log_error("XTT handshake failed\n");
         goto out;
     }
- out:
+out:
     enftun_xtt_free(&xtt);
     ctx->tls.need_provision = 0;
- err:
+err:
     return rc;
 #else
     return 0;
 #endif
 }
 
-static
-int
+static int
 enftun_connect(struct enftun_context* ctx)
 {
     int rc = 0;
@@ -236,17 +220,16 @@ enftun_connect(struct enftun_context* ctx)
 
     if (ctx->config.ip_file)
     {
-        if ((rc = enftun_context_ipv6_write_to_file(ctx, ctx->config.ip_file)) < 0)
+        if ((rc = enftun_context_ipv6_write_to_file(ctx, ctx->config.ip_file)) <
+            0)
             goto out;
     }
 
     if ((rc = enftun_conn_state_prepare(&ctx->conn_state, &ctx->loop,
-                                        trigger_reconnect, (void*)ctx)) < 0)
+                                        trigger_reconnect, (void*) ctx)) < 0)
         goto out;
 
-
-    if ((rc = enftun_tls_connect(&ctx->tls,
-                                 ctx->config.fwmark,
+    if ((rc = enftun_tls_connect(&ctx->tls, ctx->config.fwmark,
                                  ctx->config.remote_hosts,
                                  ctx->config.remote_port)) < 0)
         goto close_conn_state;
@@ -255,40 +238,43 @@ enftun_connect(struct enftun_context* ctx)
                               ctx->config.dev_node)) < 0)
         goto close_tls;
 
-    if (ctx->config.ip_set && (rc = enftun_tun_set_ip6(&ctx->tun, ctx->config.ip_path, &ctx->ipv6)) < 0)
+    if (ctx->config.ip_set &&
+        (rc = enftun_tun_set_ip6(&ctx->tun, ctx->config.ip_path, &ctx->ipv6)) <
+            0)
         goto close_tun;
 
     rc = enftun_tunnel(ctx);
 
- close_tun:
+close_tun:
     enftun_tun_close(&ctx->tun);
 
- close_tls:
+close_tls:
     enftun_tls_disconnect(&ctx->tls);
 
- close_conn_state:
+close_conn_state:
     enftun_conn_state_close(&ctx->conn_state);
 
- out:
+out:
     return rc;
 }
 
-static
-int enftun_print(struct enftun_context* ctx)
+static int
+enftun_print(struct enftun_context* ctx)
 {
     return enftun_config_print(&ctx->config, ctx->options.print_arg);
 }
 
-static
-int enftun_run(struct enftun_context* ctx)
+static int
+enftun_run(struct enftun_context* ctx)
 {
     int rc = 0;
 
     while (1)
     {
         // Sets tls.need_provision if the certs don't exist yet
-        rc = enftun_tls_load_credentials(&ctx->tls, ctx->config.remote_ca_cert_file,
-                                         ctx->config.cert_file, ctx->config.key_file);
+        rc = enftun_tls_load_credentials(
+            &ctx->tls, ctx->config.remote_ca_cert_file, ctx->config.cert_file,
+            ctx->config.key_file);
 
         if (ctx->tls.need_provision && ctx->config.xtt_enable)
         {
@@ -307,9 +293,8 @@ int enftun_run(struct enftun_context* ctx)
     return rc;
 }
 
-static
-int
-enftun_main(int argc, char *argv[])
+static int
+enftun_main(int argc, char* argv[])
 {
     struct enftun_context ctx;
     int rc;
@@ -336,15 +321,15 @@ enftun_main(int argc, char *argv[])
         break;
     }
 
- free_context:
+free_context:
     enftun_context_free(&ctx);
 
- out:
+out:
     return rc;
 }
 
 int
-main(int argc, char *argv[])
+main(int argc, char* argv[])
 {
-  return enftun_main(argc, argv);
+    return enftun_main(argc, argv);
 }

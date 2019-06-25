@@ -23,12 +23,11 @@
 #include "cert.h"
 #include "log.h"
 
-static
-int
+static int
 asn1_extract(ASN1_STRING* asn1, char* out, size_t out_len)
 {
     unsigned char* utf8;
-    int len ;
+    int len;
 
     if ((len = ASN1_STRING_to_UTF8(&utf8, asn1)) < 0)
         goto out;
@@ -41,19 +40,19 @@ asn1_extract(ASN1_STRING* asn1, char* out, size_t out_len)
 
     memcpy(out, utf8, len);
 
- free:
+free:
     OPENSSL_free(utf8);
 
- out:
+out:
     return len;
 }
 
 int
-enftun_cert_common_name_X509(X509 *cert, char* out, size_t out_len)
+enftun_cert_common_name_X509(X509* cert, char* out, size_t out_len)
 {
-    X509_NAME *subject_name;
-    X509_NAME_ENTRY *cn_entry;
-    ASN1_STRING *cn_asn1;
+    X509_NAME* subject_name;
+    X509_NAME_ENTRY* cn_entry;
+    ASN1_STRING* cn_asn1;
     int len, pos;
 
     subject_name = X509_get_subject_name(cert);
@@ -84,7 +83,6 @@ enftun_cert_common_name_X509(X509 *cert, char* out, size_t out_len)
         goto err;
     }
 
-
     len = asn1_extract(cn_asn1, out, out_len);
     if (len < 0)
     {
@@ -93,15 +91,15 @@ enftun_cert_common_name_X509(X509 *cert, char* out, size_t out_len)
 
     return len;
 
- err:
+err:
     return -1;
 }
 
 int
-enftun_cert_common_name_file(const char *file, char* out, size_t out_len)
+enftun_cert_common_name_file(const char* file, char* out, size_t out_len)
 {
     FILE* fp;
-    X509 *cert;
+    X509* cert;
     int len;
 
     // Try to open cert as PEM format
@@ -141,6 +139,6 @@ enftun_cert_common_name_file(const char *file, char* out, size_t out_len)
 
     X509_free(cert);
 
- out:
+out:
     return len;
 }

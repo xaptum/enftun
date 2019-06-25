@@ -14,23 +14,22 @@
  * limitations under the License.
  */
 
+#include <arpa/inet.h>
 #include <netdb.h>
 #include <string.h>
-#include <unistd.h>
-#include <arpa/inet.h>
-#include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include "log.h"
 #include "tls.h"
 
-struct enftun_channel_ops enftun_tls_ops =
-{
-   .read    = (int  (*)(void*, struct enftun_packet*)) enftun_tls_read_packet,
-   .write   = (int  (*)(void*, struct enftun_packet*)) enftun_tls_write_packet,
-   .prepare = (void (*)(void*, struct enftun_packet*)) enftun_tls_prepare_packet,
-   .pending = (int  (*)(void*)) enftun_tls_pending
-};
+struct enftun_channel_ops enftun_tls_ops = {
+    .read  = (int (*)(void*, struct enftun_packet*)) enftun_tls_read_packet,
+    .write = (int (*)(void*, struct enftun_packet*)) enftun_tls_write_packet,
+    .prepare =
+        (void (*)(void*, struct enftun_packet*)) enftun_tls_prepare_packet,
+    .pending = (int (*)(void*)) enftun_tls_pending};
 
 int
 enftun_tls_init(struct enftun_tls* tls)
@@ -47,7 +46,7 @@ enftun_tls_init(struct enftun_tls* tls)
 
     tls->need_provision = 0;
 
- out:
+out:
     return rc;
 }
 
@@ -61,11 +60,13 @@ enftun_tls_free(struct enftun_tls* tls)
 int
 enftun_tls_load_credentials(struct enftun_tls* tls,
                             const char* cacert_file,
-                            const char* cert_file, const char* key_file)
+                            const char* cert_file,
+                            const char* key_file)
 {
     if (!SSL_CTX_load_verify_locations(tls->ctx, cacert_file, NULL))
     {
-        enftun_log_ssl_error("Failed to load server TLS certificate %s", cacert_file);
+        enftun_log_ssl_error("Failed to load server TLS certificate %s",
+                             cacert_file);
         goto err;
     }
     enftun_log_debug("Loaded server TLS certificate %s\n", cacert_file);
@@ -73,7 +74,8 @@ enftun_tls_load_credentials(struct enftun_tls* tls,
     if (!(SSL_CTX_use_certificate_file(tls->ctx, cert_file, SSL_FILETYPE_PEM) ||
           SSL_CTX_use_certificate_file(tls->ctx, cert_file, SSL_FILETYPE_ASN1)))
     {
-        enftun_log_ssl_error("Failed to load client TLS certificate %s:", cert_file);
+        enftun_log_ssl_error("Failed to load client TLS certificate %s:",
+                             cert_file);
         goto err;
     }
     enftun_log_debug("Loaded client TLS certificate %s\n", cert_file);
@@ -88,20 +90,20 @@ enftun_tls_load_credentials(struct enftun_tls* tls,
 
     if (!SSL_CTX_check_private_key(tls->ctx))
     {
-        enftun_log_ssl_error("Failed to validate client TLS cert and private key:");
+        enftun_log_ssl_error(
+            "Failed to validate client TLS cert and private key:");
         goto err;
     }
 
     enftun_log_debug("Validated client TLS cert and private key\n");
     return 0;
 
- err:
+err:
     tls->need_provision = 1;
     return -1;
 }
 
-static
-int
+static int
 enftun_tls_handshake(struct enftun_tls* tls)
 {
     int rc;
@@ -154,20 +156,21 @@ enftun_tls_handshake(struct enftun_tls* tls)
     enftun_log_info("Completed TLS handshake\n");
     goto out;
 
-
- free_ssl:
+free_ssl:
     SSL_free(tls->ssl);
 
- err:
+err:
     rc = -1;
 
- out:
+out:
     return rc;
 }
 
 int
-enftun_tls_connect(struct enftun_tls* tls, int mark,
-                   const char** hosts, const char *port)
+enftun_tls_connect(struct enftun_tls* tls,
+                   int mark,
+                   const char** hosts,
+                   const char* port)
 {
     int rc;
 
@@ -179,7 +182,7 @@ enftun_tls_connect(struct enftun_tls* tls, int mark,
     if (rc < 0)
         enftun_tcp_close(&tls->sock);
 
- out:
+out:
     return rc;
 }
 
@@ -255,12 +258,11 @@ enftun_tls_write(struct enftun_tls* tls, uint8_t* buf, size_t len)
 
     enftun_log_ssl_error("Failed to write");
 
- out:
-        return rc;
+out:
+    return rc;
 }
 
-static
-size_t
+static size_t
 size_to_read(struct enftun_packet* pkt)
 {
     /* read header */
@@ -268,7 +270,7 @@ size_to_read(struct enftun_packet* pkt)
         return 2 - pkt->size;
 
     /* read body */
-    return ntohs(*(uint16_t*)pkt->data) - (pkt->size - 2);
+    return ntohs(*(uint16_t*) pkt->data) - (pkt->size - 2);
 }
 
 int
@@ -311,7 +313,7 @@ enftun_tls_read_packet(struct enftun_tls* tls, struct enftun_packet* pkt)
     enftun_packet_remove_head(pkt, 2);
     rc = 0;
 
- out:
+out:
     return rc;
 }
 
@@ -320,7 +322,7 @@ enftun_tls_prepare_packet(struct enftun_tls* tls __attribute__((unused)),
                           struct enftun_packet* pkt)
 {
     enftun_packet_insert_head(pkt, 2);
-    *(uint16_t*)(pkt->data) = htons(pkt->size - 2);
+    *(uint16_t*) (pkt->data) = htons(pkt->size - 2);
 }
 
 int
@@ -341,6 +343,6 @@ enftun_tls_write_packet(struct enftun_tls* tls, struct enftun_packet* pkt)
 
     rc = 0;
 
- out:
+out:
     return rc;
 }

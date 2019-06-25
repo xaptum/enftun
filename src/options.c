@@ -24,8 +24,8 @@
 #include "memory.h"
 #include "options.h"
 
-static
-void print_usage()
+static void
+print_usage()
 {
     puts("usage: enftun [-h] -c conf_file [-p key]");
 }
@@ -52,7 +52,7 @@ enftun_options_free(struct enftun_options* opts)
 int
 enftun_options_parse_argv(struct enftun_options* opts,
                           const int argc,
-                          char *argv[])
+                          char* argv[])
 {
     int c;
     while ((c = getopt(argc, argv, "hc:p:")) != -1)
@@ -66,7 +66,7 @@ enftun_options_parse_argv(struct enftun_options* opts,
             opts->conf_file = optarg;
             break;
         case 'p':
-            opts->action = ENFTUN_ACTION_PRINT;
+            opts->action    = ENFTUN_ACTION_PRINT;
             opts->print_arg = optarg;
             break;
         default:

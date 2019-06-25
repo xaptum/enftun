@@ -38,9 +38,6 @@ enftun_log_ssl(unsigned long err, const char* format, ...)
     enftun_log(format, arglist);
     va_end(arglist);
 
-    enftun_log("%d:%s:%s:%s\n",
-               err,
-               ERR_lib_error_string(err),
-               ERR_func_error_string(err),
-               ERR_reason_error_string(err));
+    enftun_log("%d:%s:%s:%s\n", err, ERR_lib_error_string(err),
+               ERR_func_error_string(err), ERR_reason_error_string(err));
 }

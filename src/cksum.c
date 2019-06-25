@@ -25,10 +25,10 @@ in_cksum(const void* buf, size_t len)
 
     w = (uint16_t*) buf;
     for (i = len; i > 1; i -= 2)
-        sum  += *w++;
+        sum += *w++;
 
     if (i == 1)
-        sum += (uint16_t) *(uint8_t*)w;
+        sum += (uint16_t) * (uint8_t*) w;
 
     while (sum >> 16)
         sum = (sum >> 16) + (sum & 0xFFFF);

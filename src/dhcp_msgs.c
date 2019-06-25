@@ -19,8 +19,7 @@
 #include <stdbool.h>
 #include <string.h>
 
-static
-void*
+static void*
 dhcp6_find_option(struct enftun_packet* pkt, uint16_t code, uint16_t* len)
 {
     ENFTUN_SAVE_INIT(pkt);
@@ -40,7 +39,7 @@ dhcp6_find_option(struct enftun_packet* pkt, uint16_t code, uint16_t* len)
             continue;
 
         *len = ntohs(opt->len);
-        ret = body;
+        ret  = body;
         break;
     }
 
@@ -48,10 +47,8 @@ dhcp6_find_option(struct enftun_packet* pkt, uint16_t code, uint16_t* len)
     return ret;
 }
 
-static
-bool
-dhcp6_find_cid(struct enftun_packet* pkt,
-                struct enftun_dhcp6_context* ctx)
+static bool
+dhcp6_find_cid(struct enftun_packet* pkt, struct enftun_dhcp6_context* ctx)
 {
     uint8_t* cid = dhcp6_find_option(pkt, DHCP6_OPTION_CLIENTID, &ctx->cidlen);
     if (!cid)
@@ -61,10 +58,8 @@ dhcp6_find_cid(struct enftun_packet* pkt,
     return true;
 }
 
-static
-bool
-dhcp6_find_sid(struct enftun_packet* pkt,
-               struct enftun_dhcp6_context* ctx)
+static bool
+dhcp6_find_sid(struct enftun_packet* pkt, struct enftun_dhcp6_context* ctx)
 {
     uint8_t* sid = dhcp6_find_option(pkt, DHCP6_OPTION_SERVERID, &ctx->sidlen);
     if (!sid)
@@ -74,13 +69,12 @@ dhcp6_find_sid(struct enftun_packet* pkt,
     return true;
 }
 
-static
-bool
-dhcp6_find_ia_na(struct enftun_packet* pkt,
-                 struct enftun_dhcp6_context* ctx)
+static bool
+dhcp6_find_ia_na(struct enftun_packet* pkt, struct enftun_dhcp6_context* ctx)
 {
     uint16_t ia_len;
-    struct dhcp6_ia_na* ia = dhcp6_find_option(pkt, DHCP6_OPTION_IA_NA, &ia_len);
+    struct dhcp6_ia_na* ia =
+        dhcp6_find_option(pkt, DHCP6_OPTION_IA_NA, &ia_len);
     if (!ia)
         return false;
 
@@ -89,8 +83,7 @@ dhcp6_find_ia_na(struct enftun_packet* pkt,
 }
 
 struct dhcp6_msg*
-enftun_dhcp6_parse(struct enftun_packet* pkt,
-                   struct enftun_dhcp6_context* ctx)
+enftun_dhcp6_parse(struct enftun_packet* pkt, struct enftun_dhcp6_context* ctx)
 {
     ENFTUN_SAVE_INIT(pkt);
 
@@ -110,10 +103,10 @@ enftun_dhcp6_parse(struct enftun_packet* pkt,
 
     goto out;
 
- err:
+err:
     msg = NULL;
 
- out:
+out:
     ENFTUN_RESTORE(pkt);
     return msg;
 }
@@ -124,19 +117,24 @@ enftun_dhcp6_advertise(struct enftun_packet* pkt,
                        const struct in6_addr* caddr)
 {
     struct dhcp6_msg* msg = enftun_dhcp6_msg(pkt, DHCP6_ADVERTISE, ctx->xid);
-    if (!msg)                                                 return NULL;
-    if (!enftun_dhcp6_clientid(pkt, ctx->cid, ctx->cidlen))   return NULL;
-    if (!enftun_dhcp6_serverid(pkt, ctx->sid, ctx->sidlen))   return NULL;
+    if (!msg)
+        return NULL;
+    if (!enftun_dhcp6_clientid(pkt, ctx->cid, ctx->cidlen))
+        return NULL;
+    if (!enftun_dhcp6_serverid(pkt, ctx->sid, ctx->sidlen))
+        return NULL;
 
     if (ctx->iaid && caddr)
     {
         struct dhcp6_option* ia_na =
             enftun_dhcp6_ia_na_start(pkt, ctx->iaid, 0xFFFFFFF, 0xFFFFFFF);
-        if (!ia_na)                                            return NULL;
+        if (!ia_na)
+            return NULL;
 
         struct dhcp6_option* iaaddr =
             enftun_dhcp6_iaaddr_start(pkt, caddr, 0xFFFFFFFF, 0xFFFFFFFF);
-        if (!iaaddr)                                           return NULL;
+        if (!iaaddr)
+            return NULL;
 
         enftun_dhcp6_iaaddr_finish(pkt, iaaddr);
         enftun_dhcp6_ia_na_finish(pkt, ia_na);
@@ -152,19 +150,22 @@ enftun_dhcp6_reply(struct enftun_packet* pkt,
 {
     struct dhcp6_msg* msg = enftun_dhcp6_msg(pkt, DHCP6_REPLY, ctx->xid);
 
-    if (!msg)                                                 return NULL;
-    if (!enftun_dhcp6_clientid(pkt, ctx->cid, ctx->cidlen))   return NULL;
-    if (!enftun_dhcp6_serverid(pkt, ctx->sid, ctx->sidlen))   return NULL;
+    if (!msg)
+        return NULL;
+    if (!enftun_dhcp6_clientid(pkt, ctx->cid, ctx->cidlen))
+        return NULL;
+    if (!enftun_dhcp6_serverid(pkt, ctx->sid, ctx->sidlen))
+        return NULL;
 
-    struct dhcp6_option* ia_na = enftun_dhcp6_ia_na_start(pkt, ctx->iaid,
-                                                          0xFFFFFFF,
-                                                          0xFFFFFFF);
-    if (!ia_na)                                               return NULL;
+    struct dhcp6_option* ia_na =
+        enftun_dhcp6_ia_na_start(pkt, ctx->iaid, 0xFFFFFFF, 0xFFFFFFF);
+    if (!ia_na)
+        return NULL;
 
-    struct dhcp6_option* iaaddr = enftun_dhcp6_iaaddr_start(pkt, caddr,
-                                                            0xFFFFFFFF,
-                                                            0xFFFFFFFF);
-    if (!iaaddr)                                              return NULL;
+    struct dhcp6_option* iaaddr =
+        enftun_dhcp6_iaaddr_start(pkt, caddr, 0xFFFFFFFF, 0xFFFFFFFF);
+    if (!iaaddr)
+        return NULL;
     enftun_dhcp6_iaaddr_finish(pkt, iaaddr);
     enftun_dhcp6_ia_na_finish(pkt, ia_na);
 
@@ -184,35 +185,36 @@ enftun_dhcp6_msg(struct enftun_packet* pkt, uint8_t type, const uint8_t* xid)
     return msg;
 }
 
-#define DHCP6_INIT_OPT(opt_code)                                              \
-    struct dhcp6_option* opt = enftun_packet_insert_tail(pkt, sizeof(*opt));  \
-    if (!opt)                                                                 \
-        return NULL;                                                          \
-                                                                              \
-    opt->code = htons(opt_code);                                              \
+#define DHCP6_INIT_OPT(opt_code)                                               \
+    struct dhcp6_option* opt = enftun_packet_insert_tail(pkt, sizeof(*opt));   \
+    if (!opt)                                                                  \
+        return NULL;                                                           \
+                                                                               \
+    opt->code = htons(opt_code);                                               \
     opt->len  = htons(0)
 
-#define DHCP6_INIT_OPT_BODY(opt_code, body_type)                              \
-    DHCP6_INIT_OPT(opt_code);                                                 \
-                                                                              \
-    body_type* body = enftun_packet_insert_tail(pkt, sizeof(*body));          \
-    if (!body)                                                                \
-        return NULL;                                                          \
-                                                                              \
+#define DHCP6_INIT_OPT_BODY(opt_code, body_type)                               \
+    DHCP6_INIT_OPT(opt_code);                                                  \
+                                                                               \
+    body_type* body = enftun_packet_insert_tail(pkt, sizeof(*body));           \
+    if (!body)                                                                 \
+        return NULL;                                                           \
+                                                                               \
     opt->len = htons(sizeof(*body))
 
-#define DHCP6_INIT_OPT_BODY_SIZE(opt_code, body_size)                         \
-    DHCP6_INIT_OPT(opt_code);                                                 \
-                                                                              \
-    void* body = enftun_packet_insert_tail(pkt, body_size);                   \
-    if (!body)                                                                \
-        return NULL;                                                          \
-                                                                              \
+#define DHCP6_INIT_OPT_BODY_SIZE(opt_code, body_size)                          \
+    DHCP6_INIT_OPT(opt_code);                                                  \
+                                                                               \
+    void* body = enftun_packet_insert_tail(pkt, body_size);                    \
+    if (!body)                                                                 \
+        return NULL;                                                           \
+                                                                               \
     opt->len = htons(body_size)
 
 struct dhcp6_option*
 enftun_dhcp6_clientid(struct enftun_packet* pkt,
-                      const uint8_t* duid, size_t duidlen)
+                      const uint8_t* duid,
+                      size_t duidlen)
 {
     DHCP6_INIT_OPT_BODY_SIZE(DHCP6_OPTION_CLIENTID, duidlen);
     memcpy(body, duid, duidlen);
@@ -221,7 +223,8 @@ enftun_dhcp6_clientid(struct enftun_packet* pkt,
 
 struct dhcp6_option*
 enftun_dhcp6_serverid(struct enftun_packet* pkt,
-                      const uint8_t* duid, size_t duidlen)
+                      const uint8_t* duid,
+                      size_t duidlen)
 {
     DHCP6_INIT_OPT_BODY_SIZE(DHCP6_OPTION_SERVERID, duidlen);
     memcpy(body, duid, duidlen);
@@ -230,7 +233,9 @@ enftun_dhcp6_serverid(struct enftun_packet* pkt,
 
 struct dhcp6_option*
 enftun_dhcp6_ia_na_start(struct enftun_packet* pkt,
-                         uint32_t iaid, uint32_t t1, uint32_t t2)
+                         uint32_t iaid,
+                         uint32_t t1,
+                         uint32_t t2)
 {
     DHCP6_INIT_OPT_BODY(DHCP6_OPTION_IA_NA, struct dhcp6_ia_na);
     body->iaid = htonl(iaid);
@@ -242,7 +247,8 @@ enftun_dhcp6_ia_na_start(struct enftun_packet* pkt,
 struct dhcp6_option*
 enftun_dhcp6_iaaddr_start(struct enftun_packet* pkt,
                           const struct in6_addr* addr,
-                          uint32_t pltime, uint32_t vltime)
+                          uint32_t pltime,
+                          uint32_t vltime)
 {
     DHCP6_INIT_OPT_BODY(DHCP6_OPTION_IAADDR, struct dhcp6_iaaddr);
     memcpy(&body->addr, addr, sizeof(body->addr));

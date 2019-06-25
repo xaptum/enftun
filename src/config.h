@@ -57,7 +57,6 @@ struct enftun_config
     const char* xtt_socket_host;
     const char* xtt_socket_port;
     const char* xtt_basename;
-
 };
 
 int

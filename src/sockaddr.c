@@ -26,28 +26,29 @@ enftun_sockaddr_equal(struct sockaddr* a, struct sockaddr* b)
 
     switch (a->sa_family)
     {
-        case AF_INET:
-        {
-            struct sockaddr_in *ina = (struct sockaddr_in*)a;
-            struct sockaddr_in *inb = (struct sockaddr_in*)b;
+    case AF_INET:
+    {
+        struct sockaddr_in* ina = (struct sockaddr_in*) a;
+        struct sockaddr_in* inb = (struct sockaddr_in*) b;
 
-            if (ina->sin_addr.s_addr != inb->sin_addr.s_addr)
-                return -1;
-            break;
-        }
-        case AF_INET6:
-        {
-            struct sockaddr_in6 *in6a = (struct sockaddr_in6*)a;
-            struct sockaddr_in6 *in6b = (struct sockaddr_in6*)b;
-
-            int rc = memcmp(in6a->sin6_addr.s6_addr, in6b->sin6_addr.s6_addr, sizeof(in6a->sin6_addr.s6_addr));
-            if (rc != 0)
-                return -1;
-            break;
-        }
-        default:
+        if (ina->sin_addr.s_addr != inb->sin_addr.s_addr)
             return -1;
-            break;
+        break;
+    }
+    case AF_INET6:
+    {
+        struct sockaddr_in6* in6a = (struct sockaddr_in6*) a;
+        struct sockaddr_in6* in6b = (struct sockaddr_in6*) b;
+
+        int rc = memcmp(in6a->sin6_addr.s6_addr, in6b->sin6_addr.s6_addr,
+                        sizeof(in6a->sin6_addr.s6_addr));
+        if (rc != 0)
+            return -1;
+        break;
+    }
+    default:
+        return -1;
+        break;
     }
 
     return 0;

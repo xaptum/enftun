@@ -28,20 +28,19 @@ struct enftun_chain;
 
 enum enftun_chain_state
 {
- enftun_chain_reading,
- enftun_chain_writing
+    enftun_chain_reading,
+    enftun_chain_writing
 };
 
 typedef int (*enftun_chain_filter)(struct enftun_chain* chain,
                                    struct enftun_packet* packet);
 
-typedef void (*enftun_chain_complete)(struct enftun_chain* chain,
-                                      int status);
+typedef void (*enftun_chain_complete)(struct enftun_chain* chain, int status);
 
 struct enftun_chain
 {
-    struct enftun_channel *input;
-    struct enftun_channel *output;
+    struct enftun_channel* input;
+    struct enftun_channel* output;
 
     struct enftun_packet packet;
     struct enftun_crb crb;
@@ -65,8 +64,7 @@ int
 enftun_chain_free(struct enftun_chain* chain);
 
 int
-enftun_chain_start(struct enftun_chain* chain,
-                   enftun_chain_complete complete);
+enftun_chain_start(struct enftun_chain* chain, enftun_chain_complete complete);
 
 int
 enftun_chain_stop(struct enftun_chain* chain);

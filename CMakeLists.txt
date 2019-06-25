@@ -12,6 +12,7 @@ option(BUILD_EXAMPLE "Build and install example configs" ON)
 option(BUILD_SYSTEMD "Build with systemd support" ON)
 option(BUILD_TEST    "Build tests" ON)
 option(BUILD_XTT     "Build with XTT support" ON)
+option(CHECK_FORMAT  "Check source format during build" ON)
 
 include(GNUInstallDirs)
 
@@ -30,6 +31,10 @@ add_compile_options(-std=c99 -Wall -Wextra -Wno-missing-field-initializers)
 set(CMAKE_C_FLAGS_RELWITHSANITIZE "${CMAKE_C_FLAGS_RELWITHSANITIZE} -O2 -g -fsanitize=address,undefined -fsanitize=unsigned-integer-overflow")
 set(CMAKE_C_FLAGS_DEV "${CMAKE_C_FLAGS_RELEASE} -Werror")
 set(CMAKE_C_FLAGS_DEVDEBUG "${CMAKE_C_FLAGS_DEBUG} -Werror")
+
+add_custom_target(check-format
+                  COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/format.sh check || (exit 0)
+                  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
 set(ENFTUN_SRCS
     src/cert.c
@@ -113,4 +118,8 @@ endif()
 
 if (BUILD_TEST)
   add_subdirectory(test)
+endif()
+
+if (CHECK_FORMAT)
+  add_dependencies(enftun check-format)
 endif()

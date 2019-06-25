@@ -48,7 +48,7 @@ enftun_icmp6_nd_rs_pull(struct enftun_packet* pkt, struct ip6_hdr* iph)
 
     return rs;
 
- err:
+err:
     ENFTUN_RESTORE(pkt);
     return NULL;
 }
@@ -60,17 +60,18 @@ enftun_icmp6_nd_mtu(struct enftun_packet* pkt)
     if (!mh)
         return NULL;
 
-    mh->nd_opt_mtu_type = ND_OPT_MTU;
-    mh->nd_opt_mtu_len = 1;
+    mh->nd_opt_mtu_type     = ND_OPT_MTU;
+    mh->nd_opt_mtu_len      = 1;
     mh->nd_opt_mtu_reserved = 0;
-    mh->nd_opt_mtu_mtu = htonl(1280);
+    mh->nd_opt_mtu_mtu      = htonl(1280);
 
     return mh;
 }
 
 struct nd_opt_route_info*
 enftun_icmp6_nd_route_info(struct enftun_packet* pkt,
-                           const struct in6_addr* pfx, uint8_t pfxlen,
+                           const struct in6_addr* pfx,
+                           uint8_t pfxlen,
                            uint32_t lifetime)
 {
     ENFTUN_SAVE_INIT(pkt);
@@ -83,26 +84,26 @@ enftun_icmp6_nd_route_info(struct enftun_packet* pkt,
     if (!ri_pfx)
         goto err;
 
-    ri->nd_opt_rti_type = ND_OPT_ROUTE_INFO;
-    ri->nd_opt_rti_len = 3;
+    ri->nd_opt_rti_type      = ND_OPT_ROUTE_INFO;
+    ri->nd_opt_rti_len       = 3;
     ri->nd_opt_rti_prefixlen = pfxlen;
-    ri->nd_opt_rti_flags = ND_RA_FLAG_PRF_HIGH;
-    ri->nd_opt_rti_lifetime = htonl(lifetime);
+    ri->nd_opt_rti_flags     = ND_RA_FLAG_PRF_HIGH;
+    ri->nd_opt_rti_lifetime  = htonl(lifetime);
     memcpy(ri_pfx, pfx, 16);
 
     return ri;
 
- err:
+err:
     ENFTUN_RESTORE(pkt);
     return NULL;
 }
-
 
 struct nd_router_advert*
 enftun_icmp6_nd_ra(struct enftun_packet* pkt,
                    const struct in6_addr* src,
                    const struct in6_addr* dst,
-                   const struct in6_addr* network, uint16_t prefix,
+                   const struct in6_addr* network,
+                   uint16_t prefix,
                    const char** other_routes)
 {
     enftun_ip6_reserve(pkt);
@@ -111,14 +112,14 @@ enftun_icmp6_nd_ra(struct enftun_packet* pkt,
     if (!ra)
         goto err;
 
-    ra->nd_ra_type = ND_ROUTER_ADVERT;
-    ra->nd_ra_code = 0;
-    ra->nd_ra_cksum = 0; // computed below
-    ra->nd_ra_curhoplimit = 0; // unspecified by this router
-    ra->nd_ra_flags_reserved = ND_RA_FLAG_PRF_HIGH | ND_RA_FLAG_MANAGED;
+    ra->nd_ra_type            = ND_ROUTER_ADVERT;
+    ra->nd_ra_code            = 0;
+    ra->nd_ra_cksum           = 0; // computed below
+    ra->nd_ra_curhoplimit     = 0; // unspecified by this router
+    ra->nd_ra_flags_reserved  = ND_RA_FLAG_PRF_HIGH | ND_RA_FLAG_MANAGED;
     ra->nd_ra_router_lifetime = htons(0); // will be set later if default router
-    ra->nd_ra_reachable = htonl(0); // unspecified by this router
-    ra->nd_ra_retransmit = htonl(0); // unspecified by this router
+    ra->nd_ra_reachable       = htonl(0); // unspecified by this router
+    ra->nd_ra_retransmit      = htonl(0); // unspecified by this router
 
     struct nd_opt_mtu* mh = enftun_icmp6_nd_mtu(pkt);
     if (!mh)
@@ -128,7 +129,7 @@ enftun_icmp6_nd_ra(struct enftun_packet* pkt,
         goto err;
 
     const char* route;
-    for (route=*other_routes; route!=NULL; route=*++other_routes)
+    for (route = *other_routes; route != NULL; route = *++other_routes)
     {
         struct in6_addr prefix;
         uint8_t prefixlen;
@@ -146,9 +147,8 @@ enftun_icmp6_nd_ra(struct enftun_packet* pkt,
             ra->nd_ra_router_lifetime = htons(9000); // max allowed by RFC4861
             break;
         default:
-            if (NULL == enftun_icmp6_nd_route_info(pkt,
-                                                   &prefix, prefixlen,
-                                                   0xffffffff))
+            if (NULL ==
+                enftun_icmp6_nd_route_info(pkt, &prefix, prefixlen, 0xffffffff))
             {
                 enftun_log_warn("ndp: router advertisment full, "
                                 "skipping route\n");
@@ -158,11 +158,11 @@ enftun_icmp6_nd_ra(struct enftun_packet* pkt,
         }
     }
 
-    struct ip6_hdr *nh = enftun_ip6_header(pkt, IPPROTO_ICMPV6, 255, src, dst);
-    ra->nd_ra_cksum = ip6_l3_cksum(nh, &ra->nd_ra_hdr);
+    struct ip6_hdr* nh = enftun_ip6_header(pkt, IPPROTO_ICMPV6, 255, src, dst);
+    ra->nd_ra_cksum    = ip6_l3_cksum(nh, &ra->nd_ra_hdr);
 
     return ra;
 
- err:
+err:
     return NULL;
 }
