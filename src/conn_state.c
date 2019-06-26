@@ -42,8 +42,6 @@ check_preferred_route(struct enftun_conn_state* conn_state)
 
     rc = enftun_sockaddr_equal(&conn_state->udp.local_addr,
                                &conn_state->conn->sock.local_addr);
-    if (0 != rc)
-        conn_state->reconnect_cb(conn_state);
 
     return rc;
 }
@@ -60,7 +58,9 @@ on_poll(uv_poll_t* handle, int status, int events)
         return;
 
     enftun_netlink_read_message(&conn_state->nl, msg_buf, sizeof(msg_buf));
-    check_preferred_route(conn_state);
+    int rc = check_preferred_route(conn_state);
+    if (0 != rc)
+        conn_state->reconnect_cb(conn_state);
 }
 
 int
