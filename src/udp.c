@@ -30,7 +30,9 @@
 #include "log.h"
 
 int
-enftun_udp_connect_addr(struct enftun_udp* udp, struct sockaddr* connect_addr)
+enftun_udp_connect_addr(struct enftun_udp* udp,
+                        int mark,
+                        struct sockaddr* connect_addr)
 {
     int rc = 0;
 
@@ -38,32 +40,45 @@ enftun_udp_connect_addr(struct enftun_udp* udp, struct sockaddr* connect_addr)
     if (udp->fd < 0)
     {
         enftun_log_error("UDP: Failed to create socket: %s\n", strerror(errno));
-        return -1;
+        rc = -errno;
+        goto out;
+    }
+
+    if (mark > 0)
+    {
+        if ((rc = setsockopt(udp->fd, SOL_SOCKET, SO_MARK, &mark,
+                             sizeof(mark))) < 0)
+        {
+            enftun_log_error("UDP: Failed to set mark %d: %s\n", mark,
+                             strerror(errno));
+            rc = -errno;
+            goto close_fd;
+        }
     }
 
     rc = connect(udp->fd, connect_addr, sizeof(struct sockaddr));
     if (0 != rc)
     {
-        enftun_log_error("UDP: Failed to connect: \n", strerror(errno));
-        close(udp->fd);
-        return rc;
+        enftun_log_error("UDP: Failed to connect: %s\n", strerror(errno));
+        goto close_fd;
     }
 
     socklen_t length = MAX_SOCKADDR_LEN;
     rc               = getsockname(udp->fd, &udp->local_addr, &length);
     if (0 != rc)
-    {
-        close(udp->fd);
-        return rc;
-    }
+        goto close_fd;
 
     rc = getpeername(udp->fd, &udp->remote_addr, &length);
     if (0 != rc)
-    {
-        close(udp->fd);
-        return rc;
-    }
+        goto close_fd;
 
+    goto out;
+
+close_fd:
+    close(udp->fd);
+    udp->fd = 0;
+
+out:
     return rc;
 }
 

@@ -40,6 +40,8 @@ struct enftun_conn_state
     struct enftun_udp udp;
 
     struct enftun_tls* conn;
+
+    int mark; // mark to apply to tunnel packets. 0 to disable
 };
 
 int
@@ -53,7 +55,8 @@ int
 enftun_conn_state_prepare(struct enftun_conn_state* conn_state,
                           uv_loop_t* loop,
                           enftun_conn_state_reconnect cb,
-                          void* cb_ctx);
+                          void* cb_ctx,
+                          int mark);
 
 int
 enftun_conn_state_close(struct enftun_conn_state* conn_state);
