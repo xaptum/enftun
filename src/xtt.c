@@ -106,7 +106,7 @@ enftun_xtt_handshake(const char** server_hosts,
                      const char* basename_in,
                      struct enftun_xtt* xtt)
 {
-    struct enftun_tcp sock;
+    struct enftun_tcp sock = {0};
     int init_daa_ret = -1;
     int ret          = 0;
 
