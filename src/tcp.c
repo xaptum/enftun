@@ -108,6 +108,7 @@ enftun_tcp_connect(struct enftun_tcp* tcp,
         getsockname(tcp->fd, &tcp->local_addr, &length);
         getpeername(tcp->fd, &tcp->remote_addr, &length);
     }
+    */
 
     freeaddrinfo(addr_h);
 
