@@ -102,6 +102,7 @@ enftun_tcp_connect(struct enftun_tcp* tcp,
             break;
     }
 
+    /*
     if (addr != NULL)
     {
         socklen_t length = MAX_SOCKADDR_LEN;
