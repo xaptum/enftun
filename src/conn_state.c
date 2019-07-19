@@ -30,6 +30,8 @@
 #include "sockaddr.h"
 #include "udp.h"
 
+#define NEED_PING 1
+
 static int
 check_preferred_route(struct enftun_conn_state* conn_state)
 {
@@ -46,6 +48,64 @@ check_preferred_route(struct enftun_conn_state* conn_state)
     return rc;
 }
 
+static int
+get_if_status(struct nlmsghdr* nl_message)
+{
+    struct ifinfomsg* if_info;
+
+    if_info = (struct ifinfomsg*) NLMSG_DATA(nl_message);
+
+    if (if_info->ifi_flags & IFF_UP & IFF_RUNNING)
+        return 0;
+    else
+        return -1;
+}
+
+static void
+reset_io_vector(struct enftun_netlink* nl)
+{
+    nl->io_vector.iov_base = NULL;
+    nl->io_vector.iov_len  = 0;
+}
+
+static int
+parse_netlink_message(struct enftun_netlink* nl, int bytes_in_msg)
+{
+    int rc = 0;
+
+    struct nlmsghdr* nl_message;
+    nl_message = (struct nlmsghdr*) nl->io_vector.iov_base;
+
+    while (bytes_in_msg >= (ssize_t) sizeof(*nl_message))
+    {
+        int length_msghdr = nl_message->nlmsg_len;
+        int length_msg    = length_msghdr - sizeof(*nl_message);
+
+        if ((length_msg < 0) || (length_msghdr > bytes_in_msg))
+        {
+            enftun_log_error("Invalid message length: %i\n", length_msghdr);
+            continue;
+        }
+
+        if (nl_message->nlmsg_type == RTM_NEWADDR)
+        {
+            rc = NEED_PING;
+        }
+        else if (nl_message->nlmsg_type == RTM_NEWLINK &&
+                 0 == get_if_status(nl_message))
+        {
+            rc = NEED_PING;
+        }
+
+        bytes_in_msg -= NLMSG_ALIGN(length_msghdr);
+
+        nl_message = (struct nlmsghdr*) ((char*) nl_message +
+                                         NLMSG_ALIGN(length_msghdr));
+    }
+
+    return rc;
+}
+
 static void
 on_poll(uv_poll_t* handle, int status, int events)
 {
@@ -57,10 +117,20 @@ on_poll(uv_poll_t* handle, int status, int events)
     if (status < 0)
         return;
 
-    enftun_netlink_read_message(&conn_state->nl, msg_buf, sizeof(msg_buf));
+    int bytes =
+        enftun_netlink_read_message(&conn_state->nl, msg_buf, sizeof(msg_buf));
     int rc = check_preferred_route(conn_state);
     if (0 != rc)
         conn_state->reconnect_cb(conn_state);
+    else
+    {
+        rc = parse_netlink_message(&conn_state->nl, bytes);
+        if (NEED_PING == rc)
+            enftun_heartbeat_now(&conn_state->heartbeat);
+    }
+
+    reset_io_vector(&conn_state->nl);
+    return;
 }
 
 int

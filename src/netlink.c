@@ -30,9 +30,6 @@ enftun_netlink_read_message(struct enftun_netlink* nl, char* buf, size_t buflen)
     if (bytes_in_msg < 0 || (nl->msg.msg_namelen != sizeof(nl->sock_addr)))
         return -1;
 
-    nl->io_vector.iov_base = NULL;
-    nl->io_vector.iov_len  = 0;
-
     return bytes_in_msg;
 }
 

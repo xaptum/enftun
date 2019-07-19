@@ -76,10 +76,19 @@ trigger_reconnect(struct enftun_conn_state* conn_state)
     stop_all(ctx);
 }
 
+static void
+ping_reconnect(struct enftun_heartbeat* heartbeat)
+{
+    struct enftun_context* ctx = (struct enftun_context*) heartbeat->data;
+    stop_all(ctx);
+}
+
 static int
 chain_ingress_filter(struct enftun_chain* chain, struct enftun_packet* pkt)
 {
     struct enftun_context* ctx = (struct enftun_context*) chain->data;
+
+    enftun_heartbeat_restart(&ctx->conn_state.heartbeat);
 
     if (!enftun_is_ipv6(pkt))
     {
