@@ -93,6 +93,9 @@ chain_ingress_filter(struct enftun_chain* chain, struct enftun_packet* pkt)
         return 1;
     }
 
+    if (!enftun_heartbeat_handle_packet(&ctx->conn_state.heartbeat, pkt))
+        return 1;
+
     return 0;
 }
 
@@ -230,9 +233,11 @@ enftun_connect(struct enftun_context* ctx)
     }
 
 #ifndef USE_PSOCK
-    if ((rc = enftun_conn_state_prepare(&ctx->conn_state, &ctx->loop,
-                                        trigger_reconnect, (void*) ctx,
-                                        ctx->config.fwmark)) < 0)
+    if ((rc = enftun_conn_state_prepare(
+                  &ctx->conn_state, &ctx->loop, trigger_reconnect, (void*) ctx,
+                  ctx->config.fwmark, &ctx->tlschan, &ctx->ipv6,
+                  ctx->config.heartbeat_period, ctx->config.heartbeat_timeout,
+                  ping_reconnect) < 0))
         goto out;
 #endif
 

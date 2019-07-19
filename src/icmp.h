@@ -65,4 +65,12 @@ enftun_icmp6_nd_ra(struct enftun_packet* pkt,
 struct nd_router_solicit*
 enftun_icmp6_nd_rs_pull(struct enftun_packet* pkt, struct ip6_hdr* iph);
 
+struct icmp6_hdr*
+enftun_icmp6_echo_reply_pull(struct enftun_packet* pkt, struct ip6_hdr* iph);
+
+struct icmp6_hdr*
+enftun_icmp6_echo_request(struct enftun_packet* pkt,
+                          const struct in6_addr* src,
+                          const struct in6_addr* dest);
+
 #endif // ENFTUN_ICMP_H

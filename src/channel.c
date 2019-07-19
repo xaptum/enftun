@@ -142,7 +142,6 @@ void
 enftun_crb_read(struct enftun_crb* crb, struct enftun_channel* chan)
 {
     enftun_packet_reset(crb->packet);
-    enftun_packet_reserve_head(crb->packet, 2); // space for stream header
 
     crb->channel = chan;
 

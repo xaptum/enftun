@@ -50,6 +50,9 @@ struct enftun_config
 
     int ra_period; /* router advertisement period in ms */
 
+    int heartbeat_period;
+    int heartbeat_timeout;
+
     int xtt_enable;
     const char* xtt_remote_port;
     const char* xtt_tcti;

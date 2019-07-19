@@ -68,14 +68,24 @@ enftun_conn_state_start(struct enftun_conn_state* conn_state,
                         struct enftun_tls* tls_conn)
 {
     conn_state->conn = tls_conn;
-    int rc           = uv_poll_start(&conn_state->poll, UV_READABLE, on_poll);
+
+    int rc = enftun_heartbeat_start(&conn_state->heartbeat);
+    if (0 != rc)
+        return rc;
+
+    rc = uv_poll_start(&conn_state->poll, UV_READABLE, on_poll);
     return rc;
 }
 
 int
 enftun_conn_state_stop(struct enftun_conn_state* conn_state)
 {
-    return uv_poll_stop(&conn_state->poll);
+    int rc = uv_poll_stop(&conn_state->poll);
+    if (0 != rc)
+        return rc;
+
+    rc = enftun_heartbeat_stop(&conn_state->heartbeat);
+    return rc;
 }
 
 int
@@ -83,7 +93,12 @@ enftun_conn_state_prepare(struct enftun_conn_state* conn_state,
                           uv_loop_t* loop,
                           enftun_conn_state_reconnect cb,
                           void* cb_ctx,
-                          int mark)
+                          int mark,
+                          struct enftun_channel* chan,
+                          struct in6_addr* ipv6,
+                          int hb_period,
+                          int hb_timeout,
+                          void (*on_timeout)(struct enftun_heartbeat* hb))
 {
     conn_state->poll.data    = conn_state;
     conn_state->reconnect_cb = cb;
@@ -91,6 +106,9 @@ enftun_conn_state_prepare(struct enftun_conn_state* conn_state,
     conn_state->mark         = mark;
 
     enftun_netlink_connect(&conn_state->nl);
+
+    enftun_heartbeat_init(&conn_state->heartbeat, loop, chan, ipv6, on_timeout,
+                          cb_ctx, hb_period, hb_timeout);
 
     int rc = uv_poll_init(loop, &conn_state->poll, conn_state->nl.fd);
     if (0 != rc)
@@ -102,6 +120,10 @@ enftun_conn_state_prepare(struct enftun_conn_state* conn_state,
 int
 enftun_conn_state_close(struct enftun_conn_state* conn_state)
 {
+    int rc = enftun_heartbeat_free(&conn_state->heartbeat);
+    if (0 != rc)
+        return rc;
+
     return enftun_netlink_close(&conn_state->nl);
 }
 

@@ -32,6 +32,8 @@ enftun_packet_reset(struct enftun_packet* pkt)
     pkt->tail = pkt->data;
 
     pkt->size = 0;
+
+    enftun_packet_reserve_head(pkt, 2); // space for stream header
 }
 
 void
