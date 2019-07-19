@@ -81,6 +81,13 @@ chain_ingress_filter(struct enftun_chain* chain, struct enftun_packet* pkt)
 {
     struct enftun_context* ctx = (struct enftun_context*) chain->data;
 
+    // Check if this is a heartbeat response
+    if (enftun_heartbeat_handle_packet(&ctx->conn_state.hb, pkt))
+        return 1; // STOLEN
+
+    // Received a packet, so reset the heartbeat timer
+    enftun_heartbeat_reset(&ctx->conn_state.hb);
+
     // -------------------------- IPv4 --------------------------
     if (enftun_is_ipv4(pkt))
     {

@@ -26,7 +26,9 @@
 #include "channel.h"
 #include "packet.h"
 
-typedef int (*enftun_heartbeat_timeout)(struct enftun_heartbeat hb);
+struct enftun_heartbeat;
+
+typedef void (*enftun_heartbeat_timeout)(struct enftun_heartbeat* hb);
 
 struct enftun_heartbeat
 {

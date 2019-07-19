@@ -19,6 +19,7 @@
 #ifndef ENFTUN_CONNECTION_STATE_H
 #define ENFTUN_CONNECTION_STATE_H
 
+#include "heartbeat.h"
 #include "netlink.h"
 #include "tls.h"
 #include "udp.h"
@@ -38,6 +39,7 @@ struct enftun_conn_state
     uv_poll_t poll;
     struct enftun_netlink nl;
     struct enftun_udp udp;
+    struct enftun_heartbeat hb;
 
     struct enftun_tls* conn;
 
@@ -55,6 +57,11 @@ int
 enftun_conn_state_init(struct enftun_conn_state* conn_state,
                        uv_loop_t* loop,
                        int mark,
+                       int hb_period,
+                       int hb_timeout,
+                       struct enftun_channel* chan,
+                       const struct in6_addr* saddr,
+                       const struct in6_addr* daddr,
                        enftun_conn_state_reconnect cb,
                        void* data);
 

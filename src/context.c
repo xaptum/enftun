@@ -21,6 +21,7 @@
 
 #include "cert.h"
 #include "conn_state.h"
+#include "ip.h"
 #include "log.h"
 
 /**
@@ -92,8 +93,10 @@ enftun_context_run_init(struct enftun_context* ctx,
 {
     int rc;
 
-    rc = enftun_conn_state_init(&ctx->conn_state, &ctx->loop,
-                                ctx->config.fwmark, cb, ctx);
+    rc = enftun_conn_state_init(
+        &ctx->conn_state, &ctx->loop, ctx->config.fwmark,
+        ctx->config.heartbeat_period, ctx->config.heartbeat_timeout,
+        &ctx->tlschan, &ctx->ipv6, &ip6_enf_router, cb, ctx);
     if (rc < 0)
         goto err;
 
