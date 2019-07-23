@@ -37,6 +37,7 @@ extern const struct in6_addr ip6_all_routers;
 extern const struct in6_addr ip6_default;
 extern const struct in6_addr ip6_all_dhcp_relay_agents_and_servers;
 extern const struct in6_addr ip6_self;
+extern const struct in6_addr ip6_enf_router;
 
 /**
  * Computes the checksum for common transport (layer 3) protocols like
