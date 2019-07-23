@@ -98,8 +98,8 @@ enftun_config_init(struct enftun_config* config)
     config->trusted_ifaces = calloc(2, sizeof(char*));
 
     config->ra_period         = 10 * 60 * 1000; // milliseconds
-    config->heartbeat_period  = 12 * 1000;
-    config->heartbeat_timeout = 3 * 1000;
+    config->heartbeat_period  = 5 * 60 * 1000;
+    config->heartbeat_timeout = 15 * 1000;
 
     config->xtt_enable      = 0;
     config->xtt_remote_port = "444";

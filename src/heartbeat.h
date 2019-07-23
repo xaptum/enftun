@@ -42,6 +42,7 @@ struct enftun_heartbeat
     uv_timer_t reply_timer;
     int heartbeat_timeout;
 
+    bool hb_sending;
     bool hb_inflight;
     bool hb_scheduled;
 

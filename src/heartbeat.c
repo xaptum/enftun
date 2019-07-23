@@ -35,15 +35,19 @@ send_heartbeat(struct enftun_heartbeat* heartbeat);
 static void
 on_write(struct enftun_crb* crb)
 {
+    struct enftun_heartbeat* heartbeat = crb->context;
     if (crb->status)
         enftun_log_error("PING: failed to send heartbeat reply: %d\n",
                          crb->status);
+
+    heartbeat->hb_sending = false;
 }
 
 static void
 send_heartbeat(struct enftun_heartbeat* heartbeat)
 {
     heartbeat->hb_scheduled = false;
+    heartbeat->hb_sending   = true;
     heartbeat->hb_inflight  = true;
 
     enftun_log_debug("Ping.....");
@@ -62,7 +66,7 @@ schedule_heartbeat(struct enftun_heartbeat* heartbeat)
 {
     heartbeat->hb_scheduled = true;
 
-    if (!heartbeat->hb_inflight)
+    if (!heartbeat->hb_inflight && !heartbeat->hb_sending)
         send_heartbeat(heartbeat);
 }
 
@@ -77,6 +81,7 @@ static void
 on_reply_timer(uv_timer_t* timer)
 {
     struct enftun_heartbeat* heartbeat = timer->data;
+    heartbeat->hb_inflight             = false;
     heartbeat->on_timeout(heartbeat->data);
     return;
 }
@@ -93,7 +98,7 @@ enftun_heartbeat_start(struct enftun_heartbeat* heartbeat)
 int
 enftun_heartbeat_restart(struct enftun_heartbeat* heartbeat)
 {
-    if (!heartbeat->hb_inflight)
+    if (!heartbeat->hb_inflight && !heartbeat->hb_sending)
     {
         enftun_heartbeat_stop(heartbeat);
         uv_timer_start(&heartbeat->request_timer, on_request_timer,
@@ -116,7 +121,7 @@ enftun_heartbeat_stop(struct enftun_heartbeat* heartbeat)
     uv_timer_stop(&heartbeat->request_timer);
     uv_timer_stop(&heartbeat->reply_timer);
 
-    if (heartbeat->hb_inflight)
+    if (heartbeat->hb_sending)
         enftun_crb_cancel(&heartbeat->reply_crb);
 
     return 0;
@@ -182,6 +187,7 @@ enftun_heartbeat_init(struct enftun_heartbeat* heartbeat,
     heartbeat->heartbeat_timeout = hb_timeout;
 
     heartbeat->hb_scheduled = false;
+    heartbeat->hb_sending   = false;
     heartbeat->hb_inflight  = false;
 
     heartbeat->on_timeout = on_timeout;

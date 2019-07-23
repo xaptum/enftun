@@ -39,7 +39,7 @@ struct enftun_ndp
     struct enftun_packet ra_pkt;
     struct enftun_crb ra_crb;
 
-    bool ra_inflight;
+    bool ra_sending;
     bool ra_scheduled;
 };
 
