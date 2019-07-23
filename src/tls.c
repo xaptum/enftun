@@ -44,8 +44,14 @@ enftun_tls_init(struct enftun_tls* tls, int mark)
         goto out;
     }
 
+#ifdef USE_PSOCK
+    (void) mark;
+    enftun_tcp_psock_init(&tls->sock_psock);
+    tls->sock = &tls->sock_psock.base;
+#else
     enftun_tcp_native_init(&tls->sock_native, mark);
     tls->sock = &tls->sock_native.base;
+#endif
 
     tls->need_provision = 0;
 

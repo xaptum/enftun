@@ -39,7 +39,9 @@ trigger_reconnect(struct enftun_conn_state* conn_state);
 static void
 start_all(struct enftun_context* ctx)
 {
+#ifndef USE_PSOCK
     enftun_conn_state_start(&ctx->conn_state, &ctx->tls);
+#endif
     enftun_chain_start(&ctx->ingress, chain_complete);
     enftun_chain_start(&ctx->egress, chain_complete);
     enftun_ndp_start(&ctx->ndp);
@@ -53,7 +55,9 @@ stop_all(struct enftun_context* ctx)
     enftun_ndp_stop(&ctx->ndp);
     enftun_chain_stop(&ctx->ingress);
     enftun_chain_stop(&ctx->egress);
+#ifndef USE_PSOCK
     enftun_conn_state_stop(&ctx->conn_state);
+#endif
 
     enftun_log_info("Stopped.\n");
 }
@@ -225,10 +229,12 @@ enftun_connect(struct enftun_context* ctx)
             goto out;
     }
 
+#ifndef USE_PSOCK
     if ((rc = enftun_conn_state_prepare(&ctx->conn_state, &ctx->loop,
                                         trigger_reconnect, (void*) ctx,
                                         ctx->config.fwmark)) < 0)
         goto out;
+#endif
 
     if ((rc = enftun_tls_connect(&ctx->tls, ctx->config.remote_hosts,
                                  ctx->config.remote_port)) < 0)
@@ -252,7 +258,9 @@ close_tls:
     enftun_tls_disconnect(&ctx->tls);
 
 close_conn_state:
+#ifndef USE_PSOCK
     enftun_conn_state_close(&ctx->conn_state);
+#endif
 
 out:
     return rc;

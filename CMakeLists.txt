@@ -9,6 +9,7 @@ project(enftun
 
 option(BUILD_CACERT  "Install the the ENF ca cert" ON)
 option(BUILD_EXAMPLE "Build and install example configs" ON)
+option(BUILD_PSOCK   "Build with psock support" OFF)
 option(BUILD_SYSTEMD "Build with systemd support" ON)
 option(BUILD_TEST    "Build tests" ON)
 option(BUILD_XTT     "Build with XTT support" ON)
@@ -25,6 +26,10 @@ if(BUILD_XTT)
     add_definitions(-DUSE_XTT)
     find_package(sodium REQUIRED QUIET 1.0.11)
     find_package(xtt COMPONENTS tpm REQUIRED QUIET 0.10.4)
+endif()
+
+if(BUILD_PSOCK)
+    add_definitions(-DUSE_PSOCK)
 endif()
 
 add_compile_options(-std=c99 -Wall -Wextra -Wno-missing-field-initializers)
@@ -65,6 +70,10 @@ set(ENFTUN_SRCS
 
 if(BUILD_XTT)
     list(APPEND ENFTUN_SRCS src/xtt.c)
+endif()
+
+if(BUILD_PSOCK)
+    list(APPEND ENFTUN_SRCS src/tcp_psock.c)
 endif()
 
 add_executable(enftun ${ENFTUN_SRCS})
