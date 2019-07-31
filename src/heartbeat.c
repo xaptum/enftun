@@ -67,7 +67,7 @@ on_reply_timer(uv_timer_t* timer)
     struct enftun_heartbeat* heartbeat = timer->data;
     if (!heartbeat->reply_recieved)
     {
-        heartbeat->on_timeout(heartbeat);
+        heartbeat->on_timeout(heartbeat->data);
         return;
     }
 
@@ -149,7 +149,7 @@ enftun_heartbeat_init(struct enftun_heartbeat* heartbeat,
                       uv_loop_t* loop,
                       struct enftun_channel* chan,
                       const struct in6_addr* ipv6,
-                      void (*on_timeout)(struct enftun_heartbeat* hb),
+                      void (*on_timeout)(void* data),
                       void* cb_ctx,
                       int hb_period,
                       int hb_timeout)

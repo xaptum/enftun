@@ -33,8 +33,6 @@
 
 static void
 chain_complete(struct enftun_chain* chain, int status);
-static void
-trigger_reconnect(struct enftun_conn_state* conn_state);
 
 static void
 start_all(struct enftun_context* ctx)
@@ -70,16 +68,9 @@ chain_complete(struct enftun_chain* chain, int status __attribute__((unused)))
 }
 
 static void
-trigger_reconnect(struct enftun_conn_state* conn_state)
+trigger_reconnect(void* data)
 {
-    struct enftun_context* ctx = (struct enftun_context*) conn_state->data;
-    stop_all(ctx);
-}
-
-static void
-ping_reconnect(struct enftun_heartbeat* heartbeat)
-{
-    struct enftun_context* ctx = (struct enftun_context*) heartbeat->data;
+    struct enftun_context* ctx = (struct enftun_context*) data;
     stop_all(ctx);
 }
 
@@ -245,8 +236,8 @@ enftun_connect(struct enftun_context* ctx)
     if ((rc = enftun_conn_state_prepare(
                   &ctx->conn_state, &ctx->loop, trigger_reconnect, (void*) ctx,
                   ctx->config.fwmark, &ctx->tlschan, &ctx->ipv6,
-                  ctx->config.heartbeat_period, ctx->config.heartbeat_timeout,
-                  ping_reconnect) < 0))
+                  ctx->config.heartbeat_period,
+                  ctx->config.heartbeat_timeout) < 0))
         goto out;
 #endif
 

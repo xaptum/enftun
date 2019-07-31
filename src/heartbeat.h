@@ -44,7 +44,7 @@ struct enftun_heartbeat
     bool hb_inflight;
     bool reply_recieved;
 
-    void (*on_timeout)(struct enftun_heartbeat* heartbeat);
+    void (*on_timeout)(void* data);
     void* data;
 };
 
@@ -60,7 +60,7 @@ enftun_heartbeat_init(struct enftun_heartbeat* heartbeat,
                       uv_loop_t* loop,
                       struct enftun_channel* chan,
                       const struct in6_addr* ipv6,
-                      void (*on_timeout)(struct enftun_heartbeat* hb),
+                      void (*on_timeout)(void* data),
                       void* cb_ctx,
                       int hb_period,
                       int hb_timeout);

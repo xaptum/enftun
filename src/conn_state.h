@@ -28,12 +28,9 @@
 
 struct enftun_conn_state;
 
-typedef void (*enftun_conn_state_reconnect)(
-    struct enftun_conn_state* conn_state);
-
 struct enftun_conn_state
 {
-    enftun_conn_state_reconnect reconnect_cb;
+    void (*reconnect_cb)(void* data);
     void* data; // data for reconnect callback
 
     uv_poll_t poll;
@@ -56,14 +53,13 @@ enftun_conn_state_stop(struct enftun_conn_state* conn_state);
 int
 enftun_conn_state_prepare(struct enftun_conn_state* conn_state,
                           uv_loop_t* loop,
-                          enftun_conn_state_reconnect cb,
+                          void (*cb)(void* data),
                           void* cb_ctx,
                           int mark,
                           struct enftun_channel* chan,
                           struct in6_addr* ipv6,
                           int hb_period,
-                          int hb_timeout,
-                          void (*on_timeout)(struct enftun_heartbeat* hb));
+                          int hb_timeout);
 
 int
 enftun_conn_state_close(struct enftun_conn_state* conn_state);

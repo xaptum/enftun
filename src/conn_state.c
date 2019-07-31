@@ -121,7 +121,7 @@ on_poll(uv_poll_t* handle, int status, int events)
         enftun_netlink_read_message(&conn_state->nl, msg_buf, sizeof(msg_buf));
     int rc = check_preferred_route(conn_state);
     if (0 != rc)
-        conn_state->reconnect_cb(conn_state);
+        conn_state->reconnect_cb(conn_state->data);
     else
     {
         rc = parse_netlink_message(&conn_state->nl, bytes);
@@ -161,14 +161,13 @@ enftun_conn_state_stop(struct enftun_conn_state* conn_state)
 int
 enftun_conn_state_prepare(struct enftun_conn_state* conn_state,
                           uv_loop_t* loop,
-                          enftun_conn_state_reconnect cb,
+                          void (*cb)(void* data),
                           void* cb_ctx,
                           int mark,
                           struct enftun_channel* chan,
                           struct in6_addr* ipv6,
                           int hb_period,
-                          int hb_timeout,
-                          void (*on_timeout)(struct enftun_heartbeat* hb))
+                          int hb_timeout)
 {
     conn_state->poll.data    = conn_state;
     conn_state->reconnect_cb = cb;
@@ -177,8 +176,8 @@ enftun_conn_state_prepare(struct enftun_conn_state* conn_state,
 
     enftun_netlink_connect(&conn_state->nl);
 
-    enftun_heartbeat_init(&conn_state->heartbeat, loop, chan, ipv6, on_timeout,
-                          cb_ctx, hb_period, hb_timeout);
+    enftun_heartbeat_init(&conn_state->heartbeat, loop, chan, ipv6, cb, cb_ctx,
+                          hb_period, hb_timeout);
 
     int rc = uv_poll_init(loop, &conn_state->poll, conn_state->nl.fd);
     if (0 != rc)
