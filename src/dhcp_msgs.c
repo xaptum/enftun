@@ -19,6 +19,8 @@
 #include <stdbool.h>
 #include <string.h>
 
+#define DHCP6_ONE_YEAR 31536000
+
 static void*
 dhcp6_find_option(struct enftun_packet* pkt, uint16_t code, uint16_t* len)
 {
@@ -126,13 +128,15 @@ enftun_dhcp6_advertise(struct enftun_packet* pkt,
 
     if (ctx->iaid && caddr)
     {
-        struct dhcp6_option* ia_na =
-            enftun_dhcp6_ia_na_start(pkt, ctx->iaid, 0xFFFFFFF, 0xFFFFFFF);
+        // Set T1 and T2 to .5 and .8 times preferred lifetime, per RFC 3315
+        // Section 22.4
+        struct dhcp6_option* ia_na = enftun_dhcp6_ia_na_start(
+            pkt, ctx->iaid, 0.5 * DHCP6_ONE_YEAR, 0.8 * DHCP6_ONE_YEAR);
         if (!ia_na)
             return NULL;
 
-        struct dhcp6_option* iaaddr =
-            enftun_dhcp6_iaaddr_start(pkt, caddr, 0xFFFFFFFF, 0xFFFFFFFF);
+        struct dhcp6_option* iaaddr = enftun_dhcp6_iaaddr_start(
+            pkt, caddr, DHCP6_ONE_YEAR, DHCP6_ONE_YEAR);
         if (!iaaddr)
             return NULL;
 
@@ -157,13 +161,15 @@ enftun_dhcp6_reply(struct enftun_packet* pkt,
     if (!enftun_dhcp6_serverid(pkt, ctx->sid, ctx->sidlen))
         return NULL;
 
-    struct dhcp6_option* ia_na =
-        enftun_dhcp6_ia_na_start(pkt, ctx->iaid, 0xFFFFFFF, 0xFFFFFFF);
+    // Set T1 and T2 to .5 and .8 times preferred lifetime, per RFC 3315
+    // Section 22.4
+    struct dhcp6_option* ia_na = enftun_dhcp6_ia_na_start(
+        pkt, ctx->iaid, 0.5 * DHCP6_ONE_YEAR, 0.8 * DHCP6_ONE_YEAR);
     if (!ia_na)
         return NULL;
 
     struct dhcp6_option* iaaddr =
-        enftun_dhcp6_iaaddr_start(pkt, caddr, 0xFFFFFFFF, 0xFFFFFFFF);
+        enftun_dhcp6_iaaddr_start(pkt, caddr, DHCP6_ONE_YEAR, DHCP6_ONE_YEAR);
     if (!iaaddr)
         return NULL;
     enftun_dhcp6_iaaddr_finish(pkt, iaaddr);
