@@ -32,6 +32,22 @@
 
 #define get_sin_port(addr) (((struct sockaddr_in*) addr->ai_addr)->sin_port)
 
+void
+enftun_tcp_native_init(struct enftun_tcp_native* ctx,
+                       struct enftun_tcp* sock,
+                       int mark)
+{
+    ctx->socket = *sock;
+
+    ctx->socket.ops.connect     = (int (*)(void*, const char* host,
+                                       const char*)) enftun_tcp_native_connect;
+    ctx->socket.ops.connect_any = (int (*)(
+        void*, const char** host, const char*)) enftun_tcp_native_connect_any;
+    ctx->socket.ops.close       = (void (*)(void*)) enftun_tcp_native_close;
+
+    ctx->fwmark = mark;
+}
+
 static int
 do_connect(struct enftun_tcp* tcp, int mark, struct addrinfo* addr)
 {
@@ -122,10 +138,9 @@ out:
 }
 
 int
-enftun_tcp_connect(struct enftun_tcp* tcp,
-                   int mark,
-                   const char* host,
-                   const char* port)
+enftun_tcp_native_connect(struct enftun_tcp_native* ctx,
+                          const char* host,
+                          const char* port)
 {
     int rc;
     struct addrinfo *addr_h, *addr, hints;
@@ -147,7 +162,7 @@ enftun_tcp_connect(struct enftun_tcp* tcp,
 
     for (addr = addr_h; addr != NULL; addr = addr->ai_next)
     {
-        rc = do_connect(tcp, mark, addr);
+        rc = do_connect(&ctx->socket, ctx->fwmark, addr);
         if (rc == 0)
             break;
     }
@@ -155,8 +170,8 @@ enftun_tcp_connect(struct enftun_tcp* tcp,
     if (addr != NULL)
     {
         socklen_t length = MAX_SOCKADDR_LEN;
-        getsockname(tcp->fd, &tcp->local_addr, &length);
-        getpeername(tcp->fd, &tcp->remote_addr, &length);
+        getsockname(ctx->socket.fd, &ctx->socket.local_addr, &length);
+        getpeername(ctx->socket.fd, &ctx->socket.remote_addr, &length);
     }
 
     freeaddrinfo(addr_h);
@@ -166,17 +181,16 @@ out:
 }
 
 int
-enftun_tcp_connect_any(struct enftun_tcp* tcp,
-                       int mark,
-                       const char** hosts,
-                       const char* port)
+enftun_tcp_native_connect_any(struct enftun_tcp_native* ctx,
+                              const char** hosts,
+                              const char* port)
 {
     int rc = 0;
     const char* host;
 
     for (host = *hosts; host != NULL; host = *++hosts)
     {
-        rc = enftun_tcp_connect(tcp, mark, host, port);
+        rc = enftun_tcp_native_connect(ctx, host, port);
         if (rc == 0)
             break;
     }
@@ -185,9 +199,9 @@ enftun_tcp_connect_any(struct enftun_tcp* tcp,
 }
 
 void
-enftun_tcp_close(struct enftun_tcp* tcp)
+enftun_tcp_native_close(struct enftun_tcp_native* ctx)
 {
-    if (tcp->fd)
-        close(tcp->fd);
-    tcp->fd = 0;
+    if (ctx->socket.fd)
+        close(ctx->socket.fd);
+    ctx->socket.fd = 0;
 }

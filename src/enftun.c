@@ -124,7 +124,7 @@ enftun_tunnel(struct enftun_context* ctx)
     int rc;
 
     rc = enftun_channel_init(&ctx->tlschan, &enftun_tls_ops, &ctx->tls,
-                             &ctx->loop, ctx->tls.sock.fd);
+                             &ctx->loop, ctx->tls.tcp_ctx.socket.fd);
     if (rc < 0)
         goto out;
 
@@ -230,8 +230,7 @@ enftun_connect(struct enftun_context* ctx)
                                         ctx->config.fwmark)) < 0)
         goto out;
 
-    if ((rc = enftun_tls_connect(&ctx->tls, ctx->config.fwmark,
-                                 ctx->config.remote_hosts,
+    if ((rc = enftun_tls_connect(&ctx->tls, ctx->config.remote_hosts,
                                  ctx->config.remote_port)) < 0)
         goto close_conn_state;
 

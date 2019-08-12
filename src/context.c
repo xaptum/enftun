@@ -61,7 +61,7 @@ enftun_context_init(struct enftun_context* ctx)
     if (rc < 0)
         goto free_config;
 
-    rc = enftun_tls_init(&ctx->tls);
+    rc = enftun_tls_init(&ctx->tls, ctx->config.fwmark);
     if (rc < 0)
         goto free_conn_state;
 
