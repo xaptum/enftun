@@ -30,6 +30,9 @@ static void
 on_reply_timer(uv_timer_t* timer);
 
 static void
+send_heartbeat(struct enftun_heartbeat* heartbeat);
+
+static void
 on_write(struct enftun_crb* crb)
 {
     if (crb->status)
@@ -40,13 +43,14 @@ on_write(struct enftun_crb* crb)
 static void
 send_heartbeat(struct enftun_heartbeat* heartbeat)
 {
-    heartbeat->hb_inflight    = true;
-    heartbeat->reply_recieved = false;
+    heartbeat->hb_scheduled = false;
+    heartbeat->hb_inflight  = true;
+
     enftun_log_debug("Ping.....");
 
     enftun_packet_reset(&heartbeat->reply_pkt);
-    enftun_icmp6_echo_request(&heartbeat->reply_pkt, heartbeat->addr,
-                              &ip6_all_routers);
+    enftun_icmp6_echo_request(&heartbeat->reply_pkt, heartbeat->source_addr,
+                              heartbeat->dest_addr);
     enftun_crb_write(&heartbeat->reply_crb, heartbeat->chan);
 
     uv_timer_start(&heartbeat->reply_timer, on_reply_timer,
@@ -54,28 +58,26 @@ send_heartbeat(struct enftun_heartbeat* heartbeat)
 }
 
 static void
+schedule_heartbeat(struct enftun_heartbeat* heartbeat)
+{
+    heartbeat->hb_scheduled = true;
+
+    if (!heartbeat->hb_inflight)
+        send_heartbeat(heartbeat);
+}
+
+static void
 on_request_timer(uv_timer_t* timer)
 {
     struct enftun_heartbeat* heartbeat = timer->data;
-    if (!heartbeat->hb_inflight)
-        send_heartbeat(heartbeat);
+    schedule_heartbeat(heartbeat);
 }
 
 static void
 on_reply_timer(uv_timer_t* timer)
 {
     struct enftun_heartbeat* heartbeat = timer->data;
-    if (!heartbeat->reply_recieved)
-    {
-        heartbeat->on_timeout(heartbeat->data);
-        return;
-    }
-
-    heartbeat->hb_inflight = false;
-    enftun_log_info("Recieved ping reply\n");
-
-    uv_timer_start(&heartbeat->request_timer, on_request_timer,
-                   heartbeat->heartbeat_period, 0);
+    heartbeat->on_timeout(heartbeat->data);
     return;
 }
 
@@ -104,8 +106,7 @@ enftun_heartbeat_restart(struct enftun_heartbeat* heartbeat)
 int
 enftun_heartbeat_now(struct enftun_heartbeat* heartbeat)
 {
-    if (!heartbeat->hb_inflight)
-        send_heartbeat(heartbeat);
+    schedule_heartbeat(heartbeat);
     return 0;
 }
 
@@ -127,7 +128,7 @@ enftun_heartbeat_handle_packet(struct enftun_heartbeat* heartbeat,
 {
     ENFTUN_SAVE_INIT(pkt);
 
-    struct ip6_hdr* iph = enftun_ip6_pull_if_dest(pkt, heartbeat->addr);
+    struct ip6_hdr* iph = enftun_ip6_pull_if_dest(pkt, heartbeat->source_addr);
     if (!iph)
         goto pass;
 
@@ -135,7 +136,17 @@ enftun_heartbeat_handle_packet(struct enftun_heartbeat* heartbeat,
     if (!icmph)
         goto pass;
 
-    heartbeat->reply_recieved = true;
+    heartbeat->hb_inflight = false;
+
+    enftun_log_debug("Received ping reply\n");
+
+    if (heartbeat->hb_scheduled)
+    {
+        enftun_heartbeat_stop(heartbeat);
+        send_heartbeat(heartbeat);
+    }
+    else
+        enftun_heartbeat_restart(heartbeat);
 
     return 0;
 
@@ -148,7 +159,8 @@ int
 enftun_heartbeat_init(struct enftun_heartbeat* heartbeat,
                       uv_loop_t* loop,
                       struct enftun_channel* chan,
-                      const struct in6_addr* ipv6,
+                      const struct in6_addr* source,
+                      const struct in6_addr* dest,
                       void (*on_timeout)(void* data),
                       void* cb_ctx,
                       int hb_period,
@@ -156,7 +168,8 @@ enftun_heartbeat_init(struct enftun_heartbeat* heartbeat,
 {
     heartbeat->chan = chan;
 
-    heartbeat->addr = ipv6;
+    heartbeat->source_addr = source;
+    heartbeat->dest_addr   = dest;
 
     heartbeat->reply_crb.context  = heartbeat;
     heartbeat->reply_crb.packet   = &heartbeat->reply_pkt;
@@ -168,8 +181,8 @@ enftun_heartbeat_init(struct enftun_heartbeat* heartbeat,
     heartbeat->reply_timer.data  = heartbeat;
     heartbeat->heartbeat_timeout = hb_timeout;
 
-    heartbeat->hb_inflight    = false;
-    heartbeat->reply_recieved = false;
+    heartbeat->hb_scheduled = false;
+    heartbeat->hb_inflight  = false;
 
     heartbeat->on_timeout = on_timeout;
     heartbeat->data       = cb_ctx;

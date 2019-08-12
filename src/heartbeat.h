@@ -30,7 +30,8 @@ struct enftun_heartbeat
 {
     struct enftun_channel* chan;
 
-    const struct in6_addr* addr;
+    const struct in6_addr* source_addr;
+    const struct in6_addr* dest_addr;
 
     struct enftun_packet reply_pkt;
     struct enftun_crb reply_crb;
@@ -42,7 +43,7 @@ struct enftun_heartbeat
     int heartbeat_timeout;
 
     bool hb_inflight;
-    bool reply_recieved;
+    bool hb_scheduled;
 
     void (*on_timeout)(void* data);
     void* data;
@@ -59,7 +60,8 @@ int
 enftun_heartbeat_init(struct enftun_heartbeat* heartbeat,
                       uv_loop_t* loop,
                       struct enftun_channel* chan,
-                      const struct in6_addr* ipv6,
+                      const struct in6_addr* source,
+                      const struct in6_addr* dest,
                       void (*on_timeout)(void* data),
                       void* cb_ctx,
                       int hb_period,

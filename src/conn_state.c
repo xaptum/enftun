@@ -165,7 +165,8 @@ enftun_conn_state_prepare(struct enftun_conn_state* conn_state,
                           void* cb_ctx,
                           int mark,
                           struct enftun_channel* chan,
-                          struct in6_addr* ipv6,
+                          const struct in6_addr* source,
+                          const struct in6_addr* dest,
                           int hb_period,
                           int hb_timeout)
 {
@@ -176,8 +177,8 @@ enftun_conn_state_prepare(struct enftun_conn_state* conn_state,
 
     enftun_netlink_connect(&conn_state->nl);
 
-    enftun_heartbeat_init(&conn_state->heartbeat, loop, chan, ipv6, cb, cb_ctx,
-                          hb_period, hb_timeout);
+    enftun_heartbeat_init(&conn_state->heartbeat, loop, chan, source, dest, cb,
+                          cb_ctx, hb_period, hb_timeout);
 
     int rc = uv_poll_init(loop, &conn_state->poll, conn_state->nl.fd);
     if (0 != rc)

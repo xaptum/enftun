@@ -24,6 +24,7 @@
 #include "context.h"
 #include "dhcp.h"
 #include "filter.h"
+#include "ip.h"
 #include "log.h"
 #include "ndp.h"
 #include "tls.h"
@@ -235,7 +236,7 @@ enftun_connect(struct enftun_context* ctx)
 #ifndef USE_PSOCK
     if ((rc = enftun_conn_state_prepare(
                   &ctx->conn_state, &ctx->loop, trigger_reconnect, (void*) ctx,
-                  ctx->config.fwmark, &ctx->tlschan, &ctx->ipv6,
+                  ctx->config.fwmark, &ctx->tlschan, &ctx->ipv6, &ip6_self,
                   ctx->config.heartbeat_period,
                   ctx->config.heartbeat_timeout) < 0))
         goto out;

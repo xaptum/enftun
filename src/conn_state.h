@@ -57,7 +57,8 @@ enftun_conn_state_prepare(struct enftun_conn_state* conn_state,
                           void* cb_ctx,
                           int mark,
                           struct enftun_channel* chan,
-                          struct in6_addr* ipv6,
+                          const struct in6_addr* source,
+                          const struct in6_addr* dest,
                           int hb_period,
                           int hb_timeout);
 
