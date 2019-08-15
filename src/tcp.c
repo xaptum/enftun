@@ -32,6 +32,20 @@
 
 #define get_sin_port(addr) (((struct sockaddr_in*) addr->ai_addr)->sin_port)
 
+static struct enftun_tcp_ops enftun_tcp_native_ops = {
+    .connect = (int (*)(void*, const char* host, const char*))
+        enftun_tcp_native_connect,
+    .connect_any =
+        (int (*)(void*, const char** host, const char*)) enftun_tcp_connect_any,
+    .close = (void (*)(void*)) enftun_tcp_close};
+
+void
+enftun_tcp_native_init(struct enftun_tcp_native* tcp, int mark)
+{
+    tcp->base.ops = enftun_tcp_native_ops;
+    tcp->fwmark   = mark;
+}
+
 static int
 do_connect(struct enftun_tcp* tcp, int mark, struct addrinfo* addr)
 {
@@ -122,10 +136,9 @@ out:
 }
 
 int
-enftun_tcp_connect(struct enftun_tcp* tcp,
-                   int mark,
-                   const char* host,
-                   const char* port)
+enftun_tcp_native_connect(struct enftun_tcp_native* tcp,
+                          const char* host,
+                          const char* port)
 {
     int rc;
     struct addrinfo *addr_h, *addr, hints;
@@ -147,7 +160,7 @@ enftun_tcp_connect(struct enftun_tcp* tcp,
 
     for (addr = addr_h; addr != NULL; addr = addr->ai_next)
     {
-        rc = do_connect(tcp, mark, addr);
+        rc = do_connect(&tcp->base, tcp->fwmark, addr);
         if (rc == 0)
             break;
     }
@@ -155,8 +168,8 @@ enftun_tcp_connect(struct enftun_tcp* tcp,
     if (addr != NULL)
     {
         socklen_t length = MAX_SOCKADDR_LEN;
-        getsockname(tcp->fd, &tcp->local_addr, &length);
-        getpeername(tcp->fd, &tcp->remote_addr, &length);
+        getsockname(tcp->base.fd, &tcp->base.local_addr, &length);
+        getpeername(tcp->base.fd, &tcp->base.remote_addr, &length);
     }
 
     freeaddrinfo(addr_h);
@@ -167,7 +180,6 @@ out:
 
 int
 enftun_tcp_connect_any(struct enftun_tcp* tcp,
-                       int mark,
                        const char** hosts,
                        const char* port)
 {
@@ -176,7 +188,7 @@ enftun_tcp_connect_any(struct enftun_tcp* tcp,
 
     for (host = *hosts; host != NULL; host = *++hosts)
     {
-        rc = enftun_tcp_connect(tcp, mark, host, port);
+        rc = tcp->ops.connect(tcp, host, port);
         if (rc == 0)
             break;
     }

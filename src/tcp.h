@@ -23,6 +23,13 @@
 
 #define MAX_SOCKADDR_LEN sizeof(struct sockaddr_in6)
 
+struct enftun_tcp_ops
+{
+    int (*connect)(void* ctx, const char* host, const char* port);
+    int (*connect_any)(void* ctx, const char** host, const char* port);
+    void (*close)(void* ctx);
+};
+
 struct enftun_tcp
 {
     int fd; // file descriptor for the underlying TCP socket
@@ -35,17 +42,26 @@ struct enftun_tcp
         struct sockaddr remote_addr;
         char _remote_addr_pad[MAX_SOCKADDR_LEN];
     };
+
+    struct enftun_tcp_ops ops;
 };
 
+struct enftun_tcp_native
+{
+    struct enftun_tcp base;
+    int fwmark;
+};
+
+void
+enftun_tcp_native_init(struct enftun_tcp_native* ctx, int mark);
+
 int
-enftun_tcp_connect(struct enftun_tcp* tcp,
-                   int mark,
-                   const char* host,
-                   const char* port);
+enftun_tcp_native_connect(struct enftun_tcp_native* tcp,
+                          const char* host,
+                          const char* port);
 
 int
 enftun_tcp_connect_any(struct enftun_tcp* tcp,
-                       int mark,
                        const char** hosts,
                        const char* port);
 

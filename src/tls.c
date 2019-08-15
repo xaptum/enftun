@@ -32,7 +32,7 @@ struct enftun_channel_ops enftun_tls_ops = {
     .pending = (int (*)(void*)) enftun_tls_pending};
 
 int
-enftun_tls_init(struct enftun_tls* tls)
+enftun_tls_init(struct enftun_tls* tls, int mark)
 {
     int rc = 0;
 
@@ -43,6 +43,9 @@ enftun_tls_init(struct enftun_tls* tls)
         rc = -1;
         goto out;
     }
+
+    enftun_tcp_native_init(&tls->sock_native, mark);
+    tls->sock = &tls->sock_native.base;
 
     tls->need_provision = 0;
 
@@ -121,10 +124,10 @@ enftun_tls_handshake(struct enftun_tls* tls)
         goto free_ssl;
     }
 
-    if (!SSL_set_fd(tls->ssl, tls->sock.fd))
+    if (!SSL_set_fd(tls->ssl, tls->sock->fd))
     {
         enftun_log_ssl_error("Failed to set SSL file descriptor (%d):",
-                             tls->sock.fd);
+                             tls->sock->fd);
         goto free_ssl;
     }
 
@@ -167,20 +170,17 @@ out:
 }
 
 int
-enftun_tls_connect(struct enftun_tls* tls,
-                   int mark,
-                   const char** hosts,
-                   const char* port)
+enftun_tls_connect(struct enftun_tls* tls, const char** hosts, const char* port)
 {
     int rc;
 
-    rc = enftun_tcp_connect_any(&tls->sock, mark, hosts, port);
+    rc = tls->sock->ops.connect_any(tls->sock, hosts, port);
     if (rc < 0)
         goto out;
 
     rc = enftun_tls_handshake(tls);
     if (rc < 0)
-        enftun_tcp_close(&tls->sock);
+        tls->sock->ops.close(tls->sock);
 
 out:
     return rc;
@@ -208,7 +208,7 @@ enftun_tls_disconnect(struct enftun_tls* tls)
         }
     }
 
-    enftun_tcp_close(&tls->sock);
+    tls->sock->ops.close(tls->sock);
     SSL_free(tls->ssl);
 
     return 0;
