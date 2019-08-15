@@ -33,16 +33,15 @@
 static int
 check_preferred_route(struct enftun_conn_state* conn_state)
 {
-    int rc =
-        enftun_udp_connect_addr(&conn_state->udp, conn_state->mark,
-                                &conn_state->conn->tcp_ctx.base.remote_addr);
+    int rc = enftun_udp_connect_addr(&conn_state->udp, conn_state->mark,
+                                     &conn_state->conn->sock->remote_addr);
     if (0 != rc)
         return rc;
 
     enftun_udp_close(&conn_state->udp);
 
     rc = enftun_sockaddr_equal(&conn_state->udp.local_addr,
-                               &conn_state->conn->tcp_ctx.base.local_addr);
+                               &conn_state->conn->sock->local_addr);
 
     return rc;
 }

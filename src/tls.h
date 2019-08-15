@@ -31,7 +31,7 @@
 struct enftun_tls
 {
     struct enftun_tcp* sock; // the underlying TCP socket
-    struct enftun_tcp_native tcp_ctx;
+    struct enftun_tcp_native sock_native;
 
     int mark; // mark to apply to tunnel packets. 0 to disable
 

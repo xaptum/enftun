@@ -53,9 +53,7 @@ struct enftun_tcp_native
 };
 
 void
-enftun_tcp_native_init(struct enftun_tcp_native* ctx,
-                       struct enftun_tcp* sock,
-                       int mark);
+enftun_tcp_native_init(struct enftun_tcp_native* ctx, int mark);
 
 int
 enftun_tcp_native_connect(struct enftun_tcp_native* tcp,
@@ -63,11 +61,11 @@ enftun_tcp_native_connect(struct enftun_tcp_native* tcp,
                           const char* port);
 
 int
-enftun_tcp_native_connect_any(struct enftun_tcp_native* tcp,
-                              const char** hosts,
-                              const char* port);
+enftun_tcp_connect_any(struct enftun_tcp* tcp,
+                       const char** hosts,
+                       const char* port);
 
 void
-enftun_tcp_native_close(struct enftun_tcp_native* tcp);
+enftun_tcp_close(struct enftun_tcp* tcp);
 
 #endif
