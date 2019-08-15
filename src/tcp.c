@@ -32,20 +32,22 @@
 
 #define get_sin_port(addr) (((struct sockaddr_in*) addr->ai_addr)->sin_port)
 
+static struct enftun_tcp_ops enftun_tcp_native_ops = {
+    .connect = (int (*)(void*, const char* host, const char*))
+        enftun_tcp_native_connect,
+    .connect_any = (int (*)(void*, const char** host, const char*))
+        enftun_tcp_native_connect_any,
+    .close = (void (*)(void*)) enftun_tcp_native_close};
+
 void
 enftun_tcp_native_init(struct enftun_tcp_native* ctx,
                        struct enftun_tcp* sock,
                        int mark)
 {
-    ctx->socket = *sock;
-
-    ctx->socket.ops.connect     = (int (*)(void*, const char* host,
-                                       const char*)) enftun_tcp_native_connect;
-    ctx->socket.ops.connect_any = (int (*)(
-        void*, const char** host, const char*)) enftun_tcp_native_connect_any;
-    ctx->socket.ops.close       = (void (*)(void*)) enftun_tcp_native_close;
-
-    ctx->fwmark = mark;
+    sock = &ctx->base;
+    (void) sock;
+    ctx->base.ops = enftun_tcp_native_ops;
+    ctx->fwmark   = mark;
 }
 
 static int
@@ -162,7 +164,7 @@ enftun_tcp_native_connect(struct enftun_tcp_native* ctx,
 
     for (addr = addr_h; addr != NULL; addr = addr->ai_next)
     {
-        rc = do_connect(&ctx->socket, ctx->fwmark, addr);
+        rc = do_connect(&ctx->base, ctx->fwmark, addr);
         if (rc == 0)
             break;
     }
@@ -170,8 +172,8 @@ enftun_tcp_native_connect(struct enftun_tcp_native* ctx,
     if (addr != NULL)
     {
         socklen_t length = MAX_SOCKADDR_LEN;
-        getsockname(ctx->socket.fd, &ctx->socket.local_addr, &length);
-        getpeername(ctx->socket.fd, &ctx->socket.remote_addr, &length);
+        getsockname(ctx->base.fd, &ctx->base.local_addr, &length);
+        getpeername(ctx->base.fd, &ctx->base.remote_addr, &length);
     }
 
     freeaddrinfo(addr_h);
@@ -201,7 +203,7 @@ enftun_tcp_native_connect_any(struct enftun_tcp_native* ctx,
 void
 enftun_tcp_native_close(struct enftun_tcp_native* ctx)
 {
-    if (ctx->socket.fd)
-        close(ctx->socket.fd);
-    ctx->socket.fd = 0;
+    if (ctx->base.fd)
+        close(ctx->base.fd);
+    ctx->base.fd = 0;
 }

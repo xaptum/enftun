@@ -48,7 +48,7 @@ struct enftun_tcp
 
 struct enftun_tcp_native
 {
-    struct enftun_tcp socket;
+    struct enftun_tcp base;
     int fwmark;
 };
 

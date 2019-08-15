@@ -124,7 +124,7 @@ enftun_tunnel(struct enftun_context* ctx)
     int rc;
 
     rc = enftun_channel_init(&ctx->tlschan, &enftun_tls_ops, &ctx->tls,
-                             &ctx->loop, ctx->tls.tcp_ctx.socket.fd);
+                             &ctx->loop, ctx->tls.tcp_ctx.base.fd);
     if (rc < 0)
         goto out;
 

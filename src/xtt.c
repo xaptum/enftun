@@ -107,7 +107,7 @@ enftun_xtt_handshake(const char** server_hosts,
                      struct enftun_xtt* xtt)
 {
     struct enftun_tcp_native sock;
-    enftun_tcp_native_init(&sock, &sock.socket, mark);
+    enftun_tcp_native_init(&sock, &sock.base, mark);
     int init_daa_ret = -1;
     int ret          = 0;
 
@@ -226,7 +226,7 @@ enftun_xtt_handshake(const char** server_hosts,
     }
 
     // 2) Make TCP connection to server.
-    ret = sock.socket.ops.connect_any(&sock, server_hosts, (char*) server_port);
+    ret = sock.base.ops.connect_any(&sock, server_hosts, (char*) server_port);
     if (ret < 0)
     {
         ret = 1;
@@ -251,7 +251,7 @@ enftun_xtt_handshake(const char** server_hosts,
     }
 
     // 4) Run the identity-provisioning handshake with the server.
-    ret = do_handshake_client(sock.socket.fd, &requested_client_id, &group_ctx,
+    ret = do_handshake_client(sock.base.fd, &requested_client_id, &group_ctx,
                               &ctx, &saved_root_id, &saved_cert);
     if (0 == ret)
     {
@@ -269,7 +269,7 @@ enftun_xtt_handshake(const char** server_hosts,
     }
 
 finish:
-    sock.socket.ops.close(&sock);
+    sock.base.ops.close(&sock);
     xtt_free_tpm_context(&xtt->tpm_ctx);
     if (0 == ret)
     {

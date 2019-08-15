@@ -44,7 +44,7 @@ enftun_tls_init(struct enftun_tls* tls, int mark)
         goto out;
     }
 
-    enftun_tcp_native_init(&tls->tcp_ctx, &tls->tcp_ctx.socket, mark);
+    enftun_tcp_native_init(&tls->tcp_ctx, tls->sock, mark);
 
     tls->need_provision = 0;
 
@@ -123,10 +123,10 @@ enftun_tls_handshake(struct enftun_tls* tls)
         goto free_ssl;
     }
 
-    if (!SSL_set_fd(tls->ssl, tls->tcp_ctx.socket.fd))
+    if (!SSL_set_fd(tls->ssl, tls->tcp_ctx.base.fd))
     {
         enftun_log_ssl_error("Failed to set SSL file descriptor (%d):",
-                             tls->tcp_ctx.socket.fd);
+                             tls->tcp_ctx.base.fd);
         goto free_ssl;
     }
 
@@ -173,13 +173,13 @@ enftun_tls_connect(struct enftun_tls* tls, const char** hosts, const char* port)
 {
     int rc;
 
-    rc = tls->tcp_ctx.socket.ops.connect_any(&tls->tcp_ctx, hosts, port);
+    rc = tls->tcp_ctx.base.ops.connect_any(&tls->tcp_ctx, hosts, port);
     if (rc < 0)
         goto out;
 
     rc = enftun_tls_handshake(tls);
     if (rc < 0)
-        tls->tcp_ctx.socket.ops.close(&tls->sock);
+        tls->tcp_ctx.base.ops.close(&tls->sock);
 
 out:
     return rc;
@@ -207,7 +207,7 @@ enftun_tls_disconnect(struct enftun_tls* tls)
         }
     }
 
-    tls->tcp_ctx.socket.ops.close(&tls->sock);
+    tls->tcp_ctx.base.ops.close(&tls->sock);
     SSL_free(tls->ssl);
 
     return 0;
