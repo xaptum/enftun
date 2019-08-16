@@ -28,10 +28,19 @@
 #include "packet.h"
 #include "tcp.h"
 
+#ifdef USE_PSOCK
+#include "tcp_psock.h"
+#endif
+
 struct enftun_tls
 {
     struct enftun_tcp* sock; // the underlying TCP socket
+
+#ifdef USE_PSOCK
+    struct enftun_tcp_psock sock_psock;
+#else
     struct enftun_tcp_native sock_native;
+#endif
 
     int mark; // mark to apply to tunnel packets. 0 to disable
 

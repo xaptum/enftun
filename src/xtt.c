@@ -106,10 +106,19 @@ enftun_xtt_handshake(const char** server_hosts,
                      const char* basename_in,
                      struct enftun_xtt* xtt)
 {
-    struct enftun_tcp_native sock_native;
     struct enftun_tcp* sock;
-    sock = &sock_native.base;
+
+#ifdef USE_PSOCK
+    (void) mark;
+    struct enftun_tcp_psock sock_psock = {0};
+    enftun_tcp_psock_init(&sock_psock);
+    sock = &sock_psock.base;
+#else
+    struct enftun_tcp_native sock_native = {0};
     enftun_tcp_native_init(&sock_native, mark);
+    sock = &sock_native.base;
+#endif
+
     int init_daa_ret = -1;
     int ret          = 0;
 
