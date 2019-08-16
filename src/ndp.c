@@ -45,7 +45,7 @@ on_write(struct enftun_crb* crb)
     if (crb->status)
         enftun_log_error("ndp: failed to send RA: %d\n", crb->status);
 
-    ndp->ra_inflight = false;
+    ndp->ra_sending = false;
     if (ndp->ra_scheduled)
         send_ra(ndp);
 }
@@ -54,7 +54,7 @@ static void
 send_ra(struct enftun_ndp* ndp)
 {
     ndp->ra_scheduled = false;
-    ndp->ra_inflight  = true;
+    ndp->ra_sending   = true;
 
     enftun_packet_reset(&ndp->ra_pkt);
     enftun_icmp6_nd_ra(&ndp->ra_pkt, &ip6_self, &ip6_all_nodes, &ndp->network,
@@ -71,7 +71,7 @@ schedule_ra(struct enftun_ndp* ndp)
 {
     ndp->ra_scheduled = true;
 
-    if (!ndp->ra_inflight)
+    if (!ndp->ra_sending)
         send_ra(ndp);
 }
 
@@ -93,7 +93,7 @@ enftun_ndp_init(struct enftun_ndp* ndp,
     ndp->ra_period = ra_period;
 
     ndp->ra_scheduled = false;
-    ndp->ra_inflight  = false;
+    ndp->ra_sending   = false;
 
     ndp->ra_crb.context  = ndp;
     ndp->ra_crb.packet   = &ndp->ra_pkt;
@@ -128,7 +128,7 @@ enftun_ndp_stop(struct enftun_ndp* ndp)
 {
     uv_timer_stop(&ndp->timer);
 
-    if (ndp->ra_inflight)
+    if (ndp->ra_sending)
         enftun_crb_cancel(&ndp->ra_crb);
 
     return 0;
