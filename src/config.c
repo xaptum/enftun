@@ -97,7 +97,9 @@ enftun_config_init(struct enftun_config* config)
 
     config->trusted_ifaces = calloc(2, sizeof(char*));
 
-    config->ra_period = 10 * 60 * 1000; // milliseconds
+    config->ra_period         = 10 * 60 * 1000; // milliseconds
+    config->heartbeat_period  = 12 * 1000;
+    config->heartbeat_timeout = 3 * 1000;
 
     config->xtt_enable      = 0;
     config->xtt_remote_port = "444";
@@ -172,6 +174,9 @@ enftun_config_parse(struct enftun_config* config, const char* file)
     lookup_string_array(cfg, "route.trusted_interfaces",
                         &config->trusted_ifaces);
     config_lookup_int(cfg, "route.ra_period", &config->ra_period);
+    config_lookup_int(cfg, "route.heartbeat_period", &config->heartbeat_period);
+    config_lookup_int(cfg, "route.heartbeat_timeout",
+                      &config->heartbeat_timeout);
 
     /* Identity settings */
     config_lookup_string(cfg, "identity.cert_file", &config->cert_file);
@@ -230,6 +235,10 @@ enftun_config_print(struct enftun_config* config, const char* key)
         print_joined(config->trusted_ifaces, " ");
     else if (strcmp(key, "route.ra_period") == 0)
         fprintf(stdout, "%d\n", config->ra_period);
+    else if (strcmp(key, "route.heartbeat_period") == 0)
+        fprintf(stdout, "%d\n", config->heartbeat_period);
+    else if (strcmp(key, "route.heartbeat_timeout") == 0)
+        fprintf(stdout, "%d\n", config->heartbeat_timeout);
     /* Identity settings */
     else if (strcmp(key, "identity.cert_file") == 0)
         fprintf(stdout, "%s\n", config->cert_file);
