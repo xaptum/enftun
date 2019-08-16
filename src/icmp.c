@@ -25,6 +25,9 @@
 #include "log.h"
 #include "packet.h"
 
+#define ECHO_ID 0x4e45
+#define ECHO_SEQ 0x5446
+
 struct nd_router_solicit*
 enftun_icmp6_nd_rs_pull(struct enftun_packet* pkt, struct ip6_hdr* iph)
 {
@@ -162,6 +165,63 @@ enftun_icmp6_nd_ra(struct enftun_packet* pkt,
     ra->nd_ra_cksum    = ip6_l3_cksum(nh, &ra->nd_ra_hdr);
 
     return ra;
+
+err:
+    return NULL;
+}
+
+struct icmp6_hdr*
+enftun_icmp6_echo_reply_pull(struct enftun_packet* pkt, struct ip6_hdr* iph)
+{
+    ENFTUN_SAVE_INIT(pkt);
+
+    if (IPPROTO_ICMPV6 != iph->ip6_nxt)
+        goto err;
+
+    struct icmp6_hdr* echo = enftun_packet_remove_head(pkt, sizeof(*echo));
+    if (!echo)
+        goto err;
+
+    if (ICMP6_ECHO_REPLY != echo->icmp6_type)
+        goto err;
+
+    if (0 != echo->icmp6_code)
+        goto err;
+
+    if (ECHO_ID != echo->icmp6_id)
+        goto err;
+
+    if (ECHO_SEQ != echo->icmp6_seq)
+        goto err;
+
+    return echo;
+
+err:
+    ENFTUN_RESTORE(pkt);
+    return NULL;
+}
+
+struct icmp6_hdr*
+enftun_icmp6_echo_request(struct enftun_packet* pkt,
+                          const struct in6_addr* src,
+                          const struct in6_addr* dest)
+{
+    enftun_packet_reserve_head(pkt, sizeof(struct ip6_hdr));
+
+    struct icmp6_hdr* req =
+        enftun_packet_insert_tail(pkt, sizeof(struct icmp6_hdr));
+    if (!req)
+        goto err;
+
+    req->icmp6_type = ICMP6_ECHO_REQUEST;
+    req->icmp6_code = 0;
+    req->icmp6_id   = ECHO_ID;
+    req->icmp6_seq  = ECHO_SEQ;
+    struct ip6_hdr* hdr =
+        enftun_ip6_header(pkt, IPPROTO_ICMPV6, 255, src, dest);
+    req->icmp6_cksum = ip6_l3_cksum(hdr, &req);
+
+    return req;
 
 err:
     return NULL;
