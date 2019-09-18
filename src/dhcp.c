@@ -175,7 +175,7 @@ enftun_dhcp_handle_packet(struct enftun_dhcp* dhcp, struct enftun_packet* pkt)
 
     // Verify that this an UDP packet addressed to us
     struct ip6_hdr* iph = enftun_udp6_pull_if_dest(
-        pkt, &ip6_all_dhcp_relay_agents_and_servers, 546, 547);
+        pkt, &ip6_all_dhcp_relay_agents_and_servers, 0, 547);
     if (!iph)
         goto pass;
 
