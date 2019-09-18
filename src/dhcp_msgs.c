@@ -144,6 +144,13 @@ enftun_dhcp6_advertise(struct enftun_packet* pkt,
         enftun_dhcp6_ia_na_finish(pkt, ia_na);
     }
 
+    // Connman had a bug that prevented it from parsing the last
+    // option in a message. It was fixed in 1.14, but we include a
+    // workaround to support old gateways: include an optional
+    // status_code option as the last message.
+    if (!enftun_dhcp6_status_code(pkt, DHCP6_STATUS_CODE_SUCCESS))
+        return NULL;
+
     return msg;
 }
 
@@ -174,6 +181,13 @@ enftun_dhcp6_reply(struct enftun_packet* pkt,
         return NULL;
     enftun_dhcp6_iaaddr_finish(pkt, iaaddr);
     enftun_dhcp6_ia_na_finish(pkt, ia_na);
+
+    // Connman had a bug that prevented it from parsing the last
+    // option in a message. It was fixed in 1.14, but we include a
+    // workaround to support old gateways: include an optional
+    // status_code option as the last message.
+    if (!enftun_dhcp6_status_code(pkt, DHCP6_STATUS_CODE_SUCCESS))
+        return NULL;
 
     return msg;
 }
