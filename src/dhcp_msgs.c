@@ -262,3 +262,11 @@ enftun_dhcp6_iaaddr_start(struct enftun_packet* pkt,
     body->vltime = htonl(vltime);
     return opt;
 }
+
+struct dhcp6_option*
+enftun_dhcp6_status_code(struct enftun_packet* pkt, uint16_t code)
+{
+    DHCP6_INIT_OPT_BODY(DHCP6_OPTION_STATUS_CODE, struct dhcp6_status_code);
+    body->code = htons(code);
+    return opt;
+}
