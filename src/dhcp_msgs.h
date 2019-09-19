@@ -89,4 +89,7 @@ enftun_dhcp6_iaaddr_finish(struct enftun_packet* pkt, struct dhcp6_option* opt)
     opt->len = htons((void*) pkt->tail - (void*) opt - sizeof(*opt));
 }
 
+struct dhcp6_option*
+enftun_dhcp6_status_code(struct enftun_packet* pkt, uint16_t code);
+
 #endif // ENFTUN_DHCP6_MSGS_H

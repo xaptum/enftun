@@ -296,11 +296,11 @@ enftun_udp6_pull_if_dest(struct enftun_packet* pkt,
         goto err;
 
     // Has right destination port
-    if (dport != ntohs(udph->uh_dport))
+    if (dport && (dport != ntohs(udph->uh_dport)))
         goto err;
 
     // Has right source port
-    if (sport != ntohs(udph->uh_sport))
+    if (sport && (sport != ntohs(udph->uh_sport)))
         goto err;
 
     return iph;

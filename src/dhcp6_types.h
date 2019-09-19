@@ -78,6 +78,13 @@ struct dhcp6_relay_msg
 #define DHCP6_OPTION_SOL_MAX_RT 82
 #define DHCP6_OPTION_INF_MAX_RT 83
 
+#define DHCP6_STATUS_CODE_SUCCESS 0
+#define DHCP6_STATUS_CODE_UNSPEC_FAIL 1
+#define DHCP6_STATUS_CODE_NO_ADDRS_AVAIL 2
+#define DHCP6_STATUS_CODE_NO_BINDING 3
+#define DHCP6_STATUS_CODE_NOT_ON_LINK 4
+#define DHCP6_STATUS_CODE_USE_MULTICAST 5
+
 struct dhcp6_option
 {
     uint16_t code;
@@ -107,7 +114,7 @@ struct dhcp6_iaaddr
     // IAAddr options are here
 };
 
-struct dchp6_preference
+struct dhcp6_preference
 {
     uint8_t pref;
 };
@@ -131,25 +138,25 @@ struct dhcp6_unicast
     struct in6_addr saddr;
 };
 
-struct dchp6_status_code
+struct dhcp6_status_code
 {
     uint16_t code;
     // message (variable length)
 };
 
-struct dchp6_vendor_class
+struct dhcp6_vendor_class
 {
     uint32_t enterprise_num;
     // vendor class data (variable length)
 };
 
-struct dchp6_vendor_opts
+struct dhcp6_vendor_opts
 {
     uint32_t enterprise_num;
     // vendor option data (variable length)
 };
 
-struct dchp6_reconf_msg
+struct dhcp6_reconf_msg
 {
     uint8_t type;
 };
@@ -176,12 +183,12 @@ struct dhcp6_info_refresh_time
     uint32_t time;
 };
 
-struct dchp6_sol_max_rt
+struct dhcp6_sol_max_rt
 {
     uint32_t sol_max_rt;
 };
 
-struct dchp6_inf_max_rt
+struct dhcp6_inf_max_rt
 {
     uint32_t inf_max_rt;
 };
