@@ -16,28 +16,28 @@
 
 #include "ndp.h"
 
-#include <netinet/ip6.h>
 #include <netinet/icmp6.h>
+#include <netinet/ip6.h>
 #include <string.h>
 
-#include "ip.h"
 #include "icmp.h"
+#include "ip.h"
 #include "log.h"
 #include "packet.h"
 
-static void send_ra(struct enftun_ndp* ndp);
-static void schedule_ra(struct enftun_ndp* ndp);
+static void
+send_ra(struct enftun_ndp* ndp);
+static void
+schedule_ra(struct enftun_ndp* ndp);
 
-static
-void
+static void
 on_timer(uv_timer_t* timer)
 {
     struct enftun_ndp* ndp = timer->data;
     schedule_ra(ndp);
 }
 
-static
-void
+static void
 on_write(struct enftun_crb* crb)
 {
     struct enftun_ndp* ndp = crb->context;
@@ -45,21 +45,20 @@ on_write(struct enftun_crb* crb)
     if (crb->status)
         enftun_log_error("ndp: failed to send RA: %d\n", crb->status);
 
-    ndp->ra_inflight = false;
+    ndp->ra_sending = false;
     if (ndp->ra_scheduled)
         send_ra(ndp);
 }
 
-static
-void
+static void
 send_ra(struct enftun_ndp* ndp)
 {
     ndp->ra_scheduled = false;
-    ndp->ra_inflight = true;
+    ndp->ra_sending   = true;
 
     enftun_packet_reset(&ndp->ra_pkt);
-    enftun_icmp6_nd_ra(&ndp->ra_pkt, &ip6_self, &ip6_all_nodes,
-                       &ndp->network, 64, ndp->routes, 3 * ndp->ra_period);
+    enftun_icmp6_nd_ra(&ndp->ra_pkt, &ip6_self, &ip6_all_nodes, &ndp->network,
+                       64, ndp->routes);
 
     enftun_crb_write(&ndp->ra_crb, ndp->chan);
 
@@ -67,13 +66,12 @@ send_ra(struct enftun_ndp* ndp)
     uv_timer_start(&ndp->timer, on_timer, ndp->ra_period, 0);
 }
 
-static
-void
+static void
 schedule_ra(struct enftun_ndp* ndp)
 {
     ndp->ra_scheduled = true;
 
-    if (!ndp->ra_inflight)
+    if (!ndp->ra_sending)
         send_ra(ndp);
 }
 
@@ -91,18 +89,18 @@ enftun_ndp_init(struct enftun_ndp* ndp,
 
     memset(&ndp->network, 0, sizeof(ndp->network));
     memcpy(&ndp->network, ipv6, 8);
-    ndp->routes = routes;
+    ndp->routes    = routes;
     ndp->ra_period = ra_period;
 
     ndp->ra_scheduled = false;
-    ndp->ra_inflight = false;
+    ndp->ra_sending   = false;
 
-    ndp->ra_crb.context = ndp;
-    ndp->ra_crb.packet = &ndp->ra_pkt;
+    ndp->ra_crb.context  = ndp;
+    ndp->ra_crb.packet   = &ndp->ra_pkt;
     ndp->ra_crb.complete = on_write;
 
     ndp->timer.data = ndp;
-    rc = uv_timer_init(loop, &ndp->timer);
+    rc              = uv_timer_init(loop, &ndp->timer);
 
     return rc;
 }
@@ -130,6 +128,9 @@ enftun_ndp_stop(struct enftun_ndp* ndp)
 {
     uv_timer_stop(&ndp->timer);
 
+    if (ndp->ra_sending)
+        enftun_crb_cancel(&ndp->ra_crb);
+
     return 0;
 }
 
@@ -139,8 +140,7 @@ enftun_ndp_handle_packet(struct enftun_ndp* ndp, struct enftun_packet* pkt)
     ENFTUN_SAVE_INIT(pkt);
 
     // Verify that this an IP packet addressed to us
-    struct ip6_hdr* iph =
-        enftun_ip6_pull_if_dest(pkt, &ip6_all_routers);
+    struct ip6_hdr* iph = enftun_ip6_pull_if_dest(pkt, &ip6_all_routers);
     if (!iph)
         goto pass;
 
@@ -151,7 +151,7 @@ enftun_ndp_handle_packet(struct enftun_ndp* ndp, struct enftun_packet* pkt)
     schedule_ra(ndp);
     return 1;
 
- pass:
+pass:
     ENFTUN_RESTORE(pkt);
     return 0;
 }

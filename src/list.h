@@ -24,23 +24,20 @@ struct enftun_list
     struct enftun_list *next, *prev;
 };
 
-static inline
-int
+static inline int
 enftun_list_init(struct enftun_list* head)
 {
     head->next = head->prev = head;
     return 0;
 }
 
-static inline
-int
+static inline int
 enftun_list_empty(struct enftun_list* head)
 {
     return head->next == head;
 }
 
-static inline
-void
+static inline void
 enftun_list_append(struct enftun_list* head, struct enftun_list* new)
 {
     new->next       = head;
@@ -49,8 +46,7 @@ enftun_list_append(struct enftun_list* head, struct enftun_list* new)
     head->prev      = new;
 }
 
-static inline
-void
+static inline void
 enftun_list_delete(struct enftun_list* entry)
 {
     entry->next->prev = entry->prev;

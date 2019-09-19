@@ -13,10 +13,12 @@ also be built from source.
 
 ``` bash
 # Install the Xaptum API repo GPG signing key.
-apt-key adv --keyserver keyserver.ubuntu.com --recv-keys c615bfaa7fe1b4ca
+sudo apt-get install dirmngr
+sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys c615bfaa7fe1b4ca
 
 # Add the repository to your APT sources
-echo "deb http://dl.bintray.com/xaptum/deb stretch main" > /etc/apt/sources.list.d/xaptum.list
+echo "deb http://dl.bintray.com/xaptum/deb stretch main" | sudo tee /etc/apt/sources.list.d/xaptum.list
+sudo apt-get update
 
 # Install the library.
 sudo apt-get install enftun
@@ -69,6 +71,8 @@ The following CMake configuration options are supported.
 | BUILD_SYSTEMD        | ON, OFF        | ON         | Build with systemd support                             |
 | BUILD_TEST           | ON, OFF        | ON         | Build tests                                            |
 | BUILD_XTT            | ON, OFF        | ON         | Build with XTT support                                 |
+| BUILD_PSOCK          | ON, OFF        | OFF        | Build with PSOCK support                               |
+
 
 ## Usage
 
@@ -164,7 +168,7 @@ $ source enftun-env/bin/activate
 ```
 
 # License
-Copyright 2018 Xaptum, Inc.
+Copyright 2018-2019 Xaptum, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License"); you may not
 use this work except in compliance with the License. You may obtain a copy of

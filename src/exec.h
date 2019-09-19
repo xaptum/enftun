@@ -19,6 +19,7 @@
 #ifndef ENFTUN_EXEC_H
 #define ENFTUN_EXEC_H
 
-int enftun_exec(const char* const argv[], const char* const envp[]);
+int
+enftun_exec(const char* const argv[], const char* const envp[]);
 
 #endif // ENFTUN_EXEC_H

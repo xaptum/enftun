@@ -31,25 +31,24 @@ typedef void (*enftun_crb_complete)(struct enftun_crb*);
 
 struct enftun_crb
 {
-    struct enftun_list entry;        /* to store in list */
+    struct enftun_list entry; /* to store in list */
 
-    struct enftun_packet* packet;    /* associated packet buffer */
+    struct enftun_packet* packet; /* associated packet buffer */
 
-    struct enftun_channel* channel;  /* active channel */
+    struct enftun_channel* channel; /* active channel */
 
-    void *context;                   /* context for completion */
-    enftun_crb_complete complete;    /* completion route */
+    void* context;                /* context for completion */
+    enftun_crb_complete complete; /* completion route */
 
-    int status;                      /* status code after completion */
+    int status; /* status code after completion */
 };
-
 
 struct enftun_channel_ops
 {
-    int  (*read)(void* ctx, struct enftun_packet* pkt);
-    int  (*write)(void* ctx, struct enftun_packet* pkt);
+    int (*read)(void* ctx, struct enftun_packet* pkt);
+    int (*write)(void* ctx, struct enftun_packet* pkt);
     void (*prepare)(void* ctx, struct enftun_packet* pkt);
-    int  (*pending)(void* ctx);
+    int (*pending)(void* ctx);
 };
 
 struct enftun_channel

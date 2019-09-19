@@ -22,22 +22,32 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
-#include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/types.h>
 
 #include "log.h"
 #include "tcp.h"
 
-#define get_sin_addr(addr) \
-    (&((struct sockaddr_in*)addr->ai_addr)->sin_addr)
+#define get_sin_addr(addr) (&((struct sockaddr_in*) addr->ai_addr)->sin_addr)
 
-#define get_sin_port(addr) \
-    (((struct sockaddr_in*)addr->ai_addr)->sin_port)
+#define get_sin_port(addr) (((struct sockaddr_in*) addr->ai_addr)->sin_port)
 
-static
-int
-do_connect(struct enftun_tcp* tcp, int mark,
-           struct addrinfo* addr)
+static struct enftun_tcp_ops enftun_tcp_native_ops = {
+    .connect = (int (*)(void*, const char* host, const char*))
+        enftun_tcp_native_connect,
+    .connect_any =
+        (int (*)(void*, const char** host, const char*)) enftun_tcp_connect_any,
+    .close = (void (*)(void*)) enftun_tcp_close};
+
+void
+enftun_tcp_native_init(struct enftun_tcp_native* tcp, int mark)
+{
+    tcp->base.ops = enftun_tcp_native_ops;
+    tcp->fwmark   = mark;
+}
+
+static int
+do_connect(struct enftun_tcp* tcp, int mark, struct addrinfo* addr)
 {
     char ip[45];
     int opt, port;
@@ -57,26 +67,32 @@ do_connect(struct enftun_tcp* tcp, int mark,
 
     if (mark > 0)
     {
-        if ((rc = setsockopt(tcp->fd, SOL_SOCKET, SO_MARK, &mark, sizeof(mark))) < 0)
+        if ((rc = setsockopt(tcp->fd, SOL_SOCKET, SO_MARK, &mark,
+                             sizeof(mark))) < 0)
         {
-            enftun_log_error("TCP: Failed to set mark %d: %s\n", mark, strerror(errno));
+            enftun_log_error("TCP: Failed to set mark %d: %s\n", mark,
+                             strerror(errno));
             rc = -errno;
             goto close_fd;
         }
     }
 
     opt = 1;
-    if ((rc = setsockopt(tcp->fd, SOL_SOCKET, SO_KEEPALIVE, &opt, sizeof(opt))) < 0)
+    if ((rc = setsockopt(tcp->fd, SOL_SOCKET, SO_KEEPALIVE, &opt,
+                         sizeof(opt))) < 0)
     {
-        enftun_log_error("TCP: Failed to enable keepalives: %s\n", strerror(errno));
+        enftun_log_error("TCP: Failed to enable keepalives: %s\n",
+                         strerror(errno));
         rc = -errno;
         goto close_fd;
     }
 
     opt = 5 * 60;
-    if ((rc = setsockopt(tcp->fd, SOL_TCP, TCP_KEEPIDLE, &opt, sizeof(opt))) < 0)
+    if ((rc = setsockopt(tcp->fd, SOL_TCP, TCP_KEEPIDLE, &opt, sizeof(opt))) <
+        0)
     {
-        enftun_log_error("TCP: Failed to enable keepalive time: %s\n", strerror(errno));
+        enftun_log_error("TCP: Failed to enable keepalive time: %s\n",
+                         strerror(errno));
         rc = -errno;
         goto close_fd;
     }
@@ -84,23 +100,26 @@ do_connect(struct enftun_tcp* tcp, int mark,
     opt = 6;
     if ((rc = setsockopt(tcp->fd, SOL_TCP, TCP_KEEPCNT, &opt, sizeof(opt))) < 0)
     {
-        enftun_log_error("TCP: Failed to enable keepalive probes: %s\n", strerror(errno));
+        enftun_log_error("TCP: Failed to enable keepalive probes: %s\n",
+                         strerror(errno));
         rc = -errno;
         goto close_fd;
     }
 
     opt = 10;
-    if ((rc = setsockopt(tcp->fd, SOL_TCP, TCP_KEEPINTVL, &opt, sizeof(opt))) < 0)
+    if ((rc = setsockopt(tcp->fd, SOL_TCP, TCP_KEEPINTVL, &opt, sizeof(opt))) <
+        0)
     {
-        enftun_log_error("TCP: Failed to enable keepalive interval: %s\n", strerror(errno));
+        enftun_log_error("TCP: Failed to enable keepalive interval: %s\n",
+                         strerror(errno));
         rc = -errno;
         goto close_fd;
     }
 
     if ((rc = connect(tcp->fd, addr->ai_addr, addr->ai_addrlen)) < 0)
     {
-        enftun_log_error("TCP: Failed to connect to [%s]:%d: %s\n",
-                         ip, port, strerror(errno));
+        enftun_log_error("TCP: Failed to connect to [%s]:%d: %s\n", ip, port,
+                         strerror(errno));
         rc = -errno;
         goto close_fd;
     }
@@ -108,17 +127,18 @@ do_connect(struct enftun_tcp* tcp, int mark,
     enftun_log_info("TCP: Connected to [%s]:%d\n", ip, port);
     goto out;
 
- close_fd:
+close_fd:
     close(tcp->fd);
     tcp->fd = 0;
 
- out:
+out:
     return rc;
 }
 
 int
-enftun_tcp_connect(struct enftun_tcp* tcp,
-                   int mark, const char* host, const char *port)
+enftun_tcp_native_connect(struct enftun_tcp_native* tcp,
+                          const char* host,
+                          const char* port)
 {
     int rc;
     struct addrinfo *addr_h, *addr, hints;
@@ -132,36 +152,43 @@ enftun_tcp_connect(struct enftun_tcp* tcp,
     rc = getaddrinfo(host, port, &hints, &addr_h);
     if (rc < 0)
     {
-        enftun_log_error("TCP: Cannot resolve %s:%s: %s\n",
-                         host, port, gai_strerror(rc));
+        enftun_log_error("TCP: Cannot resolve %s:%s: %s\n", host, port,
+                         gai_strerror(rc));
         rc = -1;
         goto out;
     }
 
-    for (addr=addr_h; addr!=NULL; addr=addr->ai_next)
+    for (addr = addr_h; addr != NULL; addr = addr->ai_next)
     {
-        rc = do_connect(tcp, mark, addr);
+        rc = do_connect(&tcp->base, tcp->fwmark, addr);
         if (rc == 0)
             break;
     }
 
+    if (addr != NULL)
+    {
+        socklen_t length = MAX_SOCKADDR_LEN;
+        getsockname(tcp->base.fd, &tcp->base.local_addr, &length);
+        getpeername(tcp->base.fd, &tcp->base.remote_addr, &length);
+    }
+
     freeaddrinfo(addr_h);
 
- out:
+out:
     return rc;
 }
 
 int
 enftun_tcp_connect_any(struct enftun_tcp* tcp,
-                       int mark,
-                       const char** hosts, const char *port)
+                       const char** hosts,
+                       const char* port)
 {
     int rc = 0;
     const char* host;
 
-    for (host=*hosts; host!=NULL; host=*++hosts)
+    for (host = *hosts; host != NULL; host = *++hosts)
     {
-        rc = enftun_tcp_connect(tcp, mark, host, port);
+        rc = tcp->ops.connect(tcp, host, port);
         if (rc == 0)
             break;
     }

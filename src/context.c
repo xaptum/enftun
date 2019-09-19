@@ -20,14 +20,14 @@
 #include <string.h>
 
 #include "cert.h"
+#include "conn_state.h"
 #include "log.h"
 
 /**
  * Adds missing colons back into IPv6 string.
  */
-static
-void
-fix_ipv6_string(char *ipv6_str)
+static void
+fix_ipv6_string(char* ipv6_str)
 {
     int i, c;
     for (i = 0; i < 5; i++)
@@ -57,9 +57,13 @@ enftun_context_init(struct enftun_context* ctx)
     if (rc < 0)
         goto free_options;
 
-    rc = enftun_tls_init(&ctx->tls);
+    rc = enftun_conn_state_init(&ctx->conn_state);
     if (rc < 0)
         goto free_config;
+
+    rc = enftun_tls_init(&ctx->tls, ctx->config.fwmark);
+    if (rc < 0)
+        goto free_conn_state;
 
     rc = enftun_tun_init(&ctx->tun);
     if (rc < 0)
@@ -73,19 +77,22 @@ enftun_context_init(struct enftun_context* ctx)
 
     return 0;
 
- free_tun:
+free_tun:
     enftun_tun_free(&ctx->tun);
 
- free_tls:
+free_tls:
     enftun_tls_free(&ctx->tls);
 
- free_config:
+free_conn_state:
+    enftun_conn_state_free(&ctx->conn_state);
+
+free_config:
     enftun_config_free(&ctx->config);
 
- free_options:
+free_options:
     enftun_options_free(&ctx->options);
 
- err:
+err:
     return rc;
 }
 
@@ -96,6 +103,8 @@ enftun_context_free(struct enftun_context* ctx)
 
     enftun_tun_free(&ctx->tun);
     enftun_tls_free(&ctx->tls);
+
+    enftun_conn_state_free(&ctx->conn_state);
 
     enftun_config_free(&ctx->config);
     enftun_options_free(&ctx->options);
@@ -108,8 +117,7 @@ enftun_context_ipv6_from_cert(struct enftun_context* ctx, const char* file)
 {
     int rc;
 
-    if ((rc = enftun_cert_common_name_file(ctx->config.cert_file,
-                                           ctx->ipv6_str,
+    if ((rc = enftun_cert_common_name_file(ctx->config.cert_file, ctx->ipv6_str,
                                            sizeof(ctx->ipv6_str))) < 0)
     {
         enftun_log_error("Failed to read IPv6 address from cert %s\n", file);
@@ -120,12 +128,13 @@ enftun_context_ipv6_from_cert(struct enftun_context* ctx, const char* file)
 
     if (inet_pton(AF_INET6, ctx->ipv6_str, &ctx->ipv6) != 1)
     {
-        enftun_log_error("Invalid IPv6 address (%s) in cert %s\n", ctx->ipv6_str);
+        enftun_log_error("Invalid IPv6 address (%s) in cert %s\n",
+                         ctx->ipv6_str);
         rc = -1;
         goto out;
     }
 
- out:
+out:
     return rc;
 }
 
@@ -134,7 +143,7 @@ enftun_context_ipv6_write_to_file(struct enftun_context* ctx, const char* file)
 {
     int rc;
 
-    FILE *f = fopen(file, "w");
+    FILE* f = fopen(file, "w");
     if (NULL == f)
     {
         enftun_log_warn("Unable to open file %s\n", file);
@@ -159,6 +168,6 @@ enftun_context_ipv6_write_to_file(struct enftun_context* ctx, const char* file)
     fclose(f);
     rc = 0;
 
- out:
+out:
     return rc;
 }

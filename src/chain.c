@@ -19,24 +19,21 @@
 #include "chain.h"
 #include "log.h"
 
-static
-void
+static void
 do_read(struct enftun_chain* chain)
 {
     chain->state = enftun_chain_reading;
     enftun_crb_read(&chain->crb, chain->input);
 }
 
-static
-void
+static void
 do_write(struct enftun_chain* chain)
 {
     chain->state = enftun_chain_writing;
     enftun_crb_write(&chain->crb, chain->output);
 }
 
-static
-void
+static void
 on_complete(struct enftun_crb* crb)
 {
     struct enftun_chain* chain = (struct enftun_chain*) crb->context;
@@ -70,14 +67,14 @@ enftun_chain_init(struct enftun_chain* chain,
                   void* data,
                   enftun_chain_filter filter)
 {
-    chain->input = input;
+    chain->input  = input;
     chain->output = output;
 
     chain->crb.packet   = &chain->packet;
     chain->crb.context  = chain;
     chain->crb.complete = on_complete;
 
-    chain->data = data;
+    chain->data   = data;
     chain->filter = filter;
 
     return 0;
@@ -90,8 +87,7 @@ enftun_chain_free(struct enftun_chain* chain __attribute__((unused)))
 }
 
 int
-enftun_chain_start(struct enftun_chain* chain,
-                   enftun_chain_complete complete)
+enftun_chain_start(struct enftun_chain* chain, enftun_chain_complete complete)
 {
     chain->complete = complete;
     do_read(chain);

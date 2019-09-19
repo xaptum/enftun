@@ -1,0 +1,16 @@
+---
+Language: Cpp
+BasedOnStyle: LLVM
+AlignAfterOpenBracket: Align
+AlignConsecutiveAssignments: true
+AllowAllParametersOfDeclarationOnNextLine: false
+AlwaysBreakAfterReturnType: All
+BinPackArguments: true
+BinPackParameters: false
+BreakBeforeBraces: Allman
+IndentWidth: 4
+KeepEmptyLinesAtTheStartOfBlocks: false
+PointerAlignment: Left
+SpaceAfterCStyleCast: true
+SpacesInContainerLiterals: false
+TabWidth: 4

@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Xaptum, Inc.
+ * Copyright 2019 Xaptum, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,16 +16,32 @@
 
 #pragma once
 
-#ifndef ENFTUN_MEM_H
-#define ENFTUN_MEM_H
+#ifndef ENFTUN_NETLINK_H
+#define ENFTUN_NETLINK_H
 
-#include <string.h>
+#include <linux/rtnetlink.h>
+#include <sys/socket.h>
 
-/*
- * Clear a struct.
- *
- * This could be optimized away. Do not use to clear secrets.
- */
-#define CLEAR(s) memset(&(s), 0, sizeof(s))
+#include <uv.h>
 
-#endif // ENFTUN_MEM_H
+struct enftun_netlink
+{
+    int fd;
+    struct sockaddr_nl sock_addr;
+    struct iovec io_vector;
+
+    struct msghdr msg;
+};
+
+int
+enftun_netlink_read_message(struct enftun_netlink* nl,
+                            char* buf,
+                            size_t buflen);
+
+int
+enftun_netlink_connect(struct enftun_netlink* nl);
+
+int
+enftun_netlink_close(struct enftun_netlink* nl);
+
+#endif // ENFTUN_NETLINK_H

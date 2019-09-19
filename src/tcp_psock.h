@@ -16,16 +16,22 @@
 
 #pragma once
 
-#ifndef ENFTUN_MEM_H
-#define ENFTUN_MEM_H
+#ifndef ENFTUN_PSOCK_H
+#define ENFTUN_PSOCK_H
 
-#include <string.h>
+#include "tcp.h"
 
-/*
- * Clear a struct.
- *
- * This could be optimized away. Do not use to clear secrets.
- */
-#define CLEAR(s) memset(&(s), 0, sizeof(s))
+struct enftun_tcp_psock
+{
+    struct enftun_tcp base;
+};
 
-#endif // ENFTUN_MEM_H
+void
+enftun_tcp_psock_init(struct enftun_tcp_psock* psock);
+
+int
+enftun_tcp_psock_connect(struct enftun_tcp* psock,
+                         const char* host,
+                         const char* port);
+
+#endif

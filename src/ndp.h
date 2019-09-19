@@ -39,13 +39,13 @@ struct enftun_ndp
     struct enftun_packet ra_pkt;
     struct enftun_crb ra_crb;
 
-    bool ra_inflight;
+    bool ra_sending;
     bool ra_scheduled;
 };
 
 int
 enftun_ndp_init(struct enftun_ndp* ndp,
-                struct enftun_channel *chan,
+                struct enftun_channel* chan,
                 uv_loop_t* loop,
                 const struct in6_addr* ipv6,
                 const char** routes,

@@ -24,6 +24,7 @@ RUN apt-get install libuv1-dev
 RUN apt-get install libssl1.1
 RUN apt-get install -y libssl-dev
 RUN apt-get -y install gnupg2
+RUN apt-get install -y clang-format
 
 
 RUN apt-key adv --no-tty --keyserver keyserver.ubuntu.com --recv-keys c615bfaa7fe1b4ca

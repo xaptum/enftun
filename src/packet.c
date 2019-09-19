@@ -32,6 +32,8 @@ enftun_packet_reset(struct enftun_packet* pkt)
     pkt->tail = pkt->data;
 
     pkt->size = 0;
+
+    enftun_packet_reserve_head(pkt, 2); // space for stream header
 }
 
 void
@@ -45,7 +47,8 @@ enftun_packet_reserve_head(struct enftun_packet* pkt, size_t len)
 
     if (len > enftun_packet_max_size)
     {
-        enftun_log_error("enftun_packet_reserve_head: len greater than available space\n");
+        enftun_log_error(
+            "enftun_packet_reserve_head: len greater than available space\n");
         exit(-EINVAL);
     }
 
@@ -115,9 +118,8 @@ enftun_packet_save(struct enftun_packet* pkt, struct enftun_packet_state* st)
 void
 enftun_packet_restore(struct enftun_packet* pkt, struct enftun_packet_state* st)
 {
-    if (st->data < pkt->head || st->data > pkt->end ||
-        st->tail < pkt->head || st->tail > pkt->end ||
-        st->data > st->tail)
+    if (st->data < pkt->head || st->data > pkt->end || st->tail < pkt->head ||
+        st->tail > pkt->end || st->data > st->tail)
     {
         enftun_log_error("enftun_packet_restore: invalid packet state\n");
         exit(-EINVAL);

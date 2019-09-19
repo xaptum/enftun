@@ -1,5 +1,5 @@
-VERSION := 0.1.0
-PREFIX  := xaptum/enftun
+VERSION := 0.1.1
+PREFIX  := xaptumeng/enftun-build
 
 .DEFAULT_GOAL := all
 

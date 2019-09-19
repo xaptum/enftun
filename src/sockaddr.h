@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Xaptum, Inc.
+ * Copyright 2019 Xaptum, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,16 +16,12 @@
 
 #pragma once
 
-#ifndef ENFTUN_MEM_H
-#define ENFTUN_MEM_H
+#ifndef ENFTUN_SOCKADDR_H
+#define ENFTUN_SOCKADDR_H
 
-#include <string.h>
+#include <netinet/in.h>
 
-/*
- * Clear a struct.
- *
- * This could be optimized away. Do not use to clear secrets.
- */
-#define CLEAR(s) memset(&(s), 0, sizeof(s))
+int
+enftun_sockaddr_equal(struct sockaddr* a, struct sockaddr* b);
 
-#endif // ENFTUN_MEM_H
+#endif // ENFTUN_SOCKADDR_H

@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Xaptum, Inc.
+ * Copyright 2019 Xaptum, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,16 +16,33 @@
 
 #pragma once
 
-#ifndef ENFTUN_CERT_H
-#define ENFTUN_CERT_H
+#ifndef ENFTUN_UDP_H
+#define ENFTUN_UDP_H
 
 #include <netinet/in.h>
-#include <openssl/x509.h>
+
+#define MAX_SOCKADDR_LEN sizeof(struct sockaddr_in6)
+
+struct enftun_udp
+{
+    int fd; // file descriptor for the underlying UDP socket
+    union {
+        struct sockaddr local_addr;
+        char _local_addr_pad[MAX_SOCKADDR_LEN];
+    };
+
+    union {
+        struct sockaddr remote_addr;
+        char _remote_addr_pad[MAX_SOCKADDR_LEN];
+    };
+};
 
 int
-enftun_cert_common_name_X509(X509* cert, char* out, size_t out_len);
+enftun_udp_connect_addr(struct enftun_udp* udp,
+                        int mark,
+                        struct sockaddr* addr);
 
 int
-enftun_cert_common_name_file(const char* file, char* out, size_t out_len);
+enftun_udp_close(struct enftun_udp* udp);
 
-#endif // ENFTUN_CERT_H
+#endif // ENFTUN_UDP_H
