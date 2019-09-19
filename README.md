@@ -1,5 +1,6 @@
 # ENFTUN - Xaptum ENF Tunnel Client
 
+[![Release](https://img.shields.io/github/release/xaptum/enftun.svg)](https://github.com/xaptum/enftun/releases)
 [![Build Status](https://travis-ci.org/xaptum/enftun.svg?branch=master)](https://travis-ci.org/xaptum/enftun)
 
 `enftun` is a tunnel client for connecting to the Xaptum Edge Network Fabric (ENF).
