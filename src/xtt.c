@@ -237,7 +237,7 @@ enftun_xtt_handshake(const char** server_hosts,
     }
 
     // 2) Make TCP connection to server.
-    ret = sock->ops.connect_any(&sock, server_hosts, (char*) server_port);
+    ret = sock->ops.connect_any(sock, server_hosts, (char*) server_port);
     if (ret < 0)
     {
         ret = 1;
@@ -280,7 +280,7 @@ enftun_xtt_handshake(const char** server_hosts,
     }
 
 finish:
-    sock->ops.close(&sock);
+    sock->ops.close(sock);
     xtt_free_tpm_context(&xtt->tpm_ctx);
     if (0 == ret)
     {
