@@ -23,11 +23,15 @@
 
 #define MAX_SOCKADDR_LEN sizeof(struct sockaddr_in6)
 
+struct enftun_tcp;
+
 struct enftun_tcp_ops
 {
-    int (*connect)(void* ctx, const char* host, const char* port);
-    int (*connect_any)(void* ctx, const char** host, const char* port);
-    void (*close)(void* ctx);
+    int (*connect)(struct enftun_tcp* sock, const char* host, const char* port);
+    int (*connect_any)(struct enftun_tcp* sock,
+                       const char** host,
+                       const char* port);
+    void (*close)(struct enftun_tcp* sock);
 };
 
 struct enftun_tcp

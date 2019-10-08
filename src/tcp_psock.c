@@ -34,11 +34,10 @@
 #define get_sin_port(addr) (((struct sockaddr_in*) addr->ai_addr)->sin_port)
 
 static struct enftun_tcp_ops enftun_tcp_psock_ops = {
-    .connect = (int (*)(void*, const char* host, const char*))
+    .connect = (int (*)(struct enftun_tcp*, const char* host, const char*))
         enftun_tcp_psock_connect,
-    .connect_any =
-        (int (*)(void*, const char** host, const char*)) enftun_tcp_connect_any,
-    .close = (void (*)(void*)) enftun_tcp_close};
+    .connect_any = enftun_tcp_connect_any,
+    .close       = enftun_tcp_close};
 
 void
 enftun_tcp_psock_init(struct enftun_tcp_psock* psock)
