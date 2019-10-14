@@ -117,6 +117,8 @@ enftun_context_ipv6_from_cert(struct enftun_context* ctx, const char* file)
 {
     int rc;
 
+    memset(ctx->ipv6_str, 0, sizeof(ctx->ipv6_str));
+
     if ((rc = enftun_cert_common_name_file(ctx->config.cert_file, ctx->ipv6_str,
                                            sizeof(ctx->ipv6_str))) < 0)
     {
