@@ -59,6 +59,30 @@ filter_ipv6() {
     done
 }
 
+wait_for_iface() {
+    local i=0
+    local res
+    while [ $i -lt 50 ]; do # 5 seconds
+        res=$(ip -o link show dev $1 2>/dev/null)
+        [ -n "$res" ] && return 0
+        sleep 0.1
+        i=$[$i+1]
+    done
+    return 1
+}
+
+wait_for_iface_up() {
+    local i=0
+    local res
+    while [ $i -lt 50 ]; do # 5 seconds
+        res=$(ip -o link show up dev $1)
+        [ -n "$res" ] && return 0
+        sleep 0.1
+        i=$[$i+1]
+    done
+    return 1
+}
+
 cmd_usage() {
     cat <<-EOF
 Usage: $0 [-h,--help] {up|down|help} <config_file>
@@ -67,9 +91,12 @@ EOF
 
 add_tun() {
     cmd ip tuntap add mode tun "$INTERFACE"
+    wait_for_iface "$INTERFACE"
 
     cmd ip link set mtu "$MTU" dev "$INTERFACE"
+
     cmd ip link set "$INTERFACE" up
+    wait_for_iface_up "$INTERFACE"
 }
 
 del_tun() {
