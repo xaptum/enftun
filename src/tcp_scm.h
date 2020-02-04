@@ -31,7 +31,7 @@ enftun_tcp_scm_init(struct enftun_tcp_scm* scm);
 
 int
 enftun_tcp_scm_connect(struct enftun_tcp* scm,
-                         const char* host,
-                         const char* port);
+                       const char* host,
+                       const char* port);
 
 #endif

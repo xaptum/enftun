@@ -59,8 +59,7 @@ do_connect(struct enftun_tcp* tcp, struct addrinfo* addr)
 
     if ((tcp->fd = socket(AF_SCM, SOCK_STREAM, addr->ai_protocol)) < 0)
     {
-        enftun_log_error("SCM: Failed to create socket: %s\n",
-                         strerror(errno));
+        enftun_log_error("SCM: Failed to create socket: %s\n", strerror(errno));
         rc = -errno;
         goto out;
     }
@@ -86,8 +85,8 @@ out:
 
 int
 enftun_tcp_scm_connect(struct enftun_tcp* scm,
-                         const char* host,
-                         const char* port)
+                       const char* host,
+                       const char* port)
 {
     int rc;
     struct addrinfo *addr_h, *addr, hints;
