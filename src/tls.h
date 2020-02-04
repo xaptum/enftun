@@ -28,16 +28,16 @@
 #include "packet.h"
 #include "tcp.h"
 
-#ifdef USE_PSOCK
-#include "tcp_psock.h"
+#ifdef USE_SCM
+#include "tcp_scm.h"
 #endif
 
 struct enftun_tls
 {
     struct enftun_tcp* sock; // the underlying TCP socket
 
-#ifdef USE_PSOCK
-    struct enftun_tcp_psock sock_psock;
+#ifdef USE_SCM
+    struct enftun_tcp_scm sock_scm;
 #else
     struct enftun_tcp_native sock_native;
 #endif

@@ -73,7 +73,7 @@ The following CMake configuration options are supported.
 | BUILD_SYSTEMD        | ON, OFF        | ON         | Build with systemd support                             |
 | BUILD_TEST           | ON, OFF        | ON         | Build tests                                            |
 | BUILD_XTT            | ON, OFF        | ON         | Build with XTT support                                 |
-| BUILD_PSOCK          | ON, OFF        | OFF        | Build with PSOCK support                               |
+| BUILD_SCM            | ON, OFF        | OFF        | Build with SCM support                                 |
 
 
 ## Usage

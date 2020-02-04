@@ -44,10 +44,10 @@ enftun_tls_init(struct enftun_tls* tls, int mark)
         goto out;
     }
 
-#ifdef USE_PSOCK
+#ifdef USE_SCM
     (void) mark;
-    enftun_tcp_psock_init(&tls->sock_psock);
-    tls->sock = &tls->sock_psock.base;
+    enftun_tcp_scm_init(&tls->sock_scm);
+    tls->sock = &tls->sock_scm.base;
 #else
     enftun_tcp_native_init(&tls->sock_native, mark);
     tls->sock = &tls->sock_native.base;

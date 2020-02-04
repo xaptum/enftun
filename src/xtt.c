@@ -108,11 +108,11 @@ enftun_xtt_handshake(const char** server_hosts,
 {
     struct enftun_tcp* sock;
 
-#ifdef USE_PSOCK
+#ifdef USE_SCM
     (void) mark;
-    struct enftun_tcp_psock sock_psock = {0};
-    enftun_tcp_psock_init(&sock_psock);
-    sock = &sock_psock.base;
+    struct enftun_tcp_scm sock_scm = {0};
+    enftun_tcp_scm_init(&sock_scm);
+    sock = &sock_scm.base;
 #else
     struct enftun_tcp_native sock_native = {0};
     enftun_tcp_native_init(&sock_native, mark);
