@@ -16,14 +16,14 @@
 
 #pragma once
 
-#ifndef ENFTUN_SCM_H
-#define ENFTUN_SCM_H
+#ifndef ENFTUN_MULTI_H
+#define ENFTUN_MULTI_H
 
 #include "tcp.h"
 
-// TCP SCM specific functions
+// TCP Multi specific functions
 
 void
-enftun_tcp_scm_init(struct enftun_tcp* scm);
+enftun_tcp_multi_init(struct enftun_tcp* scm);
 
 #endif

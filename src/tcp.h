@@ -23,14 +23,27 @@
 
 #define MAX_SOCKADDR_LEN sizeof(struct sockaddr_in6)
 
+// Defines the type of TCP sockets which can be used
+enum enftun_tcp_type
+{
+    ENFTUN_TCP_NATIVE,
+    ENFTUN_TCP_SCM,
+    ENFTUN_TCP_NONE,
+    ENFTUN_TCP_MAX
+};
+
 struct enftun_tcp;
 
 struct enftun_tcp_ops
 {
-    int (*connect)(struct enftun_tcp* sock, const char* host, const char* port);
+    int (*connect)(struct enftun_tcp* sock,
+                   const char* host,
+                   const char* port,
+                   int fwmark);
     int (*connect_any)(struct enftun_tcp* sock,
                        const char** host,
-                       const char* port);
+                       const char* port,
+                       int fwmark);
     void (*close)(struct enftun_tcp* sock);
 };
 
@@ -47,27 +60,21 @@ struct enftun_tcp
         char _remote_addr_pad[MAX_SOCKADDR_LEN];
     };
 
+    enum enftun_tcp_type type;
+
     struct enftun_tcp_ops ops;
 };
 
-struct enftun_tcp_native
-{
-    struct enftun_tcp base;
-    int fwmark;
-};
+// Native TCP specific functions
 
 void
-enftun_tcp_native_init(struct enftun_tcp_native* ctx, int mark);
-
-int
-enftun_tcp_native_connect(struct enftun_tcp_native* tcp,
-                          const char* host,
-                          const char* port);
+enftun_tcp_native_init(struct enftun_tcp* ctx);
 
 int
 enftun_tcp_connect_any(struct enftun_tcp* tcp,
                        const char** hosts,
-                       const char* port);
+                       const char* port,
+                       int fwmark);
 
 void
 enftun_tcp_close(struct enftun_tcp* tcp);

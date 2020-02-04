@@ -28,19 +28,9 @@
 #include "packet.h"
 #include "tcp.h"
 
-#ifdef USE_SCM
-#include "tcp_scm.h"
-#endif
-
 struct enftun_tls
 {
-    struct enftun_tcp* sock; // the underlying TCP socket
-
-#ifdef USE_SCM
-    struct enftun_tcp_scm sock_scm;
-#else
-    struct enftun_tcp_native sock_native;
-#endif
+    struct enftun_tcp sock;
 
     int mark; // mark to apply to tunnel packets. 0 to disable
 
@@ -69,7 +59,8 @@ enftun_tls_load_credentials(struct enftun_tls* tls,
 int
 enftun_tls_connect(struct enftun_tls* tls,
                    const char** hosts,
-                   const char* port);
+                   const char* port,
+                   int fwmark);
 
 int
 enftun_tls_disconnect(struct enftun_tls* tls);
