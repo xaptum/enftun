@@ -16,21 +16,21 @@
 
 #pragma once
 
-#ifndef ENFTUN_PSOCK_H
-#define ENFTUN_PSOCK_H
+#ifndef ENFTUN_SCM_H
+#define ENFTUN_SCM_H
 
 #include "tcp.h"
 
-struct enftun_tcp_psock
+struct enftun_tcp_scm
 {
     struct enftun_tcp base;
 };
 
 void
-enftun_tcp_psock_init(struct enftun_tcp_psock* psock);
+enftun_tcp_scm_init(struct enftun_tcp_scm* scm);
 
 int
-enftun_tcp_psock_connect(struct enftun_tcp* psock,
+enftun_tcp_scm_connect(struct enftun_tcp* scm,
                          const char* host,
                          const char* port);
 

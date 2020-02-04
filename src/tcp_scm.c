@@ -27,22 +27,22 @@
 
 #include "log.h"
 #include "tcp.h"
-#include "tcp_psock.h"
+#include "tcp_scm.h"
 
 #define get_sin_addr(addr) (&((struct sockaddr_in*) addr->ai_addr)->sin_addr)
 
 #define get_sin_port(addr) (((struct sockaddr_in*) addr->ai_addr)->sin_port)
 
-static struct enftun_tcp_ops enftun_tcp_psock_ops = {
+static struct enftun_tcp_ops enftun_tcp_scm_ops = {
     .connect = (int (*)(struct enftun_tcp*, const char* host, const char*))
-        enftun_tcp_psock_connect,
+        enftun_tcp_scm_connect,
     .connect_any = enftun_tcp_connect_any,
     .close       = enftun_tcp_close};
 
 void
-enftun_tcp_psock_init(struct enftun_tcp_psock* psock)
+enftun_tcp_scm_init(struct enftun_tcp_scm* scm)
 {
-    psock->base.ops = enftun_tcp_psock_ops;
+    scm->base.ops = enftun_tcp_scm_ops;
 }
 
 static int
@@ -55,11 +55,11 @@ do_connect(struct enftun_tcp* tcp, struct addrinfo* addr)
     inet_ntop(addr->ai_family, get_sin_addr(addr), ip, sizeof(ip));
     port = ntohs(get_sin_port(addr));
 
-    enftun_log_debug("PSOCK: connecting to [%s]:%d\n", ip, port);
+    enftun_log_debug("SCM: connecting to [%s]:%d\n", ip, port);
 
-    if ((tcp->fd = socket(AF_PSOCK, SOCK_STREAM, addr->ai_protocol)) < 0)
+    if ((tcp->fd = socket(AF_SCM, SOCK_STREAM, addr->ai_protocol)) < 0)
     {
-        enftun_log_error("PSOCK: Failed to create socket: %s\n",
+        enftun_log_error("SCM: Failed to create socket: %s\n",
                          strerror(errno));
         rc = -errno;
         goto out;
@@ -67,13 +67,13 @@ do_connect(struct enftun_tcp* tcp, struct addrinfo* addr)
 
     if ((rc = connect(tcp->fd, addr->ai_addr, addr->ai_addrlen)) < 0)
     {
-        enftun_log_error("PSOCK: Failed to connect to [%s]:%d: %s\n", ip, port,
+        enftun_log_error("SCM: Failed to connect to [%s]:%d: %s\n", ip, port,
                          strerror(errno));
         rc = -errno;
         goto close_fd;
     }
 
-    enftun_log_info("PSOCK: Connected to [%s]:%d\n", ip, port);
+    enftun_log_info("SCM: Connected to [%s]:%d\n", ip, port);
     goto out;
 
 close_fd:
@@ -85,7 +85,7 @@ out:
 }
 
 int
-enftun_tcp_psock_connect(struct enftun_tcp* psock,
+enftun_tcp_scm_connect(struct enftun_tcp* scm,
                          const char* host,
                          const char* port)
 {
@@ -101,7 +101,7 @@ enftun_tcp_psock_connect(struct enftun_tcp* psock,
     rc = getaddrinfo(host, port, &hints, &addr_h);
     if (rc < 0)
     {
-        enftun_log_error("PSOCK: Cannot resolve %s:%s: %s\n", host, port,
+        enftun_log_error("SCM: Cannot resolve %s:%s: %s\n", host, port,
                          gai_strerror(rc));
         rc = -1;
         goto out;
@@ -109,7 +109,7 @@ enftun_tcp_psock_connect(struct enftun_tcp* psock,
 
     for (addr = addr_h; addr != NULL; addr = addr->ai_next)
     {
-        rc = do_connect(psock, addr);
+        rc = do_connect(scm, addr);
         if (rc == 0)
             break;
     }
