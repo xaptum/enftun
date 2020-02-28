@@ -79,6 +79,11 @@ endif()
 
 add_executable(enftun ${ENFTUN_SRCS})
 
+
+if(BUILD_SCM)
+    target_compile_definitions(enftun PRIVATE AF_SCM=44)
+endif()
+
 target_link_libraries(enftun
   PRIVATE
   LibConfig::LibConfig
