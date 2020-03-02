@@ -193,12 +193,14 @@ enftun_provision(struct enftun_context* ctx)
         goto err;
     }
 
+    enftun_log_info("enftun_xtt_handshake pre.\n");
     rc = enftun_xtt_handshake(
         ctx->config.remote_hosts, ctx->config.xtt_remote_port,
         ctx->config.fwmark, ctx->config.xtt_tcti, ctx->config.xtt_device,
         ctx->config.cert_file, ctx->config.key_file,
         ctx->config.xtt_socket_host, ctx->config.xtt_socket_port,
         ctx->config.remote_ca_cert_file, ctx->config.xtt_basename, &xtt);
+    enftun_log_info("enftun_xtt_handshake post.\n");
 
     if (0 != rc)
     {
@@ -235,10 +237,12 @@ enftun_connect(struct enftun_context* ctx)
                                         ctx->config.fwmark)) < 0)
         goto out;
 
+    enftun_log_info("enftun_tls_connect pre.\n");
     if ((rc = enftun_tls_connect(&ctx->tls, ctx->config.remote_hosts,
                                  ctx->config.remote_port, ctx->config.fwmark)) <
         0)
         goto close_conn_state;
+    enftun_log_info("enftun_tls_connect post.\n");
 
     if ((rc = enftun_tun_open(&ctx->tun, ctx->config.dev,
                               ctx->config.dev_node)) < 0)
@@ -252,10 +256,14 @@ enftun_connect(struct enftun_context* ctx)
     rc = enftun_tunnel(ctx);
 
 close_tun:
+    enftun_log_info("enftun_tun_close pre.\n");
     enftun_tun_close(&ctx->tun);
+    enftun_log_info("enftun_tun_close post.\n");
 
 close_tls:
+    enftun_log_info("enftun_tls_disconnect pre.\n");
     enftun_tls_disconnect(&ctx->tls);
+    enftun_log_info("enftun_tls_disconnect post.\n");
 
 close_conn_state:
     enftun_conn_state_close(&ctx->conn_state);

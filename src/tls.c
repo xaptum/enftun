@@ -339,11 +339,14 @@ int
 enftun_tls_write_packet(struct enftun_tls* tls, struct enftun_packet* pkt)
 {
     int rc;
+    int tmps = pkt->size;
 
     rc = enftun_tls_write(tls, pkt->data, pkt->size);
     if (rc < 0)
         goto out;
     enftun_packet_remove_head(pkt, rc);
+
+    enftun_log_debug("Sending TLS packet len=%d after=%d", tmps, pkt->size);
 
     if (pkt->size > 0)
     {

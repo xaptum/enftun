@@ -160,9 +160,11 @@ enftun_tun_write(struct enftun_tun* tun, uint8_t* buf, size_t len)
 {
     int rc;
     if ((rc = write(tun->fd, buf, len)) < 0)
-        return -errno;
-    else
-        return rc;
+        rc = -errno;
+
+    enftun_log_debug("Sending TUN packet len=%d rc=%d", len, rc);
+
+    return rc;
 }
 
 int
