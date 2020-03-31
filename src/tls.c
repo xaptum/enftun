@@ -22,6 +22,7 @@
 #include <unistd.h>
 
 #include "log.h"
+#include "tcp_multi.h"
 #include "tls.h"
 
 struct enftun_channel_ops enftun_tls_ops = {
@@ -36,6 +37,8 @@ enftun_tls_init(struct enftun_tls* tls, int mark)
 {
     int rc = 0;
 
+    (void) mark;
+
     tls->ctx = SSL_CTX_new(TLS_client_method());
     if (!tls->ctx)
     {
@@ -44,14 +47,7 @@ enftun_tls_init(struct enftun_tls* tls, int mark)
         goto out;
     }
 
-#ifdef USE_SCM
-    (void) mark;
-    enftun_tcp_scm_init(&tls->sock_scm);
-    tls->sock = &tls->sock_scm.base;
-#else
-    enftun_tcp_native_init(&tls->sock_native, mark);
-    tls->sock = &tls->sock_native.base;
-#endif
+    enftun_tcp_multi_init(&tls->sock);
 
     tls->need_provision = 0;
 
@@ -130,10 +126,10 @@ enftun_tls_handshake(struct enftun_tls* tls)
         goto free_ssl;
     }
 
-    if (!SSL_set_fd(tls->ssl, tls->sock->fd))
+    if (!SSL_set_fd(tls->ssl, tls->sock.fd))
     {
         enftun_log_ssl_error("Failed to set SSL file descriptor (%d):",
-                             tls->sock->fd);
+                             tls->sock.fd);
         goto free_ssl;
     }
 
@@ -176,17 +172,25 @@ out:
 }
 
 int
-enftun_tls_connect(struct enftun_tls* tls, const char** hosts, const char* port)
+enftun_tls_connect(struct enftun_tls* tls,
+                   const char** hosts,
+                   const char* port,
+                   int fwmark)
 {
     int rc;
 
-    rc = tls->sock->ops.connect_any(tls->sock, hosts, port);
+    /* Attempt a connection */
+    rc = tls->sock.ops.connect_any(&tls->sock, hosts, port, fwmark);
+
     if (rc < 0)
+    {
+        enftun_log_error("TLS could not connect\n");
         goto out;
+    }
 
     rc = enftun_tls_handshake(tls);
     if (rc < 0)
-        tls->sock->ops.close(tls->sock);
+        tls->sock.ops.close(&tls->sock);
 
 out:
     return rc;
@@ -214,7 +218,7 @@ enftun_tls_disconnect(struct enftun_tls* tls)
         }
     }
 
-    tls->sock->ops.close(tls->sock);
+    tls->sock.ops.close(&tls->sock);
     SSL_free(tls->ssl);
 
     return 0;

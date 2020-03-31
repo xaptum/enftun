@@ -20,6 +20,7 @@
 #include <unistd.h>
 
 #include <arpa/inet.h>
+#include <linux/socket.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <sys/socket.h>
@@ -32,18 +33,6 @@
 #define get_sin_addr(addr) (&((struct sockaddr_in*) addr->ai_addr)->sin_addr)
 
 #define get_sin_port(addr) (((struct sockaddr_in*) addr->ai_addr)->sin_port)
-
-static struct enftun_tcp_ops enftun_tcp_scm_ops = {
-    .connect = (int (*)(struct enftun_tcp*, const char* host, const char*))
-        enftun_tcp_scm_connect,
-    .connect_any = enftun_tcp_connect_any,
-    .close       = enftun_tcp_close};
-
-void
-enftun_tcp_scm_init(struct enftun_tcp_scm* scm)
-{
-    scm->base.ops = enftun_tcp_scm_ops;
-}
 
 static int
 do_connect(struct enftun_tcp* tcp, struct addrinfo* addr)
@@ -83,10 +72,11 @@ out:
     return rc;
 }
 
-int
+static int
 enftun_tcp_scm_connect(struct enftun_tcp* scm,
                        const char* host,
-                       const char* port)
+                       const char* port,
+                       int fwmark)
 {
     int rc;
     struct addrinfo *addr_h, *addr, hints;
@@ -127,4 +117,18 @@ enftun_tcp_scm_connect(struct enftun_tcp* scm,
 
 out:
     return rc;
+}
+
+static struct enftun_tcp_ops enftun_tcp_scm_ops = {
+    .connect =
+        (int (*)(struct enftun_tcp*, const char* host, const char*, int fwmark))
+            enftun_tcp_scm_connect,
+    .connect_any = enftun_tcp_connect_any,
+    .close       = enftun_tcp_close};
+
+void
+enftun_tcp_scm_init(struct enftun_tcp* scm)
+{
+    scm->ops  = enftun_tcp_scm_ops;
+    scm->type = ENFTUN_TCP_SCM;
 }

@@ -30,6 +30,7 @@
 #include <xtt/tpm/context.h>
 
 #include "log.h"
+#include "tcp_multi.h"
 #include "tls.h"
 #include "xtt.h"
 
@@ -106,18 +107,7 @@ enftun_xtt_handshake(const char** server_hosts,
                      const char* basename_in,
                      struct enftun_xtt* xtt)
 {
-    struct enftun_tcp* sock;
-
-#ifdef USE_SCM
-    (void) mark;
-    struct enftun_tcp_scm sock_scm = {0};
-    enftun_tcp_scm_init(&sock_scm);
-    sock = &sock_scm.base;
-#else
-    struct enftun_tcp_native sock_native = {0};
-    enftun_tcp_native_init(&sock_native, mark);
-    sock = &sock_native.base;
-#endif
+    struct enftun_tcp sock = {0};
 
     int init_daa_ret = -1;
     int ret          = 0;
@@ -236,10 +226,13 @@ enftun_xtt_handshake(const char** server_hosts,
         goto finish;
     }
 
-    // 2) Make TCP connection to server.
-    ret = sock->ops.connect_any(sock, server_hosts, (char*) server_port);
+    // 2) Make network connection
+    enftun_tcp_multi_init(&sock);
+    ret = sock.ops.connect_any(&sock, server_hosts, (char*) server_port, mark);
+
     if (ret < 0)
     {
+        enftun_log_error("XTT Handshake: Connection failed\n");
         ret = 1;
         goto finish;
     }
@@ -262,7 +255,7 @@ enftun_xtt_handshake(const char** server_hosts,
     }
 
     // 4) Run the identity-provisioning handshake with the server.
-    ret = do_handshake_client(sock->fd, &requested_client_id, &group_ctx, &ctx,
+    ret = do_handshake_client(sock.fd, &requested_client_id, &group_ctx, &ctx,
                               &saved_root_id, &saved_cert);
     if (0 == ret)
     {
@@ -280,7 +273,7 @@ enftun_xtt_handshake(const char** server_hosts,
     }
 
 finish:
-    sock->ops.close(sock);
+    sock.ops.close(&sock);
     xtt_free_tpm_context(&xtt->tpm_ctx);
     if (0 == ret)
     {

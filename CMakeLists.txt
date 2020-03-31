@@ -63,6 +63,7 @@ set(ENFTUN_SRCS
     src/packet.c
     src/sockaddr.c
     src/tcp.c
+    src/tcp_multi.c
     src/tls.c
     src/tun.c
     src/udp.c
