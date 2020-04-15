@@ -1,0 +1,22 @@
+[Unit]
+Description=ENF tunnel client for data %I interface
+Documentation=https://github.com/xaptum/enftun
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+ExecStartPre=/sbin/ip tuntap add mode tun %i
+ExecStartPre=@CMAKE_INSTALL_FULL_BINDIR@/wait_for_iface %i
+ExecStartPre=/sbin/ip link set mtu 1280 dev %i
+ExecStartPre=/sbin/ip link set dev %i up
+ExecStartPre=@CMAKE_INSTALL_FULL_BINDIR@/wait_for_iface_up %i
+ExecStart=@CMAKE_INSTALL_FULL_BINDIR@/enftun -c %i.conf
+ExecStopPost=/sbin/ip tuntap del mode tun %i
+WorkingDirectory=/etc/enftun
+ProtectSystem=true
+ProtectHome=true
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
