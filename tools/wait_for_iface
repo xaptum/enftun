@@ -1,0 +1,15 @@
+#!/bin/bash
+set -e
+
+wait_for_iface_f() {
+    local i=0
+    local res
+    while [ $i -lt 50 ]; do # 5 seconds
+        res=$(ip -o link show dev $1 2>/dev/null)
+        [ -n "$res" ] && return 0
+        sleep 0.1
+        i=$[$i+1]
+    done
+    return 1
+}
+wait_for_iface_f $1
