@@ -13,9 +13,11 @@ find_package(CURL REQUIRED)
 
 add_compile_options(-std=c99 -Wall -Wextra -Wno-missing-field-initializers)
 add_executable(enftun-keygen
-	src/main.c
-	src/json_tools.c
-	)
+    src/main.c
+    src/json_tools.c
+    src/auth.c
+    src/ssl.c
+    )
 
 target_include_directories(enftun-keygen
     PRIVATE
@@ -29,6 +31,7 @@ target_link_libraries(enftun-keygen
      ${OPENSSL_SSL_LIBRARIES}
      ${OPENSSL_CRYPTO_LIBRARIES}
      ${JANSSON_LIBRARIES}
+    LibConfig::LibConfig
     )
 set_target_properties(enftun-keygen
   PROPERTIES
