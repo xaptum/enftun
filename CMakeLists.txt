@@ -19,7 +19,7 @@ include(GNUInstallDirs)
 
 find_package(LibConfig REQUIRED QUIET 1.5)
 find_package(LibUV REQUIRED QUIET 1.9)
-find_package(OpenSSL REQUIRED QUIET 1.1)
+find_package(OpenSSL REQUIRED QUIET 1.0)
 
 if(BUILD_XTT)
     add_definitions(-DUSE_TPM)
