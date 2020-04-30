@@ -62,7 +62,6 @@ They may be set by end users to point at libconfig components.
 find_library(LibConfig_LIBRARY
   NAMES config
   )
-message("LibConfig_LIBRARY is ${LibConfig_LIBRARY}")
 mark_as_advanced(LibConfig_LIBRARY)
 
 find_path(LibConfig_INCLUDE_DIR
