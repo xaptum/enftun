@@ -39,7 +39,13 @@ enftun_tls_init(struct enftun_tls* tls, int mark)
 
     (void) mark;
 
+#if OPENSSL_VERSION_NUMBER < 0x10100000
+    SSL_library_init();
+    SSL_load_error_strings();
+    tls->ctx = SSL_CTX_new(TLSv1_2_client_method());
+#else
     tls->ctx = SSL_CTX_new(TLS_client_method());
+#endif
     if (!tls->ctx)
     {
         enftun_log_ssl_error("Cannot allocate SSL_CTX structure:");
@@ -120,11 +126,16 @@ enftun_tls_handshake(struct enftun_tls* tls)
         goto err;
     }
 
+#if OPENSSL_VERSION_NUMBER < 0x10100000
+    SSL_set_options(tls->ssl, SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3 | SSL_OP_NO_TLSv1 |
+                    SSL_OP_NO_TLSv1_1);
+#else
     if (SSL_set_min_proto_version(tls->ssl, TLS1_2_VERSION) < 0)
     {
         enftun_log_ssl_error("Cannot set min proto version:");
         goto free_ssl;
     }
+#endif
 
     if (!SSL_set_fd(tls->ssl, tls->sock.fd))
     {
