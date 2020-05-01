@@ -130,14 +130,14 @@ enftun_tls_handshake(struct enftun_tls* tls)
     SSL_set_options(tls->ssl, SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3 | SSL_OP_NO_TLSv1 |
                     SSL_OP_NO_TLSv1_1);
 #else
-    if (SSL_set_min_proto_version(tls->ssl, TLS1_2_VERSION) < 0)
+    if (SSL_set_min_proto_version(tls->ssl, TLS1_2_VERSION) != 1)
     {
         enftun_log_ssl_error("Cannot set min proto version:");
         goto free_ssl;
     }
 #endif
 
-    if (!SSL_set_fd(tls->ssl, tls->sock.fd))
+    if (SSL_set_fd(tls->ssl, tls->sock.fd) != 1)
     {
         enftun_log_ssl_error("Failed to set SSL file descriptor (%d):",
                              tls->sock.fd);
