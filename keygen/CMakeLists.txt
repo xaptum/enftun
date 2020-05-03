@@ -10,6 +10,7 @@ include(GNUInstallDirs)
 find_package(OpenSSL REQUIRED QUIET 1.1)
 find_package(Jansson REQUIRED)
 find_package(CURL REQUIRED)
+find_package(sodium REQUIRED QUIET 1.0.11)
 
 add_compile_options(-std=c99 -Wall -Wextra -Wno-missing-field-initializers)
 add_executable(enftun-keygen
@@ -28,10 +29,11 @@ target_include_directories(enftun-keygen
 
 target_link_libraries(enftun-keygen
     PUBLIC ${CURL_LIBRARIES}
-     ${OPENSSL_SSL_LIBRARIES}
-     ${OPENSSL_CRYPTO_LIBRARIES}
-     ${JANSSON_LIBRARIES}
+    ${OPENSSL_SSL_LIBRARIES}
+    ${OPENSSL_CRYPTO_LIBRARIES}
+    ${JANSSON_LIBRARIES}
     LibConfig::LibConfig
+    sodium
     )
 set_target_properties(enftun-keygen
   PROPERTIES
