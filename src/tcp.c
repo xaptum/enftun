@@ -193,7 +193,7 @@ enftun_tcp_close(struct enftun_tcp* tcp)
 }
 
 static struct enftun_tcp_ops enftun_tcp_native_ops = {
-    .connect     = (int (*)(struct enftun_tcp* sock,
+    .connect = (int (*)(struct enftun_tcp* sock,
                         const char* host,
                         const char* port,
                         int fwmark)) enftun_tcp_native_connect,

@@ -127,8 +127,8 @@ enftun_tls_handshake(struct enftun_tls* tls)
     }
 
 #if OPENSSL_VERSION_NUMBER < 0x10100000
-    SSL_set_options(tls->ssl, SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3 | SSL_OP_NO_TLSv1 |
-                    SSL_OP_NO_TLSv1_1);
+    SSL_set_options(tls->ssl, SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3 |
+                                  SSL_OP_NO_TLSv1 | SSL_OP_NO_TLSv1_1);
 #else
     if (SSL_set_min_proto_version(tls->ssl, TLS1_2_VERSION) != 1)
     {
