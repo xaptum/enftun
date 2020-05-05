@@ -306,6 +306,16 @@ enftun_tls_read_packet(struct enftun_tls* tls, struct enftun_packet* pkt)
     int rc;
     size_t len;
 
+    /*
+     * If starting to read a new packet, ensure the TLS stream header
+     * is half-word aligned so that the actual packet paylaod will be
+     * word aligned.
+     */
+    if (pkt->size == 0)
+    {
+        enftun_packet_reserve_head(pkt, 2);
+    }
+
     len = size_to_read(pkt);
     if (len > enftun_packet_tailroom(pkt))
     {
