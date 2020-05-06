@@ -118,7 +118,7 @@ enftun_xtt_handshake(const char** server_hosts,
     setbuf(stdout, NULL);
 
     xtt_identity_type requested_client_id = {.data = {0}};
-    requested_client_id                   = xtt_null_identity;
+    requested_client_id = xtt_null_identity;
 
     // Set suite spec from command line args
     xtt_suite_spec suite_spec = 0;
@@ -185,13 +185,13 @@ enftun_xtt_handshake(const char** server_hosts,
     // 1) Setup the needed XTT contexts (from files/TPM).
     // 1i) Read in DAA data from the TPm or from files
 
-    xtt_daa_group_pub_key_lrsw gpk        = {.data = {0}};
-    xtt_daa_credential_lrsw cred          = {.data = {0}};
+    xtt_daa_group_pub_key_lrsw gpk = {.data = {0}};
+    xtt_daa_credential_lrsw cred = {.data = {0}};
     xtt_root_certificate root_certificate = {.data = {0}};
-    unsigned char basename[1024]          = {0};
-    uint16_t basename_len                 = sizeof(basename);
-    unsigned char tls_root_cert[1024]     = {0};
-    uint16_t tls_len                      = sizeof(tls_root_cert);
+    unsigned char basename[1024]                   = {0};
+    uint16_t basename_len                          = sizeof(basename);
+    unsigned char tls_root_cert[1024]              = {0};
+    uint16_t tls_len                               = sizeof(tls_root_cert);
 
     ret = read_in_from_TPM(&xtt->tpm_ctx, basename, &basename_len, &gpk, &cred,
                            &root_certificate, tls_root_cert, &tls_len);
@@ -211,7 +211,7 @@ enftun_xtt_handshake(const char** server_hosts,
     struct xtt_client_group_context group_ctx;
     init_daa_ret = initialize_daa(&group_ctx, basename, basename_len, &gpk,
                                   &cred, &xtt->tpm_ctx, basename_in);
-    ret          = init_daa_ret;
+    ret = init_daa_ret;
     if (0 != init_daa_ret)
     {
         enftun_log_error("Error initializing DAA context\n");
@@ -401,8 +401,8 @@ initialize_certs(struct xtt_server_root_certificate_context* saved_cert,
                  xtt_certificate_root_id* saved_root_id,
                  xtt_root_certificate* root_certificate)
 {
-    xtt_return_code_type rc               = 0;
-    xtt_certificate_root_id root_id       = {.data = {0}};
+    xtt_return_code_type rc         = 0;
+    xtt_certificate_root_id root_id = {.data = {0}};
     xtt_ecdsap256_pub_key root_public_key = {.data = {0}};
 
     // Initialize stored data

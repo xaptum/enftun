@@ -127,8 +127,8 @@ enftun_tls_handshake(struct enftun_tls* tls)
     }
 
 #if OPENSSL_VERSION_NUMBER < 0x10100000
-    SSL_set_options(tls->ssl, SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3 | SSL_OP_NO_TLSv1 |
-                    SSL_OP_NO_TLSv1_1);
+    SSL_set_options(tls->ssl, SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3 |
+                                  SSL_OP_NO_TLSv1 | SSL_OP_NO_TLSv1_1);
 #else
     if (SSL_set_min_proto_version(tls->ssl, TLS1_2_VERSION) != 1)
     {
@@ -305,6 +305,16 @@ enftun_tls_read_packet(struct enftun_tls* tls, struct enftun_packet* pkt)
 {
     int rc;
     size_t len;
+
+    /*
+     * If starting to read a new packet, ensure the TLS stream header
+     * is half-word aligned so that the actual packet paylaod will be
+     * word aligned.
+     */
+    if (pkt->size == 0)
+    {
+        enftun_packet_reserve_head(pkt, 2);
+    }
 
     len = size_to_read(pkt);
     if (len > enftun_packet_tailroom(pkt))
