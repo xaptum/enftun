@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.1 FATAL_ERROR)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
 project(enftun
-  VERSION 0.6.0
+  VERSION 0.6.1
   LANGUAGES C
 )
 
