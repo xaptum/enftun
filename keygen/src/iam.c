@@ -16,93 +16,302 @@
 
 #include <string.h>
 #include <jansson.h>
-#include <curl/curl.h>
 #include "iam.h"
-#include "auth.h"
 #include "curl.h"
+#include "json_tools.h"
 
-static const char *XAP_XIAM_URL = "https://xaptum.io/api/xiam/v1/";
-static const char *XIAM_FUNC_EP_AUTH = "endpoints";
+#ifndef XAP_XIAM_URL
+#define XAP_XIAM_URL "https://xaptum.io/api/xiam/v1/"
+#endif
 
-/* TODO Factor these functions */
-static void ep_copy_json_str(char *dst, json_t *j_str)
-{
-    char *src = json_string_value(j_str);
-    int len = strlen(src);
-    strcpy(dst, src);
-}
+static const char *XIAM_FUNC_EP_AUTH = XAP_XIAM_URL "endpoints";
 
 /**
- * ep_auth_marshal() - Create XCR login
+ * ep_auth_marshal() - Generate a JSON object to send to IAM endpoints API
  * @auth: The login user and password (key)
  *
- * Returns a JSON object representing the payload of an XCR authentication
- * request with the username and password copied from login.
- *
- * Return: A pointer to the JSON data
+ * Return: The new JSON data
  */
-json_t *ep_auth_marshal(struct iam_create_endpoint_request*auth)
+char *ep_auth_marshal(struct iam_create_endpoint_request *auth)
 {
     json_t *new_endpoint_auth = json_object();
     json_t *new_credential = json_object();
     json_t *address_request = json_object();
+    char *auth_str = NULL;
+    const char *endpoint_name = auth->type == NETWORK ? "network" : "address";
+    int ret = 0;
 
-    json_object_set_new(new_credential, "type", json_string(auth->ecdsa_credential.type));
-    json_object_set_new(new_credential, "key", json_string(auth->ecdsa_credential.key));
-    json_object_set_new(address_request, "network", json_string(auth->endpoint.network));
+    /* No specific memory has to be freed so it only needs to be known if any of them failed */
+    ret |= json_object_set_new(new_credential, "type", json_string(auth->ecdsa_credential.type));
+    ret |= json_object_set_new(new_credential, "key", json_string(auth->ecdsa_credential.key));
+    ret |= json_object_set_new(address_request, endpoint_name, json_string(auth->endpoint));
 
-    json_object_set_new(new_endpoint_auth, "ecdsa_credential", new_credential);
-    json_object_set_new(new_endpoint_auth, "address_request", address_request);
+    ret |= json_object_set_new(new_endpoint_auth, "ecdsa_credential", new_credential);
+    ret |= json_object_set_new(new_endpoint_auth, "address_request", address_request);
 
-    return new_endpoint_auth;
+    /* Do not generate the string if any of them failed */
+    if (ret)
+        goto cleanup;
+
+    /* Copy the assembled object to a new stirng */
+    auth_str = json_dumps(new_endpoint_auth, 0);
+
+cleanup:
+    json_decref(new_endpoint_auth);
+
+    return auth_str;
 }
 
-json_t *
-iam_send_create_endpoint_request(struct iam_create_endpoint_request*auth, struct xcr_session *sess)
+/**
+ * ep_auth_resp_set_common() - Helper function to ep_auth_resp_unmarshal
+ * @active_credentials: The active credentials portion of XIAMs return
+ * @ep_ret: The return data structure
+ *
+ * Return: None
+ */
+static void ep_auth_resp_set_common(json_t *root, struct iam_endpoint *ep_ret)
 {
-    json_t *xcr_proc_auth_resp = NULL;
-    struct xcr_auth *auth_resp;
-    CURL *curl;
-    struct curl_slist *chunk = NULL;
-    struct MemoryStruct target;
-    char *url;
-    CURLcode res;
+    copy_json_str(ep_ret->address, json_object_get(root, "address"), sizeof(ep_ret->address));
+    copy_json_str(ep_ret->network, json_object_get(root, "network"), sizeof(ep_ret->network));
+    ep_ret->creation_timestamp = new_json_str(json_object_get(root, "creation_timestamp"));
+    ep_ret->modification_timestamp = new_json_str(json_object_get(root, "modification_timestamp"));
+}
+
+/**
+ * ep_auth_resp_set_daa() - Helper function to ep_auth_resp_unmarshal
+ * @active_credentials: The active credentials portion of XIAMs return
+ * @ep_ret: The return data structure
+ *
+ * Return: None
+ */
+static void ep_auth_resp_set_daa(json_t *active_credentials, struct iam_endpoint *ep_ret)
+{
+    ep_ret->type = EP_DAA;
+    strcpy(ep_ret->active_credentials.daa.type, "daa_lrsw_bn256");
+    copy_json_str(
+            ep_ret->active_credentials.daa.group_id,
+            json_object_get(active_credentials, "group_id"),
+            sizeof(ep_ret->active_credentials.daa.group_id));
+    ep_ret->active_credentials.daa.pseudonym = new_json_str(json_object_get(active_credentials, "pseudonym"));
+    ep_ret->active_credentials.daa.creation_timestamp =
+            new_json_str(json_object_get(active_credentials, "creation_timestamp"));
+}
+
+/**
+ * ep_auth_resp_set_ecdsa() - Helper function to ep_auth_resp_unmarshal
+ * @active_credentials: The active credentials portion of XIAMs return
+ * @ep_ret: The return data structure
+ *
+ * Return: None
+ */
+static void ep_auth_resp_set_ecdsa(json_t *active_credentials, struct iam_endpoint *ep_ret)
+{
+    ep_ret->type = EP_ECDSA;
+    strcpy(ep_ret->active_credentials.ecdsa.type, "ecdsa_p256");
+    ep_ret->active_credentials.ecdsa.key = new_json_str(json_object_get(active_credentials, "key"));
+    ep_ret->active_credentials.ecdsa.creation_timestamp =
+            new_json_str(json_object_get(active_credentials, "creation_timestamp"));
+}
+
+/**
+ * ep_auth_resp_unmarshal() - Process the response from IAM endpoints API
+ * @ep: The JSON string represneing a xiam.ENDPOINT object
+ * @ep_ret: A structure to write the return data into
+ *
+ * Return: The new endpoint
+ */
+int ep_auth_resp_unmarshal(char *ep, struct iam_endpoint *ep_ret)
+{
+    /* Json holders */
     json_error_t jerror;
+    json_t *root = NULL;
+    json_t *active_credentials = NULL;
+    int ret = 0;
 
+    /* Zero out the return struct to make bad input distinct from allocated pointers on error */
+    memset(ep_ret, 0, sizeof(*ep_ret));
 
-    /* Assemble the URL */
-    url = malloc(strlen(XAP_XIAM_URL) + strlen(XIAM_FUNC_EP_AUTH) + 1);
-    strcpy(url, XAP_XIAM_URL);
-    memcpy(url + strlen(url), XIAM_FUNC_EP_AUTH, strlen(XIAM_FUNC_EP_AUTH) + 1);
-    printf("Sending to URL %s\n", url);
-
-    /* Set up a request to send to the API */
-    curl = curl_easy_init();
-    set_std_curl_opts(curl, chunk, sess, url, json_dumps(ep_auth_marshal(auth), 0));
-
-    /* Send the request and check for errors */
-    res = curl_easy_perform(curl);
-    if(res == CURLE_OK)
-    {
-        printf("ENDPOINT RESP\n");
-        printf("%s", target.memory);
-        /* Process the response into a JSON object */
-        //xcr_proc_auth_resp = json_loads(target.memory, 0, &jerror);
-
-        /* Process the JSON object into our data structure */
-        //auth_resp = xcr_auth_marshal(xcr_proc_auth_resp);
-
-        /* Copy the token into the session handler */
-        //strcpy(session->token, auth_resp->data[0].token);
-    }
-    else {
-        fprintf(stderr, "curl_easy_perform() failed: %s\n",
-                curl_easy_strerror(res));
+    root = json_loads(ep, 0, &jerror);
+    if (!root) {
+        fprintf(stderr, "%s ERR: Could not parse JSON string error %s",
+                __func__, jerror.text);
+        goto cleanup_err;
     }
 
-    /* Clean up */
-    curl_easy_cleanup(curl);
-    curl_slist_free_all(chunk);
+    /* Determine if an active credntial was returned and abort if nothing is given */
+    active_credentials = json_object_get(root, "active_credentials");
+    active_credentials = json_array_get(json_object_get(active_credentials, "body"), 0);
+    if (!active_credentials) {
+        goto cleanup_err;
+    }
 
-    return auth_resp;
+    /* Copy common elements */
+    ep_auth_resp_set_common(root, ep_ret);
+
+    /* Copy active credentials */
+    if(strcmp("daa_lrsw_bn256", json_string_value(json_object_get(active_credentials, "type"))) == 0)
+        ep_auth_resp_set_daa(active_credentials, ep_ret);
+    else
+        ep_auth_resp_set_ecdsa(active_credentials, ep_ret);
+
+    /* See if the necessary values are all present */
+
+    /* Common fields */
+    if(!ep_ret->creation_timestamp || !ep_ret->modification_timestamp)
+        goto out;
+
+    /* Active credential types */
+    if (ep_ret->type != EP_DAA && ep_ret->type != EP_ECDSA)
+            goto cleanup_err;
+    else if (ep_ret->type == EP_DAA && (!ep_ret->active_credentials.daa.creation_timestamp || !ep_ret->active_credentials.daa.pseudonym))
+        goto cleanup_err;
+    else if (ep_ret->type == EP_ECDSA && (!ep_ret->active_credentials.ecdsa.creation_timestamp || !ep_ret->active_credentials.ecdsa.key))
+        goto cleanup_err;
+
+    /* Success */
+    ret = 1;
+    goto out;
+
+cleanup_err:
+    ret = 0;
+    ep_auth_resp_destroy(ep_ret);
+
+out:
+    if (root)
+        json_decref(root);
+    return ret;
+}
+
+/**
+ * ep_auth_resp_destroy() - Destroys an iam_endpoint object
+ * @ep: The object to be destroyed
+ *
+ * Return: None
+ */
+void ep_auth_resp_destroy(struct iam_endpoint *ep)
+{
+    free(ep->creation_timestamp);
+    free(ep->modification_timestamp);
+
+    /* Free active credential items where applicable */
+    if (ep->type == EP_DAA) {
+        free(ep->active_credentials.daa.pseudonym);
+        free(ep->active_credentials.daa.creation_timestamp);
+    } else if (ep->type == EP_ECDSA) {
+        free(ep->active_credentials.ecdsa.key);
+        free(ep->active_credentials.ecdsa.creation_timestamp);
+    }
+}
+
+/**
+ * iam_create_endpoint_request_destroy() - Destroys an iam_create_endpoint_request object
+ * @req: The object to be destroyed
+ *
+ * Return: None
+ */
+void iam_create_endpoint_request_destroy(struct iam_create_endpoint_request *req)
+{
+    free(req->ecdsa_credential.key);
+}
+
+/**
+ * iam_new_ep_auth_network() - Created a new request for XIAM endpoint request
+ * @network: The IPv6 subnet being requested
+ * @key: The x9.62-encoded public key
+ * @req Address to write the returned data into
+ *
+ * Returned value must be freed with iam_destroy
+ *
+ * Return: 1 on success, 0 on failure
+ */
+int iam_new_ep_auth_network_request(char *network, char *key, struct iam_create_endpoint_request *request)
+{
+    int ret = 1;
+    const char *suffix;
+
+    /* Avoid an overcopy error */
+    if (strlen(network) + 1 > sizeof(request->endpoint)) {
+        fprintf(stderr, "%s ERR: Endpoint address too long.", __func__);
+        ret = 0;
+        goto out;
+    }
+
+    /* Allocate and copy the key */
+    request->ecdsa_credential.key = malloc(strlen(key) + 1);
+    if (!request->ecdsa_credential.key) {
+        fprintf(stderr, "%s ERR: Memory alloc failed for key.", __func__);
+        ret = 0;
+        goto out;
+    }
+    strcpy(request->ecdsa_credential.key, key);
+    strcpy(request->ecdsa_credential.type, type_ecdsa_p256);
+
+    /* Note: This is designed to seperate valid addresses and subnets, not validate all inputs */
+    suffix = &network[strlen(network) - 3];
+    if (strcmp(suffix, "/64") == 0) {
+        request->type = NETWORK;
+        strcpy(request->endpoint, network);
+    } else {
+        request->type = ADDRESS;
+        strcpy(request->endpoint, network);
+    }
+
+out:
+    return ret;
+}
+
+/**
+ * iam_send_ep_auth() - sends an endpoint request to XIAM
+ * @auth: The endpoint authorization parameters to send (see xiam.NEW_ENDPOINT_AUTH)
+ * @token: The session token provided by XCR
+ * @ep_resp: A continer to populate with the reponse data
+ *
+ * @ep_resp must be freed with ep_auth_resp_destroy
+ *
+ * Return: 1 on success, 0 on failure
+ */
+int iam_send_ep_auth(struct iam_create_endpoint_request *auth, char *token, struct iam_endpoint *ep_resp)
+{
+    struct enftun_req api_req = {0};
+    char *send_post = NULL;
+    char *response = NULL;
+    int ret = 1;
+
+    /* Prepare the request */
+    ret = enftun_curl_init(&api_req);
+    if (!ret) {
+        ret = 0;
+        fprintf(stderr, "%s CURL init failed.\n", __func__);
+        goto cleanup;
+    }
+    enftun_req_set_auth(&api_req, token);
+
+    /* Turn the request into JSON */
+    send_post = ep_auth_marshal(auth);
+    if (!send_post) {
+        ret = 0;
+        fprintf(stderr, "%s Could not marshal request.\n", __func__);
+        goto cleanup;
+    }
+
+    /* Actually send the request */
+    response = enftun_curl_send(&api_req, XIAM_FUNC_EP_AUTH, send_post);
+
+    if (response) {
+        ret = ep_auth_resp_unmarshal(response, ep_resp);
+        if (!ret) {
+            ret = 0;
+            fprintf(stderr, "%s unable to marshal response: %s\n", __func__, response);
+        }
+    } else {
+        ret = 0;
+        fprintf(stderr, "%s No response received\n", __func__);
+    }
+
+cleanup:
+    free(response);
+    free(send_post);
+    enftun_curl_destroy(&api_req);
+
+    return ret;
 }

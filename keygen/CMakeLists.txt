@@ -20,8 +20,8 @@ add_executable(enftun-keygen
     src/auth.c
     src/ssl.c
     src/curl.c
+    src/iam.c
     )
->>>>>>> 7c6a112... enftun-keygen: Abstract common CURL functions to seperate file
 
 target_include_directories(enftun-keygen
     PRIVATE
