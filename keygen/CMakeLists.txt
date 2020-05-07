@@ -13,12 +13,15 @@ find_package(CURL REQUIRED)
 find_package(sodium REQUIRED QUIET 1.0.11)
 
 add_compile_options(-std=c99 -Wall -Wextra -Wno-missing-field-initializers)
+
 add_executable(enftun-keygen
     src/main.c
     src/json_tools.c
     src/auth.c
     src/ssl.c
+    src/curl.c
     )
+>>>>>>> 7c6a112... enftun-keygen: Abstract common CURL functions to seperate file
 
 target_include_directories(enftun-keygen
     PRIVATE
