@@ -21,6 +21,8 @@ add_executable(enftun-keygen
     src/ssl.c
     src/curl.c
     src/iam.c
+    src/enftun/config.c
+    src/enftun/log.c
     )
 
 target_include_directories(enftun-keygen
