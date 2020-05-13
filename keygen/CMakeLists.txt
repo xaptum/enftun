@@ -12,7 +12,10 @@ find_package(Jansson REQUIRED)
 find_package(CURL REQUIRED)
 
 add_compile_options(-std=c99 -Wall -Wextra -Wno-missing-field-initializers)
-add_executable(enftun-keygen src/main.c)
+add_executable(enftun-keygen
+	src/main.c
+	src/json_tools.c
+	)
 
 target_include_directories(enftun-keygen
     PRIVATE
