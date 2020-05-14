@@ -23,6 +23,8 @@ RUN apt-get install libuv1
 RUN apt-get install libuv1-dev
 RUN apt-get install libssl1.1
 RUN apt-get install -y libssl-dev
+RUN apt-get install -y libcurl4-openssl-dev
+RUN apt-get install -y libjansson-dev
 RUN apt-get -y install gnupg2
 RUN apt-get install -y clang-format
 
