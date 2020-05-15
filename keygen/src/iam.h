@@ -47,6 +47,13 @@ struct iam_endpoint
     char *modification_timestamp;
 };
 
+
+enum addr_type {
+    TYPE_NONE,
+    TYPE_IPV6_ADDR,
+    TYPE_IPV6_NETWORK
+};
+
 int iam_send_ep_auth(struct iam_create_endpoint_request *auth, char *token, struct iam_endpoint *ep_resp);
 int iam_new_ep_auth_network_request(char *network, char *key, struct iam_create_endpoint_request *request);
 void ep_auth_resp_destroy(struct iam_endpoint *ep);
