@@ -47,7 +47,6 @@ struct iam_endpoint
     char *modification_timestamp;
 };
 
-
 enum addr_type {
     TYPE_NONE,
     TYPE_IPV6_ADDR,

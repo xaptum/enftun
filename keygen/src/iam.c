@@ -27,6 +27,51 @@
 
 static const char *XIAM_FUNC_EP_AUTH = XAP_XIAM_URL "endpoints";
 
+
+/* Structure for XIAM internal errors */
+struct iam_error {
+    int error;
+    int http_error;
+    char *reason;
+};
+
+/**
+ * iam_error_unmarshall() - Marshall an error response from XIAM
+ * @str: The JSON string to marshall
+ * @out: A structure to write the return data into
+ *
+ * Return: 1 on success, 0 if structure cannot be read
+ */
+static int iam_error_unmarshall(char *str, struct iam_error *out) {
+    json_t *root = NULL;
+    struct iam_error error = {-1, -1, ""};
+    int ret = 1;
+
+    root = json_loads(str, 0, NULL);
+
+    /* Validate the object */
+    if (!root || !json_object_get(root, "xiam_error") || !json_object_get(root, "http_error") ||
+        !json_object_get(root, "reason")) {
+        ret = 0;
+        goto out;
+    }
+
+    error.error = json_integer_value(json_object_get(root, "xiam_error"));
+    error.http_error = json_integer_value(json_object_get(root, "http_error"));
+    error.reason = new_json_str(json_object_get(root, "reason"));
+
+    *out = error;
+
+out:
+    return ret;
+}
+
+static void iam_error_free(struct iam_error *err)
+{
+    if(err->reason)
+        free(err->reason);
+    err->reason = NULL;
+}
 /**
  * ep_auth_marshal() - Generate a JSON object to send to IAM endpoints API
  * @auth: The login user and password (key)
@@ -134,8 +179,6 @@ int ep_auth_resp_unmarshal(char *ep, struct iam_endpoint *ep_ret)
 
     root = json_loads(ep, 0, &jerror);
     if (!root) {
-        fprintf(stderr, "%s ERR: Could not parse JSON string error %s",
-                __func__, jerror.text);
         goto cleanup_err;
     }
 
@@ -257,7 +300,7 @@ static enum addr_type ip_version(const char *src) {
     /* Copy the IP as we can modify it */
     ip_str = malloc(strlen(src) + 1);
     if (!ip_str) {
-        fprintf("%s ERR: Memory error\n", __func__);
+        fprintf(stderr, "%s ERR: Memory error\n", __func__);
         goto out;
     }
     strcpy(ip_str, src);
@@ -386,8 +429,20 @@ int iam_send_ep_auth(struct iam_create_endpoint_request *auth, char *token, stru
     if (response) {
         ret = ep_auth_resp_unmarshal(response, ep_resp);
         if (!ret) {
+            /* try to figure out the error */
+            struct iam_error emsg = {0};
+            iam_error_unmarshall(response, &emsg);
+
+            if(emsg.error == 500)
+                fprintf(stderr, "A server error occured. Please check input parameters.\n");
+            else if(emsg.error == 403)
+                fprintf(stderr, "An authorization error occured. Please check input parameters.\n");
+            else
+                fprintf(stderr, "An unknown error occured (%d, %d, %s)\n", emsg.error, emsg.http_error, emsg.reason);
+
+            iam_error_free(&emsg);
+
             ret = 0;
-            fprintf(stderr, "%s unable to marshal response: %s\n", __func__, response);
         }
     } else {
         ret = 0;
