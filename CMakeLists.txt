@@ -13,7 +13,9 @@ option(BUILD_SCM   "Build with scm support" OFF)
 option(BUILD_SYSTEMD "Build with systemd support" ON)
 option(BUILD_TEST    "Build tests" ON)
 option(BUILD_XTT     "Build with XTT support" ON)
+option(BUILD_KEYGEN  "Build with keygen tool" ON)
 option(CHECK_FORMAT  "Check source format during build" ON)
+
 
 include(GNUInstallDirs)
 
@@ -128,6 +130,10 @@ endif()
 
 if (BUILD_TEST)
   add_subdirectory(test)
+endif()
+
+if (BUILD_KEYGEN)
+  add_subdirectory(keygen)
 endif()
 
 if (CHECK_FORMAT)
