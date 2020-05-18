@@ -16,6 +16,7 @@
 
 #include <string.h>
 #include <jansson.h>
+#include <arpa/inet.h>
 #include "iam.h"
 #include "curl.h"
 #include "json_tools.h"
@@ -26,6 +27,51 @@
 
 static const char *XIAM_FUNC_EP_AUTH = XAP_XIAM_URL "endpoints";
 
+
+/* Structure for XIAM internal errors */
+struct iam_error {
+    int error;
+    int http_error;
+    char *reason;
+};
+
+/**
+ * iam_error_unmarshall() - Marshall an error response from XIAM
+ * @str: The JSON string to marshall
+ * @out: A structure to write the return data into
+ *
+ * Return: 1 on success, 0 if structure cannot be read
+ */
+static int iam_error_unmarshall(char *str, struct iam_error *out) {
+    json_t *root = NULL;
+    struct iam_error error = {-1, -1, ""};
+    int ret = 1;
+
+    root = json_loads(str, 0, NULL);
+
+    /* Validate the object */
+    if (!root || !json_object_get(root, "xiam_error") || !json_object_get(root, "http_error") ||
+        !json_object_get(root, "reason")) {
+        ret = 0;
+        goto out;
+    }
+
+    error.error = json_integer_value(json_object_get(root, "xiam_error"));
+    error.http_error = json_integer_value(json_object_get(root, "http_error"));
+    error.reason = new_json_str(json_object_get(root, "reason"));
+
+    *out = error;
+
+out:
+    return ret;
+}
+
+static void iam_error_free(struct iam_error *err)
+{
+    if(err->reason)
+        free(err->reason);
+    err->reason = NULL;
+}
 /**
  * ep_auth_marshal() - Generate a JSON object to send to IAM endpoints API
  * @auth: The login user and password (key)
@@ -133,8 +179,6 @@ int ep_auth_resp_unmarshal(char *ep, struct iam_endpoint *ep_ret)
 
     root = json_loads(ep, 0, &jerror);
     if (!root) {
-        fprintf(stderr, "%s ERR: Could not parse JSON string error %s",
-                __func__, jerror.text);
         goto cleanup_err;
     }
 
@@ -214,6 +258,77 @@ void iam_create_endpoint_request_destroy(struct iam_create_endpoint_request *req
     free(req->ecdsa_credential.key);
 }
 
+
+/**
+ * countZeroBytes() - Counts the number of sequential zero bytes at the end of a buffer
+ * @buf: The buffer to count
+ * @size: The number of bytes in the buffer
+ *
+ * Returns the number of 0x00 bytes at the end (least signifiant) portion of a network order byte sequence.
+ * This function does not count bits in a partially zero byte.
+ *
+ * Return: The number of zero bytes found
+ */
+static int countZeroBytes(const char *buf, int size)
+{
+    int ret = 0;
+
+    /* Count the number of sequential sero bytes at the end */
+    for (; size>0 && !buf[size-1]; size--)
+        ret++;
+
+    return ret;
+}
+
+/**
+ * ip_version() - Determines if given "network" is a network, address or invalid
+ * @src: The IPv6 address or network as a string
+ *
+ * Takes an IPv6 address or subnet (including /128 subnets) and returns what type
+ * of format the address is to XIAM. /64 subnets are validated that the address doesn't
+ * supply too many bits.
+ *
+ * Return: NETWORK if
+ */
+static enum addr_type ip_version(const char *src) {
+    char buf[16] = {0};
+    char *ip_str = NULL;
+    int ip_valid = 0;
+    int ret = TYPE_NONE;
+    char *subnet;
+
+    /* Copy the IP as we can modify it */
+    ip_str = malloc(strlen(src) + 1);
+    if (!ip_str) {
+        fprintf(stderr, "%s ERR: Memory error\n", __func__);
+        goto out;
+    }
+    strcpy(ip_str, src);
+
+    /* Seperate the subnet specifier */
+    subnet = strchr(ip_str, '/');
+    if (subnet)
+        *(subnet++) = '\0';
+
+    /* Parse the IP address portion */
+    ip_valid = inet_pton(AF_INET6, ip_str, buf);
+
+    /* Check for a ::/128 */
+    if (ip_valid && subnet && strcmp(subnet, "64") == 0 && countZeroBytes(buf, sizeof(buf)) >= 8) {
+        ret = TYPE_IPV6_NETWORK;
+    }
+
+    /* A full address can be a ::/128 network or no subnet specified. */
+    if (ip_valid && inet_pton(AF_INET6, ip_str, buf) && (!subnet || strcmp(subnet,"128")==0)) {
+        ret = TYPE_IPV6_ADDR;
+    }
+
+    free(ip_str);
+
+out:
+    return ret;
+}
+
 /**
  * iam_new_ep_auth_network() - Created a new request for XIAM endpoint request
  * @network: The IPv6 subnet being requested
@@ -227,11 +342,11 @@ void iam_create_endpoint_request_destroy(struct iam_create_endpoint_request *req
 int iam_new_ep_auth_network_request(char *network, char *key, struct iam_create_endpoint_request *request)
 {
     int ret = 1;
-    const char *suffix;
+    enum addr_type addr_type;
 
     /* Avoid an overcopy error */
     if (strlen(network) + 1 > sizeof(request->endpoint)) {
-        fprintf(stderr, "%s ERR: Endpoint address too long.", __func__);
+        fprintf(stderr, "Error: Endpoint address too long.");
         ret = 0;
         goto out;
     }
@@ -241,21 +356,35 @@ int iam_new_ep_auth_network_request(char *network, char *key, struct iam_create_
     if (!request->ecdsa_credential.key) {
         fprintf(stderr, "%s ERR: Memory alloc failed for key.", __func__);
         ret = 0;
-        goto out;
+        goto cleanup;
     }
     strcpy(request->ecdsa_credential.key, key);
     strcpy(request->ecdsa_credential.type, type_ecdsa_p256);
+    strcpy(request->endpoint, network);
 
-    /* Note: This is designed to seperate valid addresses and subnets, not validate all inputs */
-    suffix = &network[strlen(network) - 3];
-    if (strcmp(suffix, "/64") == 0) {
+
+    addr_type = ip_version(network);
+    if (addr_type == TYPE_IPV6_NETWORK) {
         request->type = NETWORK;
-        strcpy(request->endpoint, network);
-    } else {
+    } else if(addr_type == TYPE_IPV6_ADDR) {
         request->type = ADDRESS;
-        strcpy(request->endpoint, network);
-    }
 
+        /* Note: The API does not accept ::/128 at this time so convert this "subnet" to a regular address */
+        char * slash;
+        slash = strchr(request->endpoint, '/');
+        if (slash)
+            *slash = '\0';
+    } else {
+        fprintf(stderr, "Error: Cannot parse address as an IPv6 address or ::/64 network.\n");
+        ret = 0;
+        goto cleanup;
+    }
+    /* Success */
+    goto out;
+
+cleanup:
+    free(request->ecdsa_credential.key);
+    request->ecdsa_credential.key = NULL;
 out:
     return ret;
 }
@@ -300,8 +429,20 @@ int iam_send_ep_auth(struct iam_create_endpoint_request *auth, char *token, stru
     if (response) {
         ret = ep_auth_resp_unmarshal(response, ep_resp);
         if (!ret) {
+            /* try to figure out the error */
+            struct iam_error emsg = {0};
+            iam_error_unmarshall(response, &emsg);
+
+            if(emsg.error == 500)
+                fprintf(stderr, "A server error occured. Please check input parameters.\n");
+            else if(emsg.error == 403)
+                fprintf(stderr, "An authorization error occured. Please check input parameters.\n");
+            else
+                fprintf(stderr, "An unknown error occured (%d, %d, %s)\n", emsg.error, emsg.http_error, emsg.reason);
+
+            iam_error_free(&emsg);
+
             ret = 0;
-            fprintf(stderr, "%s unable to marshal response: %s\n", __func__, response);
         }
     } else {
         ret = 0;
