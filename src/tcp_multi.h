@@ -16,22 +16,14 @@
 
 #pragma once
 
-#ifndef ENFTUN_PSOCK_H
-#define ENFTUN_PSOCK_H
+#ifndef ENFTUN_MULTI_H
+#define ENFTUN_MULTI_H
 
 #include "tcp.h"
 
-struct enftun_tcp_psock
-{
-    struct enftun_tcp base;
-};
+// TCP Multi specific functions
 
 void
-enftun_tcp_psock_init(struct enftun_tcp_psock* psock);
-
-int
-enftun_tcp_psock_connect(struct enftun_tcp* psock,
-                         const char* host,
-                         const char* port);
+enftun_tcp_multi_init(struct enftun_tcp* scm);
 
 #endif

@@ -30,6 +30,7 @@
 #include <xtt/tpm/context.h>
 
 #include "log.h"
+#include "tcp_multi.h"
 #include "tls.h"
 #include "xtt.h"
 
@@ -106,18 +107,7 @@ enftun_xtt_handshake(const char** server_hosts,
                      const char* basename_in,
                      struct enftun_xtt* xtt)
 {
-    struct enftun_tcp* sock;
-
-#ifdef USE_PSOCK
-    (void) mark;
-    struct enftun_tcp_psock sock_psock = {0};
-    enftun_tcp_psock_init(&sock_psock);
-    sock = &sock_psock.base;
-#else
-    struct enftun_tcp_native sock_native = {0};
-    enftun_tcp_native_init(&sock_native, mark);
-    sock = &sock_native.base;
-#endif
+    struct enftun_tcp sock = {0};
 
     int init_daa_ret = -1;
     int ret          = 0;
@@ -128,7 +118,7 @@ enftun_xtt_handshake(const char** server_hosts,
     setbuf(stdout, NULL);
 
     xtt_identity_type requested_client_id = {.data = {0}};
-    requested_client_id                   = xtt_null_identity;
+    requested_client_id = xtt_null_identity;
 
     // Set suite spec from command line args
     xtt_suite_spec suite_spec = 0;
@@ -195,13 +185,13 @@ enftun_xtt_handshake(const char** server_hosts,
     // 1) Setup the needed XTT contexts (from files/TPM).
     // 1i) Read in DAA data from the TPm or from files
 
-    xtt_daa_group_pub_key_lrsw gpk        = {.data = {0}};
-    xtt_daa_credential_lrsw cred          = {.data = {0}};
+    xtt_daa_group_pub_key_lrsw gpk = {.data = {0}};
+    xtt_daa_credential_lrsw cred = {.data = {0}};
     xtt_root_certificate root_certificate = {.data = {0}};
-    unsigned char basename[1024]          = {0};
-    uint16_t basename_len                 = sizeof(basename);
-    unsigned char tls_root_cert[1024]     = {0};
-    uint16_t tls_len                      = sizeof(tls_root_cert);
+    unsigned char basename[1024]                   = {0};
+    uint16_t basename_len                          = sizeof(basename);
+    unsigned char tls_root_cert[1024]              = {0};
+    uint16_t tls_len                               = sizeof(tls_root_cert);
 
     ret = read_in_from_TPM(&xtt->tpm_ctx, basename, &basename_len, &gpk, &cred,
                            &root_certificate, tls_root_cert, &tls_len);
@@ -221,7 +211,7 @@ enftun_xtt_handshake(const char** server_hosts,
     struct xtt_client_group_context group_ctx;
     init_daa_ret = initialize_daa(&group_ctx, basename, basename_len, &gpk,
                                   &cred, &xtt->tpm_ctx, basename_in);
-    ret          = init_daa_ret;
+    ret = init_daa_ret;
     if (0 != init_daa_ret)
     {
         enftun_log_error("Error initializing DAA context\n");
@@ -236,10 +226,13 @@ enftun_xtt_handshake(const char** server_hosts,
         goto finish;
     }
 
-    // 2) Make TCP connection to server.
-    ret = sock->ops.connect_any(&sock, server_hosts, (char*) server_port);
+    // 2) Make network connection
+    enftun_tcp_multi_init(&sock);
+    ret = sock.ops.connect_any(&sock, server_hosts, (char*) server_port, mark);
+
     if (ret < 0)
     {
+        enftun_log_error("XTT Handshake: Connection failed\n");
         ret = 1;
         goto finish;
     }
@@ -262,7 +255,7 @@ enftun_xtt_handshake(const char** server_hosts,
     }
 
     // 4) Run the identity-provisioning handshake with the server.
-    ret = do_handshake_client(sock->fd, &requested_client_id, &group_ctx, &ctx,
+    ret = do_handshake_client(sock.fd, &requested_client_id, &group_ctx, &ctx,
                               &saved_root_id, &saved_cert);
     if (0 == ret)
     {
@@ -280,7 +273,7 @@ enftun_xtt_handshake(const char** server_hosts,
     }
 
 finish:
-    sock->ops.close(&sock);
+    sock.ops.close(&sock);
     xtt_free_tpm_context(&xtt->tpm_ctx);
     if (0 == ret)
     {
@@ -408,8 +401,8 @@ initialize_certs(struct xtt_server_root_certificate_context* saved_cert,
                  xtt_certificate_root_id* saved_root_id,
                  xtt_root_certificate* root_certificate)
 {
-    xtt_return_code_type rc               = 0;
-    xtt_certificate_root_id root_id       = {.data = {0}};
+    xtt_return_code_type rc         = 0;
+    xtt_certificate_root_id root_id = {.data = {0}};
     xtt_ecdsap256_pub_key root_public_key = {.data = {0}};
 
     // Initialize stored data

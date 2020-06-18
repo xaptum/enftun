@@ -3,23 +3,25 @@ cmake_minimum_required(VERSION 3.1 FATAL_ERROR)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
 project(enftun
-  VERSION 0.4.3
+  VERSION 0.7.0
   LANGUAGES C
 )
 
 option(BUILD_CACERT  "Install the the ENF ca cert" ON)
 option(BUILD_EXAMPLE "Build and install example configs" ON)
-option(BUILD_PSOCK   "Build with psock support" OFF)
+option(BUILD_SCM   "Build with scm support" OFF)
 option(BUILD_SYSTEMD "Build with systemd support" ON)
 option(BUILD_TEST    "Build tests" ON)
 option(BUILD_XTT     "Build with XTT support" ON)
+option(BUILD_KEYGEN  "Build with keygen tool" ON)
 option(CHECK_FORMAT  "Check source format during build" ON)
+
 
 include(GNUInstallDirs)
 
 find_package(LibConfig REQUIRED QUIET 1.5)
 find_package(LibUV REQUIRED QUIET 1.9)
-find_package(OpenSSL REQUIRED QUIET 1.1)
+find_package(OpenSSL REQUIRED QUIET 1.0)
 
 if(BUILD_XTT)
     add_definitions(-DUSE_TPM)
@@ -28,8 +30,8 @@ if(BUILD_XTT)
     find_package(xtt COMPONENTS tpm REQUIRED QUIET 0.10.4)
 endif()
 
-if(BUILD_PSOCK)
-    add_definitions(-DUSE_PSOCK)
+if(BUILD_SCM)
+    add_definitions(-DUSE_SCM)
 endif()
 
 add_compile_options(-std=c99 -Wall -Wextra -Wno-missing-field-initializers)
@@ -63,6 +65,7 @@ set(ENFTUN_SRCS
     src/packet.c
     src/sockaddr.c
     src/tcp.c
+    src/tcp_multi.c
     src/tls.c
     src/tun.c
     src/udp.c
@@ -72,8 +75,8 @@ if(BUILD_XTT)
     list(APPEND ENFTUN_SRCS src/xtt.c)
 endif()
 
-if(BUILD_PSOCK)
-    list(APPEND ENFTUN_SRCS src/tcp_psock.c)
+if(BUILD_SCM)
+    list(APPEND ENFTUN_SRCS src/tcp_scm.c)
 endif()
 
 add_executable(enftun ${ENFTUN_SRCS})
@@ -127,6 +130,10 @@ endif()
 
 if (BUILD_TEST)
   add_subdirectory(test)
+endif()
+
+if (BUILD_KEYGEN)
+  add_subdirectory(keygen)
 endif()
 
 if (CHECK_FORMAT)

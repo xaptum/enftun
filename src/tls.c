@@ -22,6 +22,7 @@
 #include <unistd.h>
 
 #include "log.h"
+#include "tcp_multi.h"
 #include "tls.h"
 
 struct enftun_channel_ops enftun_tls_ops = {
@@ -36,7 +37,15 @@ enftun_tls_init(struct enftun_tls* tls, int mark)
 {
     int rc = 0;
 
+    (void) mark;
+
+#if OPENSSL_VERSION_NUMBER < 0x10100000
+    SSL_library_init();
+    SSL_load_error_strings();
+    tls->ctx = SSL_CTX_new(TLSv1_2_client_method());
+#else
     tls->ctx = SSL_CTX_new(TLS_client_method());
+#endif
     if (!tls->ctx)
     {
         enftun_log_ssl_error("Cannot allocate SSL_CTX structure:");
@@ -44,14 +53,7 @@ enftun_tls_init(struct enftun_tls* tls, int mark)
         goto out;
     }
 
-#ifdef USE_PSOCK
-    (void) mark;
-    enftun_tcp_psock_init(&tls->sock_psock);
-    tls->sock = &tls->sock_psock.base;
-#else
-    enftun_tcp_native_init(&tls->sock_native, mark);
-    tls->sock = &tls->sock_native.base;
-#endif
+    enftun_tcp_multi_init(&tls->sock);
 
     tls->need_provision = 0;
 
@@ -124,16 +126,21 @@ enftun_tls_handshake(struct enftun_tls* tls)
         goto err;
     }
 
-    if (SSL_set_min_proto_version(tls->ssl, TLS1_2_VERSION) < 0)
+#if OPENSSL_VERSION_NUMBER < 0x10100000
+    SSL_set_options(tls->ssl, SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3 |
+                                  SSL_OP_NO_TLSv1 | SSL_OP_NO_TLSv1_1);
+#else
+    if (SSL_set_min_proto_version(tls->ssl, TLS1_2_VERSION) != 1)
     {
         enftun_log_ssl_error("Cannot set min proto version:");
         goto free_ssl;
     }
+#endif
 
-    if (!SSL_set_fd(tls->ssl, tls->sock->fd))
+    if (SSL_set_fd(tls->ssl, tls->sock.fd) != 1)
     {
         enftun_log_ssl_error("Failed to set SSL file descriptor (%d):",
-                             tls->sock->fd);
+                             tls->sock.fd);
         goto free_ssl;
     }
 
@@ -176,17 +183,25 @@ out:
 }
 
 int
-enftun_tls_connect(struct enftun_tls* tls, const char** hosts, const char* port)
+enftun_tls_connect(struct enftun_tls* tls,
+                   const char** hosts,
+                   const char* port,
+                   int fwmark)
 {
     int rc;
 
-    rc = tls->sock->ops.connect_any(tls->sock, hosts, port);
+    /* Attempt a connection */
+    rc = tls->sock.ops.connect_any(&tls->sock, hosts, port, fwmark);
+
     if (rc < 0)
+    {
+        enftun_log_error("TLS could not connect\n");
         goto out;
+    }
 
     rc = enftun_tls_handshake(tls);
     if (rc < 0)
-        tls->sock->ops.close(tls->sock);
+        tls->sock.ops.close(&tls->sock);
 
 out:
     return rc;
@@ -214,7 +229,7 @@ enftun_tls_disconnect(struct enftun_tls* tls)
         }
     }
 
-    tls->sock->ops.close(tls->sock);
+    tls->sock.ops.close(&tls->sock);
     SSL_free(tls->ssl);
 
     return 0;
@@ -290,6 +305,16 @@ enftun_tls_read_packet(struct enftun_tls* tls, struct enftun_packet* pkt)
 {
     int rc;
     size_t len;
+
+    /*
+     * If starting to read a new packet, ensure the TLS stream header
+     * is half-word aligned so that the actual packet paylaod will be
+     * word aligned.
+     */
+    if (pkt->size == 0)
+    {
+        enftun_packet_reserve_head(pkt, 2);
+    }
 
     len = size_to_read(pkt);
     if (len > enftun_packet_tailroom(pkt))

@@ -1,6 +1,8 @@
 # ENFTUN - Xaptum ENF Tunnel Client
 
 [![Build Status](https://travis-ci.org/xaptum/enftun.svg?branch=master)](https://travis-ci.org/xaptum/enftun)
+[![Release](https://img.shields.io/github/release/xaptum/enftun.svg)](https://github.com/xaptum/enftun/releases)
+[![deb](https://img.shields.io/bintray/v/xaptum/deb/enftun.svg?label=deb)](https://bintray.com/xaptum/deb/enftun)
 
 `enftun` is a tunnel client for connecting to the Xaptum Edge Network Fabric (ENF).
 
@@ -71,7 +73,7 @@ The following CMake configuration options are supported.
 | BUILD_SYSTEMD        | ON, OFF        | ON         | Build with systemd support                             |
 | BUILD_TEST           | ON, OFF        | ON         | Build tests                                            |
 | BUILD_XTT            | ON, OFF        | ON         | Build with XTT support                                 |
-| BUILD_PSOCK          | ON, OFF        | OFF        | Build with PSOCK support                               |
+| BUILD_SCM            | ON, OFF        | OFF        | Build with SCM support                                 |
 
 
 ## Usage
