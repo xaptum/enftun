@@ -111,7 +111,7 @@ static int parse_args(int argc, char **argv, char **ipv6_network, char **enftun_
 
     /* Use the default enftun path if none is set */
     if (!*enftun_path) {
-        *enftun_path = malloc(sizeof(enftun_def_path));
+        *enftun_path = malloc(strlen(enftun_def_path) + 1);
         strcpy(*enftun_path, enftun_def_path);
     }
 
