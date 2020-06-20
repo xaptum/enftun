@@ -1,6 +1,12 @@
+enftun (0.7.2-1) unstable; urgency=medium
+
+  * Update to version 0.7.2
+
+ -- David R. Bild <david.bild@xaptum.com>  Sat, 20 Jun 2020 23:22:52 +0000
+
 enftun (0.7.1-1) unstable; urgency=medium
 
-  * Update to version v0.7.1
+  * Update to version 0.7.1
 
  -- David R. Bild <david.bild@xaptum.com>  Fri, 19 Jun 2020 19:53:31 +0000
 
