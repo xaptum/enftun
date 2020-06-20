@@ -157,13 +157,16 @@ static int prompt_user(const char *username, const char *network, const char *cf
     printf("Cert target file: %s\n", cert);
     printf("Key target file: %s\n", key);
 
-    printf ("Enter y to continue, n to exit: ");
-    scanf ("%c",&ch);
-    printf("\n");
+    printf("Enter y to continue, n to exit: ");
+    if (scanf("%c",&ch) < 0) {
+        return 0;
+    }
 
+    printf("\n");
     if (ch != 'y' && ch != 'Y') {
         return 0;
     }
+
     return 1;
 }
 
