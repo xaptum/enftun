@@ -3,8 +3,8 @@
 
 #include "auth.h"
 
-static const char *type_ecdsa_p256 = {"ecdsa_p256"};
-static const char *type_daa_lrsw_bn256 = {"daa_lrsw_bn256"};
+static const char type_ecdsa_p256[] = "ecdsa_p256";
+static const char type_daa_lrsw_bn256[] = "daa_lrsw_bn256";
 
 struct iam_new_credential_ECDSA
 {
