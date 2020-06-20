@@ -133,7 +133,7 @@ static void ep_auth_resp_set_common(json_t *root, struct iam_endpoint *ep_ret)
 static void ep_auth_resp_set_daa(json_t *active_credentials, struct iam_endpoint *ep_ret)
 {
     ep_ret->type = EP_DAA;
-    strcpy(ep_ret->active_credentials.daa.type, "daa_lrsw_bn256");
+    strcpy(ep_ret->active_credentials.daa.type, type_daa_lrsw_bn256);
     copy_json_str(
             ep_ret->active_credentials.daa.group_id,
             json_object_get(active_credentials, "group_id"),
@@ -153,7 +153,7 @@ static void ep_auth_resp_set_daa(json_t *active_credentials, struct iam_endpoint
 static void ep_auth_resp_set_ecdsa(json_t *active_credentials, struct iam_endpoint *ep_ret)
 {
     ep_ret->type = EP_ECDSA;
-    strcpy(ep_ret->active_credentials.ecdsa.type, "ecdsa_p256");
+    strcpy(ep_ret->active_credentials.ecdsa.type, type_ecdsa_p256);
     ep_ret->active_credentials.ecdsa.key = new_json_str(json_object_get(active_credentials, "key"));
     ep_ret->active_credentials.ecdsa.creation_timestamp =
             new_json_str(json_object_get(active_credentials, "creation_timestamp"));
@@ -193,10 +193,12 @@ int ep_auth_resp_unmarshal(char *ep, struct iam_endpoint *ep_ret)
     ep_auth_resp_set_common(root, ep_ret);
 
     /* Copy active credentials */
-    if(strcmp("daa_lrsw_bn256", json_string_value(json_object_get(active_credentials, "type"))) == 0)
+    if(strcmp(type_daa_lrsw_bn256, json_string_value(json_object_get(active_credentials, "type"))) == 0)
         ep_auth_resp_set_daa(active_credentials, ep_ret);
-    else
+    else if (strcmp(type_ecdsa_p256, json_string_value(json_object_get(active_credentials, "type"))) == 0)
         ep_auth_resp_set_ecdsa(active_credentials, ep_ret);
+    else
+        goto cleanup_err;
 
     /* See if the necessary values are all present */
 
