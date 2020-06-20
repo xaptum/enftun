@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.1 FATAL_ERROR)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
 project(enftun
-  VERSION 0.7.1
+  VERSION 0.7.2
   LANGUAGES C
 )
 
@@ -34,10 +34,10 @@ if(BUILD_SCM)
     add_definitions(-DUSE_SCM)
 endif()
 
-add_compile_options(-std=c99 -Wall -Wextra -Wno-missing-field-initializers)
-set(CMAKE_C_FLAGS_RELWITHSANITIZE "${CMAKE_C_FLAGS_RELWITHSANITIZE} -O2 -g -fsanitize=address,undefined -fsanitize=unsigned-integer-overflow")
-set(CMAKE_C_FLAGS_DEV "${CMAKE_C_FLAGS_RELEASE} -Werror")
-set(CMAKE_C_FLAGS_DEVDEBUG "${CMAKE_C_FLAGS_DEBUG} -Werror")
+add_compile_options(-std=c99 -Wall -Wextra -Wno-missing-field-initializers -Wno-missing-braces)
+set(CMAKE_C_FLAGS_RELWITHSANITIZE "${CMAKE_C_FLAGS_RELWITHSANITIZE} -O2 -g -Werror -D_FORTIFY_SOURCE=2 -fsanitize=address,undefined -fsanitize=unsigned-integer-overflow")
+set(CMAKE_C_FLAGS_DEV "${CMAKE_C_FLAGS_RELEASE} -O2 -Werror -D_FORTIFY_SOURCE=2")
+set(CMAKE_C_FLAGS_DEVDEBUG "${CMAKE_C_FLAGS_DEBUG} -O2 -Werror -D_FORTIFY_SOURCE=2")
 
 add_custom_target(check-format
                   COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/format.sh check || (exit 0)
