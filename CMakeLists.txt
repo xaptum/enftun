@@ -34,7 +34,7 @@ if(BUILD_SCM)
     add_definitions(-DUSE_SCM)
 endif()
 
-add_compile_options(-std=c99 -Wall -Wextra -Wno-missing-field-initializers)
+add_compile_options(-std=c99 -Wall -Wextra -Wno-missing-field-initializers -Wno-missing-braces)
 set(CMAKE_C_FLAGS_RELWITHSANITIZE "${CMAKE_C_FLAGS_RELWITHSANITIZE} -O2 -g -Werror -D_FORTIFY_SOURCE=2 -fsanitize=address,undefined -fsanitize=unsigned-integer-overflow")
 set(CMAKE_C_FLAGS_DEV "${CMAKE_C_FLAGS_RELEASE} -O2 -Werror -D_FORTIFY_SOURCE=2")
 set(CMAKE_C_FLAGS_DEVDEBUG "${CMAKE_C_FLAGS_DEBUG} -O2 -Werror -D_FORTIFY_SOURCE=2")
