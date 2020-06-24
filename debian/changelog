@@ -1,3 +1,11 @@
+enftun (0.7.2-1) bionic; urgency=medium
+
+  [ David R. Bild ]
+  * keygen: fix overflow errors
+  * release v0.7.2
+
+ -- David R. Bild <david.bild@xaptum.com>  Wed, 24 Jun 2020 17:59:54 +0000
+
 enftun (0.7.1-1) unstable; urgency=medium
 
   * Update to version 0.7.1
