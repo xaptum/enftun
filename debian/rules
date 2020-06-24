@@ -1,0 +1,12 @@
+#!/usr/bin/make -f
+
+%:
+	dh ${@}
+
+override_dh_auto_configure:
+	dh_auto_configure --      \
+	  -DBUILD_SYSTEMD=ON      \
+          -DCHECK_FORMAT=OFF
+
+override_dh_auto_test:
+	# No tests yet.
