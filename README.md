@@ -26,6 +26,21 @@ sudo apt-get update
 sudo apt-get install enftun
 ```
 
+### Ubuntu Bionic
+
+``` bash
+# Install the Xaptum API repo GPG signing key.
+sudo apt-get install dirmngr
+sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys c615bfaa7fe1b4ca
+
+# Add the repository to your APT sources
+echo "deb http://dl.bintray.com/xaptum/deb bionic main" | sudo tee /etc/apt/sources.list.d/xaptum.list
+sudo apt-get update
+
+# Install the library.
+sudo apt-get install enftun
+```
+
 ## Installation from Source
 
 ### Build Dependencies
