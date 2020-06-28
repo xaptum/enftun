@@ -29,8 +29,8 @@
 #include "log.h"
 #include "tcp.h"
 #include "tcp_multi.h"
-#ifdef USE_SCM
-#include "tcp_scm.h"
+#ifdef USE_HSS
+#include "tcp_hss.h"
 #endif
 
 static int
@@ -47,8 +47,8 @@ enftun_tcp_multi_connect_any(struct enftun_tcp* tcp,
 typedef void (*enftun_multi_init_type)(struct enftun_tcp* tcp);
 static enftun_multi_init_type enftun_multi_init_types[] = {
     enftun_tcp_native_init,
-#ifdef USE_SCM
-    enftun_tcp_scm_init,
+#ifdef USE_HSS
+    enftun_tcp_hss_init,
 #endif
 };
 static const int enftun_tcp_ops_size =

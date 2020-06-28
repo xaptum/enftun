@@ -28,7 +28,7 @@
 
 #include "log.h"
 #include "tcp.h"
-#include "tcp_scm.h"
+#include "tcp_hss.h"
 
 #define get_sin_addr(addr) (&((struct sockaddr_in*) addr->ai_addr)->sin_addr)
 
@@ -44,24 +44,24 @@ do_connect(struct enftun_tcp* tcp, struct addrinfo* addr)
     inet_ntop(addr->ai_family, get_sin_addr(addr), ip, sizeof(ip));
     port = ntohs(get_sin_port(addr));
 
-    enftun_log_debug("SCM: connecting to [%s]:%d\n", ip, port);
+    enftun_log_debug("HSS: connecting to [%s]:%d\n", ip, port);
 
-    if ((tcp->fd = socket(AF_SCM, SOCK_STREAM, addr->ai_protocol)) < 0)
+    if ((tcp->fd = socket(AF_HSS, SOCK_STREAM, addr->ai_protocol)) < 0)
     {
-        enftun_log_error("SCM: Failed to create socket: %s\n", strerror(errno));
+        enftun_log_error("HSS: Failed to create socket: %s\n", strerror(errno));
         rc = -errno;
         goto out;
     }
 
     if ((rc = connect(tcp->fd, addr->ai_addr, addr->ai_addrlen)) < 0)
     {
-        enftun_log_error("SCM: Failed to connect to [%s]:%d: %s\n", ip, port,
+        enftun_log_error("HSS: Failed to connect to [%s]:%d: %s\n", ip, port,
                          strerror(errno));
         rc = -errno;
         goto close_fd;
     }
 
-    enftun_log_info("SCM: Connected to [%s]:%d\n", ip, port);
+    enftun_log_info("HSS: Connected to [%s]:%d\n", ip, port);
     goto out;
 
 close_fd:
@@ -73,7 +73,7 @@ out:
 }
 
 static int
-enftun_tcp_scm_connect(struct enftun_tcp* scm,
+enftun_tcp_hss_connect(struct enftun_tcp* hss,
                        const char* host,
                        const char* port,
                        int fwmark)
@@ -90,7 +90,7 @@ enftun_tcp_scm_connect(struct enftun_tcp* scm,
     rc = getaddrinfo(host, port, &hints, &addr_h);
     if (rc < 0)
     {
-        enftun_log_error("SCM: Cannot resolve %s:%s: %s\n", host, port,
+        enftun_log_error("HSS: Cannot resolve %s:%s: %s\n", host, port,
                          gai_strerror(rc));
         rc = -1;
         goto out;
@@ -98,7 +98,7 @@ enftun_tcp_scm_connect(struct enftun_tcp* scm,
 
     for (addr = addr_h; addr != NULL; addr = addr->ai_next)
     {
-        rc = do_connect(scm, addr);
+        rc = do_connect(hss, addr);
         if (rc == 0)
             break;
     }
@@ -119,16 +119,16 @@ out:
     return rc;
 }
 
-static struct enftun_tcp_ops enftun_tcp_scm_ops = {
+static struct enftun_tcp_ops enftun_tcp_hss_ops = {
     .connect =
         (int (*)(struct enftun_tcp*, const char* host, const char*, int fwmark))
-            enftun_tcp_scm_connect,
+            enftun_tcp_hss_connect,
     .connect_any = enftun_tcp_connect_any,
     .close       = enftun_tcp_close};
 
 void
-enftun_tcp_scm_init(struct enftun_tcp* scm)
+enftun_tcp_hss_init(struct enftun_tcp* hss)
 {
-    scm->ops  = enftun_tcp_scm_ops;
-    scm->type = ENFTUN_TCP_SCM;
+    hss->ops  = enftun_tcp_hss_ops;
+    hss->type = ENFTUN_TCP_HSS;
 }
