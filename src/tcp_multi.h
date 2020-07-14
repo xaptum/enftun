@@ -24,6 +24,6 @@
 // TCP Multi specific functions
 
 void
-enftun_tcp_multi_init(struct enftun_tcp* scm);
+enftun_tcp_multi_init(struct enftun_tcp* hss);
 
 #endif

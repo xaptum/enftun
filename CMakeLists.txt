@@ -9,7 +9,7 @@ project(enftun
 
 option(BUILD_CACERT  "Install the the ENF ca cert" ON)
 option(BUILD_EXAMPLE "Build and install example configs" ON)
-option(BUILD_SCM   "Build with scm support" OFF)
+option(BUILD_HSS   "Build with hss support" OFF)
 option(BUILD_SYSTEMD "Build with systemd support" ON)
 option(BUILD_TEST    "Build tests" ON)
 option(BUILD_XTT     "Build with XTT support" ON)
@@ -30,8 +30,8 @@ if(BUILD_XTT)
     find_package(xtt COMPONENTS tpm REQUIRED QUIET 0.10.4)
 endif()
 
-if(BUILD_SCM)
-    add_definitions(-DUSE_SCM)
+if(BUILD_HSS)
+    add_definitions(-DUSE_HSS)
 endif()
 
 add_compile_options(-std=c99 -Wall -Wextra -Wno-missing-field-initializers -Wno-missing-braces)
@@ -75,8 +75,8 @@ if(BUILD_XTT)
     list(APPEND ENFTUN_SRCS src/xtt.c)
 endif()
 
-if(BUILD_SCM)
-    list(APPEND ENFTUN_SRCS src/tcp_scm.c)
+if(BUILD_HSS)
+    list(APPEND ENFTUN_SRCS src/tcp_hss.c)
 endif()
 
 add_executable(enftun ${ENFTUN_SRCS})

@@ -27,7 +27,7 @@
 enum enftun_tcp_type
 {
     ENFTUN_TCP_NATIVE,
-    ENFTUN_TCP_SCM,
+    ENFTUN_TCP_HSS,
     ENFTUN_TCP_NONE,
     ENFTUN_TCP_MAX
 };
