@@ -16,7 +16,6 @@ option(BUILD_XTT     "Build with XTT support" ON)
 option(BUILD_KEYGEN  "Build with keygen tool" ON)
 option(CHECK_FORMAT  "Check source format during build" ON)
 
-
 include(GNUInstallDirs)
 
 find_package(LibConfig REQUIRED QUIET 1.5)
@@ -67,6 +66,7 @@ set(ENFTUN_SRCS
     src/tcp.c
     src/tcp_multi.c
     src/tls.c
+    src/tls_tpm.c
     src/tun.c
     src/udp.c
     )
