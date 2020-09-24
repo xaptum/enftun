@@ -23,7 +23,7 @@ RUN apt-get install -y libcurl4-openssl-dev
 RUN apt-get install -y libjansson-dev
 RUN apt-get install -y gnupg2
 RUN apt-get install -y clang-format
-
+RUN apt-get install -y libtss2-dev
 
 RUN apt-key adv --no-tty --keyserver keyserver.ubuntu.com --recv-keys c615bfaa7fe1b4ca
 RUN echo "deb http://dl.bintray.com/xaptum/deb buster main" > /etc/apt/sources.list.d/xaptum.list
