@@ -53,6 +53,8 @@ sudo apt-get install enftun
 * [LibConfig]() (version 1.5 or higher)
 * [xtt](https://github.com/xaptum/xtt) (version 0.11.0 or higher)
   * If building with XTT and TPM support
+* [LibJansson]()
+  * If building with keygen support
 
 ### Building the Binary
 
