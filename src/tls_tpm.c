@@ -86,11 +86,6 @@ enftun_tls_tpm_use_key(struct enftun_tls* tls, const char* key_file)
     {
         goto out;
     }
-/* Having XTT enabled causes library conflicts due to xaptum-tpm */
-#ifdef USE_XTT
-    enftun_log_error("TPM key not supported when XTT is enabled.");
-    goto out;
-#endif
 
     e = enftun_tls_tpm_engine_init();
     if (!e)
