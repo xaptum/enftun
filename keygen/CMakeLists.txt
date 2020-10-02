@@ -47,6 +47,7 @@ target_link_libraries(enftun-keygen
     ${OPENSSL_CRYPTO_LIBRARIES}
     ${JANSSON_LIBRARIES}
     LibConfig::LibConfig
+    sodium
     )
 
 if(KEYGEN_USE_TPM)
