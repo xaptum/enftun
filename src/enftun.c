@@ -282,7 +282,8 @@ enftun_run(struct enftun_context* ctx)
         // Sets tls.need_provision if the certs don't exist yet
         rc = enftun_tls_load_credentials(
             &ctx->tls, ctx->config.remote_ca_cert_file, ctx->config.cert_file,
-            ctx->config.key_file);
+            ctx->config.key_file, ctx->config.tpm_tcti, ctx->config.tpm_device,
+            ctx->config.tpm_socket_host, ctx->config.tpm_socket_port);
 
         if (ctx->tls.need_provision && ctx->config.xtt_enable)
         {

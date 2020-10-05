@@ -122,6 +122,10 @@ out:
 #ifdef KEYGEN_USE_TPM
 int
 gen_and_save_tpm_key(struct key *key_out, const char *key_filename,
+                     const char* tcti,
+                     const char* device,
+                     const char* socket_host,
+                     const char* socket_port,
                      TPM2_HANDLE parent_handle,
                      TPMI_RH_HIERARCHY hierarchy,
                      const char *hierarchy_password,
@@ -131,7 +135,7 @@ gen_and_save_tpm_key(struct key *key_out, const char *key_filename,
     int ret = 1;
     TSS2_TCTI_CONTEXT *tcti_ctx = NULL;
 
-    ret = init_tcti(&tcti_ctx);
+    ret = init_tcti(&tcti_ctx, tcti, device, socket_host, socket_port);
     if (!ret) {
         fprintf(stderr, "%s ERR: Could not initialize TPM TCTI context\n", __func__);
         ret = 0;
@@ -150,7 +154,7 @@ gen_and_save_tpm_key(struct key *key_out, const char *key_filename,
         goto out;
     }
 
-    ret = tpm_key_to_pkey(&key_out->pkey, key_filename);
+    ret = tpm_key_to_pkey(&key_out->pkey, key_filename, tcti, device, socket_host, socket_port);
     if (!ret) {
         fprintf(stderr, "%s ERR: Could not convert xtpm key to EVP_PKEY\n", __func__);
         ret = 0;

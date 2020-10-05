@@ -284,6 +284,10 @@ int main(int argc, char **argv)
 #ifdef KEYGEN_USE_TPM
         printf("Generating TPM Key and saving it to file... ");
         ret = gen_and_save_tpm_key(&key, full_key_path,
+                cfg.tpm_tcti,
+                cfg.tpm_device,
+                cfg.tpm_socket_host,
+                cfg.tpm_socket_port,
                 cfg.tpm_parent,
                 cfg.tpm_hierarchy,
                 cfg.tpm_password,

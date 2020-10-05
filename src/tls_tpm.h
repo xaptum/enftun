@@ -21,8 +21,23 @@
 #define TLS_TPM_H
 
 int
-enftun_tls_tpm_use_key(struct enftun_tls* tls, const char* key_file);
+enftun_tls_tpm_use_key(struct enftun_tls* tls,
+                       const char* key_file,
+                       const char* tcti,
+                       const char* device,
+                       const char* socket_host,
+                       const char* socket_port);
 
 int
 enftun_tls_tpm_is_tpm_key(const char* key_file);
+
+ENGINE*
+enftun_tls_tpm_engine_init(const char* tcti,
+                           const char* device,
+                           const char* socket_host,
+                           const char* socket_port);
+
+UI_METHOD*
+enftun_tls_tpm_ssl_ui_passthrough(void);
+
 #endif // TLS_TPM_H

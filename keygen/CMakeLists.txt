@@ -32,6 +32,7 @@ add_executable(enftun-keygen
     src/tpm.c
     src/enftun/config.c
     src/enftun/log.c
+    src/enftun/tls_tpm.c
     )
 
 target_include_directories(enftun-keygen

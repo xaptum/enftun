@@ -21,6 +21,10 @@ gen_key(struct key *key_out);
 #ifdef KEYGEN_USE_TPM
 int
 gen_and_save_tpm_key(struct key *key_out, const char *key_filename,
+                     const char* tcti,
+                     const char* device,
+                     const char* socket_host,
+                     const char* socket_port,
                      TPM2_HANDLE parent_handle,
                      TPMI_RH_HIERARCHY hierarchy,
                      const char *hierarchy_password,

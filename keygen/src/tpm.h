@@ -25,12 +25,20 @@
 #include "ssl.h"
 
 int
-init_tcti(TSS2_TCTI_CONTEXT **tcti_ctx);
+init_tcti(TSS2_TCTI_CONTEXT **tcti_ctx,
+          const char* tcti,
+          const char* device,
+          const char* socket_host,
+          const char* socket_port);
 
 void
 free_tcti(TSS2_TCTI_CONTEXT *tcti_ctx);
 
 int
-tpm_key_to_pkey(EVP_PKEY **pkey_out, const char *key_filename);
+tpm_key_to_pkey(EVP_PKEY **pkey_out, const char *key_filename,
+                const char* tcti,
+                const char* device,
+                const char* socket_host,
+                const char* socket_port);
 
 #endif
