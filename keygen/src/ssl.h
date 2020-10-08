@@ -6,6 +6,10 @@
 #define ENFTUN_SSL_H
 #include <openssl/evp.h>
 
+#ifdef KEYGEN_USE_TPM
+#include <tss2/tss2_sys.h>
+#endif
+
 struct key {
     EVP_PKEY *pkey;
     char *hex_str;
@@ -13,6 +17,15 @@ struct key {
 
 int
 gen_key(struct key *key_out);
+
+#ifdef KEYGEN_USE_TPM
+int
+gen_and_save_tpm_key(struct key *key_out, const char *key_filename,
+                     TPM2_HANDLE parent_handle,
+                     TPMI_RH_HIERARCHY hierarchy,
+                     const char *hierarchy_password,
+                     size_t hierarchy_password_length);
+#endif
 
 void
 destroy_key(struct key *key_in);
