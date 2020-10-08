@@ -89,9 +89,9 @@ do_handshake_client(int socket,
 
 static int
 save_credentials(struct xtt_client_handshake_context* ctx,
+                 struct xtt_tpm_context* tpm_ctx,
                  const char* longterm_cert_out_file,
-                 const char* longterm_private_key_out_file,
-                 struct xtt_tpm_context* tpm_ctx);
+                 const char* longterm_private_key_out_file);
 
 int
 enftun_xtt_handshake(const char** server_hosts,
@@ -267,8 +267,8 @@ enftun_xtt_handshake(const char** server_hosts,
     {
         // 6) Save the results (what we and the server now agree on
         // post-handshake)
-        ret = save_credentials(&ctx, longterm_cert_out_file,
-                               longterm_private_key_out_file, &xtt->tpm_ctx);
+        ret = save_credentials(&ctx, &xtt->tpm_ctx, longterm_cert_out_file,
+                               longterm_private_key_out_file);
         if (0 != ret)
             goto finish;
     }
@@ -539,9 +539,9 @@ do_handshake_client(int socket,
 
 static int
 save_credentials(struct xtt_client_handshake_context* ctx,
+                 struct xtt_tpm_context* tpm_ctx,
                  const char* longterm_cert_out_file,
-                 const char* longterm_private_key_out_file,
-                 struct xtt_tpm_context* tpm_ctx)
+                 const char* longterm_private_key_out_file)
 {
     int write_ret = 0;
 
@@ -568,7 +568,7 @@ save_credentials(struct xtt_client_handshake_context* ctx,
     if (0 != xtt_x509_from_ecdsap256_TPM(&my_longterm_key,
                                          &ctx->longterm_private_key_tpm,
                                          tpm_ctx->tcti_context, &my_assigned_id,
-                 cert_buf, sizeof(cert_buf)))
+                                         cert_buf, sizeof(cert_buf)))
     {
         enftun_log_error("Error creating X509 certificate\n");
         return CERT_CREATION_ERROR;
