@@ -104,6 +104,10 @@ enftun_xtt_handshake(const char** server_hosts,
                      const char* tpm_port,
                      const char* ca_cert_file,
                      const char* basename_in,
+                     int tpm_hierarchy,
+                     const char* tpm_password,
+                     int tpm_password_len,
+                     int tpm_parent,
                      struct enftun_xtt* xtt)
 {
     struct enftun_tcp sock = {0};
@@ -239,12 +243,14 @@ enftun_xtt_handshake(const char** server_hosts,
     // 3) Initialize XTT handshake context
     // (will be populated with useful information after a successful handshake).
     enftun_log_debug("Using suite_spec = %d\n", suite_spec);
+
     unsigned char in_buffer[MAX_HANDSHAKE_SERVER_MESSAGE_LENGTH]  = {0};
     unsigned char out_buffer[MAX_HANDSHAKE_CLIENT_MESSAGE_LENGTH] = {0};
     struct xtt_client_handshake_context ctx;
-    xtt_return_code_type rc = xtt_initialize_client_handshake_context(
+    xtt_return_code_type rc = xtt_initialize_client_handshake_context_TPM(
         &ctx, in_buffer, sizeof(in_buffer), out_buffer, sizeof(out_buffer),
-        XTT_VERSION_ONE, suite_spec);
+        XTT_VERSION_ONE, suite_spec, tpm_hierarchy, tpm_password,
+        tpm_password_len, tpm_parent, xtt->tpm_ctx.tcti_context);
     if (XTT_RETURN_SUCCESS != rc)
     {
         ret = 1;

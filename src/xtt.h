@@ -49,6 +49,10 @@ enftun_xtt_handshake(const char** server_hosts,
                      const char* socket_port,
                      const char* ca_cert_file,
                      const char* basename,
+                     int tpm_hierarchy,
+                     const char* tpm_password,
+                     int tpm_password_len,
+                     int tpm_parent,
                      struct enftun_xtt* xtt);
 
 #endif // ENFTUN_XTT_H
