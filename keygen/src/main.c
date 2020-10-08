@@ -281,7 +281,7 @@ int main(int argc, char **argv)
 
     /* Generate a key (and save it to file) to send to IAM */
     if (cfg.tpm_enable) {
-#ifdef KEYGEN_USE_TPM
+#ifdef USE_TPM
         printf("Generating TPM Key and saving it to file... ");
         ret = gen_and_save_tpm_key(&key, full_key_path,
                 cfg.tpm_tcti,

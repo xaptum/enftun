@@ -1,4 +1,4 @@
-#ifdef KEYGEN_USE_TPM
+#ifdef USE_TPM
 
 #include <stdlib.h>
 #include <stdio.h>

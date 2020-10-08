@@ -22,7 +22,7 @@
 #include <sodium.h>
 #include <errno.h>
 
-#ifdef KEYGEN_USE_TPM
+#ifdef USE_TPM
 #include <xaptum-tpm/keys.h>
 
 #include "tpm.h"
@@ -119,7 +119,7 @@ out:
     return ret;
 }
 
-#ifdef KEYGEN_USE_TPM
+#ifdef USE_TPM
 int
 gen_and_save_tpm_key(struct key *key_out, const char *key_filename,
                      const char* tcti,

@@ -5,8 +5,6 @@ project(enftun-keygen
   LANGUAGES C
 )
 
-option(KEYGEN_USE_TPM "Build keygen with TPM support" ON)
-
 include(GNUInstallDirs)
 
 find_package(OpenSSL REQUIRED QUIET 1.1)
@@ -14,10 +12,10 @@ find_package(Jansson REQUIRED)
 find_package(CURL REQUIRED)
 find_package(sodium REQUIRED QUIET 1.0.11)
 
-if(KEYGEN_USE_TPM)
-  add_definitions(-DKEYGEN_USE_TPM)
+if(BUILD_TPM)
+  add_definitions(-DUSE_TPM)
+  find_package(xaptum-tpm REQUIRED QUIET)
   find_package(TSS2 REQUIRED QUIET)
-  find_package(xtt COMPONENTS tpm REQUIRED QUIET 0.11.0)
 endif()
 
 add_compile_options(-std=c99 -Wall -Wextra -Wno-missing-field-initializers)
@@ -51,7 +49,7 @@ target_link_libraries(enftun-keygen
     sodium
     )
 
-if(KEYGEN_USE_TPM)
+if(BUILD_TPM)
   target_link_libraries(enftun-keygen
     PRIVATE
     xaptum-tpm::xaptum-tpm

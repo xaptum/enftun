@@ -6,7 +6,7 @@
 #define ENFTUN_SSL_H
 #include <openssl/evp.h>
 
-#ifdef KEYGEN_USE_TPM
+#ifdef USE_TPM
 #include <tss2/tss2_sys.h>
 #endif
 
@@ -18,7 +18,7 @@ struct key {
 int
 gen_key(struct key *key_out);
 
-#ifdef KEYGEN_USE_TPM
+#ifdef USE_TPM
 int
 gen_and_save_tpm_key(struct key *key_out, const char *key_filename,
                      const char* tcti,

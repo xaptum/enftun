@@ -89,6 +89,7 @@ The following CMake configuration options are supported.
 | BUILD_EXAMPLE        | ON, OFF        | ON         | Build and install example configs                      |
 | BUILD_SYSTEMD        | ON, OFF        | ON         | Build with systemd support                             |
 | BUILD_TEST           | ON, OFF        | ON         | Build tests                                            |
+| BUILD_TPM            | ON, OFF        | ON         | Build with TPM support                                 |
 | BUILD_XTT            | ON, OFF        | ON         | Build with XTT support                                 |
 | BUILD_HSS            | ON, OFF        | OFF        | Build with HSS support                                 |
 
