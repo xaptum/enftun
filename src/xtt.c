@@ -568,7 +568,7 @@ save_credentials(struct xtt_client_handshake_context* ctx,
     if (0 != xtt_x509_from_ecdsap256_TPM(&my_longterm_key,
                                          &ctx->longterm_private_key_tpm,
                                          tpm_ctx->tcti_context, &my_assigned_id,
-                                         cert_buf, sizeof(cert_buf)))
+                 cert_buf, sizeof(cert_buf)))
     {
         enftun_log_error("Error creating X509 certificate\n");
         return CERT_CREATION_ERROR;

@@ -195,10 +195,12 @@ enftun_provision(struct enftun_context* ctx)
 
     rc = enftun_xtt_handshake(
         ctx->config.remote_hosts, ctx->config.xtt_remote_port,
-        ctx->config.fwmark, ctx->config.xtt_tcti, ctx->config.xtt_device,
+        ctx->config.fwmark, ctx->config.tpm_tcti, ctx->config.tpm_device,
         ctx->config.cert_file, ctx->config.key_file,
-        ctx->config.xtt_socket_host, ctx->config.xtt_socket_port,
-        ctx->config.remote_ca_cert_file, ctx->config.xtt_basename, &xtt);
+        ctx->config.tpm_socket_host, ctx->config.tpm_socket_port,
+        ctx->config.remote_ca_cert_file, ctx->config.xtt_basename,
+        ctx->config.tpm_hierarchy, ctx->config.tpm_password,
+        ctx->config.tpm_password_len, ctx->config.tpm_parent, &xtt);
 
     if (0 != rc)
     {

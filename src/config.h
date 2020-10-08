@@ -55,11 +55,17 @@ struct enftun_config
 
     int xtt_enable;
     const char* xtt_remote_port;
-    const char* xtt_tcti;
-    const char* xtt_device;
-    const char* xtt_socket_host;
-    const char* xtt_socket_port;
     const char* xtt_basename;
+
+    int tpm_enable;
+    const char* tpm_tcti;
+    const char* tpm_device;
+    const char* tpm_socket_host;
+    const char* tpm_socket_port;
+    int tpm_hierarchy;
+    const char* tpm_password;
+    size_t tpm_password_len;
+    int tpm_parent;
 };
 
 int
