@@ -291,7 +291,7 @@ int main(int argc, char **argv)
                 cfg.tpm_parent,
                 cfg.tpm_hierarchy,
                 cfg.tpm_password,
-                cfg.tpm_password_len);
+                strlen(cfg.tpm_password));
         if (!ret) {
             printf("Failed. Exiting.\n");
             goto cleanup;

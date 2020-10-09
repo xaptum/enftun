@@ -200,7 +200,7 @@ enftun_provision(struct enftun_context* ctx)
         ctx->config.tpm_socket_host, ctx->config.tpm_socket_port,
         ctx->config.remote_ca_cert_file, ctx->config.xtt_basename,
         ctx->config.tpm_hierarchy, ctx->config.tpm_password,
-        ctx->config.tpm_password_len, ctx->config.tpm_parent, &xtt);
+        ctx->config.tpm_parent, &xtt);
 
     if (0 != rc)
     {

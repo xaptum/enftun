@@ -107,7 +107,6 @@ enftun_xtt_handshake(const char** server_hosts,
                      const char* basename_in,
                      int tpm_hierarchy,
                      const char* tpm_password,
-                     int tpm_password_len,
                      int tpm_parent,
                      struct enftun_xtt* xtt)
 {
@@ -251,7 +250,7 @@ enftun_xtt_handshake(const char** server_hosts,
     xtt_return_code_type rc = xtt_initialize_client_handshake_context_TPM(
         &ctx, in_buffer, sizeof(in_buffer), out_buffer, sizeof(out_buffer),
         XTT_VERSION_ONE, suite_spec, tpm_hierarchy, tpm_password,
-        tpm_password_len, tpm_parent, xtt->tpm_ctx.tcti_context);
+        strlen(tpm_password), tpm_parent, xtt->tpm_ctx.tcti_context);
     if (XTT_RETURN_SUCCESS != rc)
     {
         ret = 1;

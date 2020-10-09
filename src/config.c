@@ -105,14 +105,13 @@ enftun_config_init(struct enftun_config* config)
     config->xtt_remote_port = "444";
     config->xtt_basename    = NULL;
 
-    config->tpm_tcti         = "device";
-    config->tpm_device       = "/dev/tpm0";
-    config->tpm_socket_host  = "localhost";
-    config->tpm_socket_port  = "2321";
-    config->tpm_hierarchy    = 0;
-    config->tpm_password     = NULL;
-    config->tpm_password_len = 0;
-    config->tpm_parent       = 0;
+    config->tpm_tcti        = "device";
+    config->tpm_device      = "/dev/tpm0";
+    config->tpm_socket_host = "localhost";
+    config->tpm_socket_port = "2321";
+    config->tpm_hierarchy   = 0;
+    config->tpm_password    = NULL;
+    config->tpm_parent      = 0;
 
     return 0;
 }
@@ -212,8 +211,6 @@ enftun_config_parse(struct enftun_config* config, const char* file)
                           &config->tpm_hierarchy);
         config_lookup_string(cfg, "identity.tpm.password",
                              &config->tpm_password);
-        config->tpm_password_len =
-            config->tpm_password ? strlen(config->tpm_password) : 0;
         config_lookup_int(cfg, "identity.tpm.parent", &config->tpm_parent);
     }
 

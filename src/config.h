@@ -64,7 +64,6 @@ struct enftun_config
     const char* tpm_socket_port;
     int tpm_hierarchy;
     const char* tpm_password;
-    size_t tpm_password_len;
     int tpm_parent;
 };
 
