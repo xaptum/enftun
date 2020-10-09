@@ -12,6 +12,12 @@ find_package(Jansson REQUIRED)
 find_package(CURL REQUIRED)
 find_package(sodium REQUIRED QUIET 1.0.11)
 
+if(BUILD_TPM)
+  add_definitions(-DUSE_TPM)
+  find_package(xaptum-tpm REQUIRED QUIET)
+  find_package(TSS2 REQUIRED QUIET)
+endif()
+
 add_compile_options(-std=c99 -Wall -Wextra -Wno-missing-field-initializers)
 
 add_executable(enftun-keygen
@@ -21,8 +27,10 @@ add_executable(enftun-keygen
     src/ssl.c
     src/curl.c
     src/iam.c
+    src/tpm.c
     src/enftun/config.c
     src/enftun/log.c
+    src/enftun/tls_tpm.c
     )
 
 target_include_directories(enftun-keygen
@@ -40,6 +48,17 @@ target_link_libraries(enftun-keygen
     LibConfig::LibConfig
     sodium
     )
+
+if(BUILD_TPM)
+  target_link_libraries(enftun-keygen
+    PRIVATE
+    xaptum-tpm::xaptum-tpm
+    tss2::sys
+    tss2::tcti-device
+    tss2::tcti-mssim
+    )
+endif()
+
 set_target_properties(enftun-keygen
   PROPERTIES
   C_STANDARD 99

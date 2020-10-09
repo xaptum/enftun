@@ -73,7 +73,11 @@ int
 enftun_tls_load_credentials(struct enftun_tls* tls,
                             const char* cacert_file,
                             const char* cert_file,
-                            const char* key_file)
+                            const char* key_file,
+                            const char* tcti,
+                            const char* device,
+                            const char* socket_host,
+                            const char* socket_port)
 {
     if (!SSL_CTX_load_verify_locations(tls->ctx, cacert_file, NULL))
     {
@@ -94,7 +98,8 @@ enftun_tls_load_credentials(struct enftun_tls* tls,
 
     if (!(SSL_CTX_use_PrivateKey_file(tls->ctx, key_file, SSL_FILETYPE_PEM) ||
           SSL_CTX_use_PrivateKey_file(tls->ctx, key_file, SSL_FILETYPE_ASN1) ||
-          enftun_tls_tpm_use_key(tls, key_file)))
+          enftun_tls_tpm_use_key(tls, key_file, tcti, device, socket_host,
+                                 socket_port)))
     {
         enftun_log_ssl_error("Failed to load client TLS key %s:", key_file);
         goto err;

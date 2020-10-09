@@ -89,6 +89,7 @@ do_handshake_client(int socket,
 
 static int
 save_credentials(struct xtt_client_handshake_context* ctx,
+                 struct xtt_tpm_context* tpm_ctx,
                  const char* longterm_cert_out_file,
                  const char* longterm_private_key_out_file);
 
@@ -104,6 +105,9 @@ enftun_xtt_handshake(const char** server_hosts,
                      const char* tpm_port,
                      const char* ca_cert_file,
                      const char* basename_in,
+                     int tpm_hierarchy,
+                     const char* tpm_password,
+                     int tpm_parent,
                      struct enftun_xtt* xtt)
 {
     struct enftun_tcp sock = {0};
@@ -239,12 +243,14 @@ enftun_xtt_handshake(const char** server_hosts,
     // 3) Initialize XTT handshake context
     // (will be populated with useful information after a successful handshake).
     enftun_log_debug("Using suite_spec = %d\n", suite_spec);
+
     unsigned char in_buffer[MAX_HANDSHAKE_SERVER_MESSAGE_LENGTH]  = {0};
     unsigned char out_buffer[MAX_HANDSHAKE_CLIENT_MESSAGE_LENGTH] = {0};
     struct xtt_client_handshake_context ctx;
-    xtt_return_code_type rc = xtt_initialize_client_handshake_context(
+    xtt_return_code_type rc = xtt_initialize_client_handshake_context_TPM(
         &ctx, in_buffer, sizeof(in_buffer), out_buffer, sizeof(out_buffer),
-        XTT_VERSION_ONE, suite_spec);
+        XTT_VERSION_ONE, suite_spec, tpm_hierarchy, tpm_password,
+        strlen(tpm_password), tpm_parent, xtt->tpm_ctx.tcti_context);
     if (XTT_RETURN_SUCCESS != rc)
     {
         ret = 1;
@@ -260,7 +266,7 @@ enftun_xtt_handshake(const char** server_hosts,
     {
         // 6) Save the results (what we and the server now agree on
         // post-handshake)
-        ret = save_credentials(&ctx, longterm_cert_out_file,
+        ret = save_credentials(&ctx, &xtt->tpm_ctx, longterm_cert_out_file,
                                longterm_private_key_out_file);
         if (0 != ret)
             goto finish;
@@ -532,6 +538,7 @@ do_handshake_client(int socket,
 
 static int
 save_credentials(struct xtt_client_handshake_context* ctx,
+                 struct xtt_tpm_context* tpm_ctx,
                  const char* longterm_cert_out_file,
                  const char* longterm_private_key_out_file)
 {
@@ -545,7 +552,7 @@ save_credentials(struct xtt_client_handshake_context* ctx,
         return 1;
     }
 
-    // 2) Get longterm keypair
+    // 2) Get longterm public key
     xtt_ecdsap256_pub_key my_longterm_key = {.data = {0}};
     if (XTT_RETURN_SUCCESS !=
         xtt_get_my_longterm_key_ecdsap256(&my_longterm_key, ctx))
@@ -554,38 +561,30 @@ save_credentials(struct xtt_client_handshake_context* ctx,
         return 1;
     }
 
-    xtt_ecdsap256_priv_key my_longterm_private_key = {.data = {0}};
-    if (XTT_RETURN_SUCCESS != xtt_get_my_longterm_private_key_ecdsap256(
-                                  &my_longterm_private_key, ctx))
-    {
-        enftun_log_error("Error getting longterm private key!\n");
-        return 1;
-    }
-
-    // 3) Save longterm keypair as X509 certificate and ASN.1-encoded private
-    // key
+    // 3) Save longterm keypair as X509 certificate
+    //  and PEM-encoded TPM-loadable private key blob
     unsigned char cert_buf[XTT_X509_CERTIFICATE_LENGTH] = {0};
-    if (0 != xtt_x509_from_ecdsap256_keypair(
-                 &my_longterm_key, &my_longterm_private_key, &my_assigned_id,
-                 cert_buf, sizeof(cert_buf)))
+    if (0 != xtt_x509_from_ecdsap256_TPM(&my_longterm_key,
+                                         &ctx->longterm_private_key_tpm,
+                                         tpm_ctx->tcti_context, &my_assigned_id,
+                                         cert_buf, sizeof(cert_buf)))
     {
         enftun_log_error("Error creating X509 certificate\n");
         return CERT_CREATION_ERROR;
     }
-    write_ret = xtt_save_cert_to_file(cert_buf, sizeof(cert_buf),
-                                      longterm_cert_out_file);
+    write_ret = xtt_save_to_file(cert_buf, sizeof(cert_buf),
+                                 longterm_cert_out_file, 0644);
     if (write_ret < 0)
     {
+        enftun_log_error("Error saving X509 certificate\n");
         return SAVE_TO_FILE_ERROR;
     }
 
-    write_ret =
-        xtt_write_ecdsap256_keypair(&my_longterm_key, &my_longterm_private_key,
-                                    longterm_private_key_out_file);
-    if (write_ret < 0)
+    if (TSS2_RC_SUCCESS != xtpm_write_key(&ctx->longterm_private_key_tpm,
+                                          longterm_private_key_out_file))
     {
-        enftun_log_error("Error creating ASN.1 private key\n");
-        return SAVE_TO_FILE_ERROR;
+        enftun_log_error("Error saving private key blob\n");
+        return 1;
     }
 
     return 0;

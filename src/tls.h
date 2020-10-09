@@ -54,7 +54,11 @@ int
 enftun_tls_load_credentials(struct enftun_tls* tls,
                             const char* cacert_file,
                             const char* cert_file,
-                            const char* key_file);
+                            const char* key_file,
+                            const char* tcti,
+                            const char* device,
+                            const char* socket_host,
+                            const char* socket_port);
 
 int
 enftun_tls_connect(struct enftun_tls* tls,
