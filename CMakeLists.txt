@@ -86,7 +86,13 @@ if(BUILD_HSS)
     list(APPEND ENFTUN_SRCS src/tcp_hss.c)
 endif()
 
+configure_file(src/version.h.in version.h)
+
 add_executable(enftun ${ENFTUN_SRCS})
+
+target_include_directories(enftun PRIVATE
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
+)
 
 target_link_libraries(enftun
   PRIVATE
