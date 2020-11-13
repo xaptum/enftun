@@ -246,7 +246,7 @@ enftun_xtt_handshake(const char** server_hosts,
 
     unsigned char in_buffer[MAX_HANDSHAKE_SERVER_MESSAGE_LENGTH]  = {0};
     unsigned char out_buffer[MAX_HANDSHAKE_CLIENT_MESSAGE_LENGTH] = {0};
-    struct xtt_client_handshake_context ctx = {0};
+    struct xtt_client_handshake_context ctx                       = {0};
     xtt_return_code_type rc = xtt_initialize_client_handshake_context_TPM(
         &ctx, in_buffer, sizeof(in_buffer), out_buffer, sizeof(out_buffer),
         XTT_VERSION_ONE, suite_spec, tpm_hierarchy, tpm_password,
