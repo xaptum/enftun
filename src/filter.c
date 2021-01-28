@@ -29,18 +29,10 @@ enftun_is_ipv4(struct enftun_packet* pkt)
     IP4_HEADER(hdr, pkt);
 
     if (pkt->size < sizeof(struct iphdr))
-      {
-        enftun_log_debug("enftun_is_ipv4: packet smaller than IPv4 header (%d < %d)\n",
-                         pkt->size, sizeof(struct iphdr));
         return 0;
-      }
 
     if (hdr->version != IPVERSION)
-      {
-        enftun_log_debug("enftun_is_ipv4: header version is not 4 (%d != %d)\n",
-                         (hdr->version), IPVERSION);
         return 0;
-      }
 
     if (ntohs(hdr->tot_len) != pkt->size)
     {
@@ -59,19 +51,10 @@ enftun_is_ipv6(struct enftun_packet* pkt)
     IP6_HEADER(hdr, pkt);
 
     if (pkt->size < sizeof(struct ip6_hdr))
-    {
-        enftun_log_debug(
-            "enftun_is_ipv6: packet smaller than IPv6 header (%d < %d)\n",
-            pkt->size, sizeof(struct ip6_hdr));
         return 0;
-    }
 
     if ((hdr->ip6_vfc & IPV6_VERSION_MASK) != IPV6_VERSION)
-    {
-        enftun_log_debug("enftun_is_ipv6: header version is not 6 (%d != %d)\n",
-                         (hdr->ip6_vfc >> 4), 6);
         return 0;
-    }
 
     if (ntohs(hdr->ip6_plen) != pkt->size - sizeof(*hdr))
     {
