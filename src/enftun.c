@@ -81,19 +81,33 @@ chain_ingress_filter(struct enftun_chain* chain, struct enftun_packet* pkt)
 {
     struct enftun_context* ctx = (struct enftun_context*) chain->data;
 
-    if (!enftun_is_ipv6(pkt))
+    // -------------------------- IPv4 --------------------------
+    if (enftun_is_ipv4(pkt))
     {
-        enftun_log_debug("DROP [ingress]: invalid IPv6 packet\n");
-        return 1;
+        if (!ctx->config.allow_ipv4)
+        {
+            enftun_log_debug("DROP [ingress]: route.allow_ipv4 = false\n");
+            return 1; // DROP
+        }
+
+        return 0; // ACCEPT
     }
 
-    if (!enftun_has_dst_ip(pkt, &ctx->ipv6))
+    // -------------------------- IPv6 --------------------------
+    if (enftun_is_ipv6(pkt))
     {
-        enftun_log_debug("DROP [ingress]: invalid dst IP\n");
-        return 1;
+        // Check dst IP is us
+        if (!enftun_has_dst_ip(pkt, &ctx->ipv6))
+        {
+            enftun_log_debug("DROP [ingress]: invalid dst IP\n");
+            return 1; // DROP
+        }
+
+        return 0; // ACCEPT
     }
 
-    return 0;
+    // -------------------------- Other --------------------------
+    return 1; // DROP
 }
 
 static int
@@ -101,25 +115,40 @@ chain_egress_filter(struct enftun_chain* chain, struct enftun_packet* pkt)
 {
     struct enftun_context* ctx = (struct enftun_context*) chain->data;
 
+    // -------------------------- Handlers --------------------------
     if (enftun_ndp_handle_packet(&ctx->ndp, pkt))
-        return 1;
+        return 1; // STOLEN
 
     if (enftun_dhcp_handle_packet(&ctx->dhcp, pkt))
-        return 1;
+        return 1; // STOLEN
 
-    if (!enftun_is_ipv6(pkt))
+    // -------------------------- IPv4 --------------------------
+    if (enftun_is_ipv4(pkt))
     {
-        enftun_log_debug("DROP [ egress]: invalid IPv6 packet\n");
-        return 1;
+        if (!ctx->config.allow_ipv4)
+        {
+            enftun_log_debug("DROP [ egress]: route.allow_ipv4 = false\n");
+            return 1; // DROP
+        }
+
+        return 0; // ACCEPT
     }
 
-    if (!enftun_has_src_ip(pkt, &ctx->ipv6))
+    // -------------------------- IPv6 --------------------------
+    if (enftun_is_ipv6(pkt))
     {
-        enftun_log_debug("DROP [ egress]: invalid src IP\n");
-        return 1;
+        // Check src IP is us
+        if (!enftun_has_src_ip(pkt, &ctx->ipv6))
+        {
+            enftun_log_debug("DROP [ egress]: invalid src IP\n");
+            return 1; // DROP
+        }
+
+        return 0; // ACCEPT
     }
 
-    return 0;
+    // -------------------------- Other --------------------------
+    return 1; // DROP
 }
 
 static int
