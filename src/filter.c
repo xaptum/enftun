@@ -20,7 +20,38 @@
 #include "ip.h"
 #include "log.h"
 
+#define IP4_HEADER(hdr, pkt) struct iphdr* hdr = (struct iphdr*) pkt->data
 #define IP6_HEADER(hdr, pkt) struct ip6_hdr* hdr = (struct ip6_hdr*) pkt->data
+
+int
+enftun_is_ipv4(struct enftun_packet* pkt)
+{
+    IP4_HEADER(hdr, pkt);
+
+    if (pkt->size < sizeof(struct iphdr))
+      {
+        enftun_log_debug("enftun_is_ipv4: packet smaller than IPv4 header (%d < %d)\n",
+                         pkt->size, sizeof(struct iphdr));
+        return 0;
+      }
+
+    if (hdr->version != IPVERSION)
+      {
+        enftun_log_debug("enftun_is_ipv4: header version is not 4 (%d != %d)\n",
+                         (hdr->version), IPVERSION);
+        return 0;
+      }
+
+    if (ntohs(hdr->tot_len) != pkt->size)
+    {
+        enftun_log_debug("enftun_is_ipv4: payload length does not match "
+                         "received (%d != %d)\n",
+                         ntohs(hdr->tot_len), pkt->size);
+        return 0;
+    }
+
+    return 1;
+}
 
 int
 enftun_is_ipv6(struct enftun_packet* pkt)

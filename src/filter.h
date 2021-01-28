@@ -25,6 +25,9 @@
 #include "packet.h"
 
 int
+enftun_is_ipv4(struct enftun_packet* pkt);
+
+int
 enftun_is_ipv6(struct enftun_packet* pkt);
 
 int
