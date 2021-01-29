@@ -96,6 +96,8 @@ enftun_config_init(struct enftun_config* config)
 
     config->trusted_ifaces = calloc(2, sizeof(char*));
 
+    config->allow_ipv4 = 0; // false
+
     config->ra_period         = 10 * 60 * 1000; // milliseconds
     config->heartbeat_period  = 5 * 60 * 1000;
     config->heartbeat_timeout = 15 * 1000;
@@ -176,6 +178,7 @@ enftun_config_parse(struct enftun_config* config, const char* file)
     lookup_string_array(cfg, "route.prefixes", &config->prefixes);
     lookup_string_array(cfg, "route.trusted_interfaces",
                         &config->trusted_ifaces);
+    config_lookup_bool(cfg, "route.allow_ipv4", &config->allow_ipv4);
     config_lookup_int(cfg, "route.ra_period", &config->ra_period);
     config_lookup_int(cfg, "route.heartbeat_period", &config->heartbeat_period);
     config_lookup_int(cfg, "route.heartbeat_timeout",
