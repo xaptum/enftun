@@ -1,0 +1,83 @@
+enftun (0.7.2-1) unstable; urgency=medium
+
+  * Update to version 0.7.2
+
+ -- David R. Bild <david.bild@xaptum.com>  Sat, 20 Jun 2020 23:22:52 +0000
+
+enftun (0.7.1-1) unstable; urgency=medium
+
+  * Update to version 0.7.1
+
+ -- David R. Bild <david.bild@xaptum.com>  Fri, 19 Jun 2020 19:53:31 +0000
+
+enftun (0.7.0-1) unstable; urgency=medium
+
+  * Update to version 0.7.0
+
+ -- David R. Bild <david.bild@xaptum.com>  Fri, 19 Jun 2020 16:45:39 +0000
+
+enftun (0.4.3-1) unstable; urgency=medium
+
+  * Update to version 0.4.3
+
+ -- David R. Bild <david.bild@xaptum.com>  Thu, 19 Sep 2019 14:59:45 +0000
+
+enftun (0.3.4-1) unstable; urgency=medium
+
+  * Update to version 0.3.4
+
+ -- David R. Bild <david.bild@xaptum.com>  Wed, 06 Mar 2019 17:34:56 +0000
+
+enftun (0.3.3-0) unstable; urgency=medium
+
+  * Update to version 0.3.1
+
+ -- David R. Bild <david.bild@xaptum.com>  Thu, 28 Feb 2019 18:41:06 +0000
+
+enftun (0.3.0-1) unstable; urgency=medium
+
+  * Update to version 0.3.0
+
+ -- David R. Bild <david.bild@xaptum.com>  Thu, 20 Dec 2018 19:56:38 +0000
+
+enftun (0.2.1-1) unstable; urgency=medium
+
+  * Update to version 0.2.1
+
+ -- David R. Bild <david.bild@xaptum.com>  Thu, 15 Nov 2018 05:21:46 +0000
+
+enftun (0.2.0-1) unstable; urgency=medium
+
+  * Update to version 0.2.0
+
+ -- David R. Bild <david.bild@xaptum.com>  Thu, 15 Nov 2018 04:44:14 +0000
+
+enftun (0.1.5-1) unstable; urgency=medium
+
+  * Update to version 0.1.5
+
+ -- David R. Bild <david.bild@xaptum.com>  Tue, 13 Nov 2018 01:40:13 +0000
+
+enftun (0.1.4-1) unstable; urgency=medium
+
+  * Update to version 0.1.4
+
+ -- David R. Bild <david.bild@xaptum.com>  Mon, 12 Nov 2018 21:46:26 +0000
+
+enftun (0.1.3-1) unstable; urgency=medium
+
+  * Update to version 0.1.3
+
+ -- David R. Bild <david.bild@xaptum.com>  Thu, 18 Oct 2018 22:42:03 +0000
+
+enftun (0.1.2-1) unstable; urgency=medium
+
+  * Update to version 0.1.2
+
+ -- David R. Bild <david.bild@xaptum.com>  Tue, 16 Oct 2018 23:28:08 +0000
+
+enftun (0.1.1-1) unstable; urgency=medium
+
+  * Initial release.
+
+ -- David R. Bild <david.bild@xaptum.com>  Thu, 04 Oct 2018 20:16:15 +0000
