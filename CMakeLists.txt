@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.1 FATAL_ERROR)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
 project(enftun
-  VERSION 0.8.2
+  VERSION 0.8.3
   LANGUAGES C
 )
 
@@ -28,7 +28,7 @@ if(BUILD_XTT)
     add_definitions(-DUSE_XTT)
     find_package(sodium REQUIRED QUIET 1.0.11)
     find_package(TSS2 REQUIRED QUIET)
-    find_package(xtt COMPONENTS tpm REQUIRED QUIET 0.11.0)
+    find_package(xtt COMPONENTS tpm REQUIRED QUIET 0.12.0)
 endif()
 
 if(BUILD_TPM)

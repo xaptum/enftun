@@ -51,7 +51,7 @@ sudo apt-get install enftun
 * [OpenSSL]() (version 1.1.0 or higher)
 * [LibUV]() (version 1.9 or higher)
 * [LibConfig]() (version 1.5 or higher)
-* [xtt](https://github.com/xaptum/xtt) (version 0.11.0 or higher)
+* [xtt](https://github.com/xaptum/xtt) (version 0.12.0 or higher)
   * If building with XTT and TPM support
 * [LibJansson]()
   * If building with keygen support

@@ -47,6 +47,7 @@ struct enftun_config
     int table;
     const char** prefixes;
     const char** trusted_ifaces;
+    int allow_ipv4;
 
     int ra_period; /* router advertisement period in ms */
 

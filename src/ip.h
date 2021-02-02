@@ -22,6 +22,7 @@
 #include <stdint.h>
 #include <string.h>
 
+#include <netinet/ip.h>
 #include <netinet/ip6.h>
 #include <netinet/udp.h>
 
