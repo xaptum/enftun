@@ -26,6 +26,21 @@ sudo apt-get update
 sudo apt-get install enftun
 ```
 
+### Ubuntu Bionic
+
+``` bash
+# Install the Xaptum API repo GPG signing key.
+sudo apt-get install dirmngr
+sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys c615bfaa7fe1b4ca
+
+# Add the repository to your APT sources
+echo "deb http://dl.bintray.com/xaptum/deb bionic main" | sudo tee /etc/apt/sources.list.d/xaptum.list
+sudo apt-get update
+
+# Install the library.
+sudo apt-get install enftun
+```
+
 ## Installation from Source
 
 ### Build Dependencies
@@ -36,8 +51,10 @@ sudo apt-get install enftun
 * [OpenSSL]() (version 1.1.0 or higher)
 * [LibUV]() (version 1.9 or higher)
 * [LibConfig]() (version 1.5 or higher)
-* [xtt](https://github.com/xaptum/xtt) (version 0.10.1 or higher)
+* [xtt](https://github.com/xaptum/xtt) (version 0.12.0 or higher)
   * If building with XTT and TPM support
+* [LibJansson]()
+  * If building with keygen support
 
 ### Building the Binary
 
@@ -72,8 +89,9 @@ The following CMake configuration options are supported.
 | BUILD_EXAMPLE        | ON, OFF        | ON         | Build and install example configs                      |
 | BUILD_SYSTEMD        | ON, OFF        | ON         | Build with systemd support                             |
 | BUILD_TEST           | ON, OFF        | ON         | Build tests                                            |
+| BUILD_TPM            | ON, OFF        | ON         | Build with TPM support                                 |
 | BUILD_XTT            | ON, OFF        | ON         | Build with XTT support                                 |
-| BUILD_SCM            | ON, OFF        | OFF        | Build with SCM support                                 |
+| BUILD_HSS            | ON, OFF        | OFF        | Build with HSS support                                 |
 
 
 ## Usage

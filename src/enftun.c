@@ -81,19 +81,33 @@ chain_ingress_filter(struct enftun_chain* chain, struct enftun_packet* pkt)
 {
     struct enftun_context* ctx = (struct enftun_context*) chain->data;
 
-    if (!enftun_is_ipv6(pkt))
+    // -------------------------- IPv4 --------------------------
+    if (enftun_is_ipv4(pkt))
     {
-        enftun_log_debug("DROP [ingress]: invalid IPv6 packet\n");
-        return 1;
+        if (!ctx->config.allow_ipv4)
+        {
+            enftun_log_debug("DROP [ingress]: route.allow_ipv4 = false\n");
+            return 1; // DROP
+        }
+
+        return 0; // ACCEPT
     }
 
-    if (!enftun_has_dst_ip(pkt, &ctx->ipv6))
+    // -------------------------- IPv6 --------------------------
+    if (enftun_is_ipv6(pkt))
     {
-        enftun_log_debug("DROP [ingress]: invalid dst IP\n");
-        return 1;
+        // Check dst IP is us
+        if (!enftun_has_dst_ip(pkt, &ctx->ipv6))
+        {
+            enftun_log_debug("DROP [ingress]: invalid dst IP\n");
+            return 1; // DROP
+        }
+
+        return 0; // ACCEPT
     }
 
-    return 0;
+    // -------------------------- Other --------------------------
+    return 1; // DROP
 }
 
 static int
@@ -101,25 +115,40 @@ chain_egress_filter(struct enftun_chain* chain, struct enftun_packet* pkt)
 {
     struct enftun_context* ctx = (struct enftun_context*) chain->data;
 
+    // -------------------------- Handlers --------------------------
     if (enftun_ndp_handle_packet(&ctx->ndp, pkt))
-        return 1;
+        return 1; // STOLEN
 
     if (enftun_dhcp_handle_packet(&ctx->dhcp, pkt))
-        return 1;
+        return 1; // STOLEN
 
-    if (!enftun_is_ipv6(pkt))
+    // -------------------------- IPv4 --------------------------
+    if (enftun_is_ipv4(pkt))
     {
-        enftun_log_debug("DROP [ egress]: invalid IPv6 packet\n");
-        return 1;
+        if (!ctx->config.allow_ipv4)
+        {
+            enftun_log_debug("DROP [ egress]: route.allow_ipv4 = false\n");
+            return 1; // DROP
+        }
+
+        return 0; // ACCEPT
     }
 
-    if (!enftun_has_src_ip(pkt, &ctx->ipv6))
+    // -------------------------- IPv6 --------------------------
+    if (enftun_is_ipv6(pkt))
     {
-        enftun_log_debug("DROP [ egress]: invalid src IP\n");
-        return 1;
+        // Check src IP is us
+        if (!enftun_has_src_ip(pkt, &ctx->ipv6))
+        {
+            enftun_log_debug("DROP [ egress]: invalid src IP\n");
+            return 1; // DROP
+        }
+
+        return 0; // ACCEPT
     }
 
-    return 0;
+    // -------------------------- Other --------------------------
+    return 1; // DROP
 }
 
 static int
@@ -195,10 +224,12 @@ enftun_provision(struct enftun_context* ctx)
 
     rc = enftun_xtt_handshake(
         ctx->config.remote_hosts, ctx->config.xtt_remote_port,
-        ctx->config.fwmark, ctx->config.xtt_tcti, ctx->config.xtt_device,
+        ctx->config.fwmark, ctx->config.tpm_tcti, ctx->config.tpm_device,
         ctx->config.cert_file, ctx->config.key_file,
-        ctx->config.xtt_socket_host, ctx->config.xtt_socket_port,
-        ctx->config.remote_ca_cert_file, ctx->config.xtt_basename, &xtt);
+        ctx->config.tpm_socket_host, ctx->config.tpm_socket_port,
+        ctx->config.remote_ca_cert_file, ctx->config.xtt_basename,
+        ctx->config.tpm_hierarchy, ctx->config.tpm_password,
+        ctx->config.tpm_parent, &xtt);
 
     if (0 != rc)
     {
@@ -280,7 +311,8 @@ enftun_run(struct enftun_context* ctx)
         // Sets tls.need_provision if the certs don't exist yet
         rc = enftun_tls_load_credentials(
             &ctx->tls, ctx->config.remote_ca_cert_file, ctx->config.cert_file,
-            ctx->config.key_file);
+            ctx->config.key_file, ctx->config.tpm_tcti, ctx->config.tpm_device,
+            ctx->config.tpm_socket_host, ctx->config.tpm_socket_port);
 
         if (ctx->tls.need_provision && ctx->config.xtt_enable)
         {

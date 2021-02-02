@@ -22,6 +22,12 @@
 #include <sodium.h>
 #include <errno.h>
 
+#ifdef USE_TPM
+#include <xaptum-tpm/keys.h>
+
+#include "tpm.h"
+#endif
+
 #include "ssl.h"
 #include "enftun/config.h"
 
@@ -112,6 +118,62 @@ cleanup:
 out:
     return ret;
 }
+
+#ifdef USE_TPM
+int
+gen_and_save_tpm_key(struct key *key_out, const char *key_filename,
+                     const char* tcti,
+                     const char* device,
+                     const char* socket_host,
+                     const char* socket_port,
+                     TPM2_HANDLE parent_handle,
+                     TPMI_RH_HIERARCHY hierarchy,
+                     const char *hierarchy_password,
+                     size_t hierarchy_password_length)
+{
+    struct xtpm_key tpm_key = {};
+    int ret = 1;
+    TSS2_TCTI_CONTEXT *tcti_ctx = NULL;
+
+    ret = init_tcti(&tcti_ctx, tcti, device, socket_host, socket_port);
+    if (!ret) {
+        fprintf(stderr, "%s ERR: Could not initialize TPM TCTI context\n", __func__);
+        ret = 0;
+        goto out;
+    }
+
+    if (TSS2_RC_SUCCESS != xtpm_gen_key(tcti_ctx, parent_handle, hierarchy, hierarchy_password, hierarchy_password_length, &tpm_key)) {
+        fprintf(stderr, "%s ERR: Could not generate key on TPM\n", __func__);
+        ret = 0;
+        goto out;
+    }
+
+    if (TSS2_RC_SUCCESS != xtpm_write_key(&tpm_key, key_filename)) {
+        fprintf(stderr, "%s ERR: Could not write tpm key to %s\n", __func__, key_filename);
+        ret = 0;
+        goto out;
+    }
+
+    ret = tpm_key_to_pkey(&key_out->pkey, key_filename, tcti, device, socket_host, socket_port);
+    if (!ret) {
+        fprintf(stderr, "%s ERR: Could not convert xtpm key to EVP_PKEY\n", __func__);
+        ret = 0;
+        goto out;
+    }
+
+    key_out->hex_str = public_key_encode_x962(EVP_PKEY_get1_EC_KEY(key_out->pkey));
+    if (!key_out->hex_str) {
+        fprintf(stderr, "%s ERR: Could not generate x862 public key from PKEY", __func__);
+        ret = 0;
+        goto out;
+    }
+
+out:
+    free_tcti(tcti_ctx);
+
+    return ret;
+}
+#endif
 
 /**
  * destroy_key() - Deallocate a key

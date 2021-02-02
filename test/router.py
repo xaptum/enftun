@@ -15,6 +15,10 @@ def set_icmp6_checksum(ip):
     ip.data.sum = 0
     ip.data.sum = dpkt.dpkt.in_cksum(pseudohdr + bytes(ip.data))
 
+def set_icmp4_checksum(ip):
+    ip.data.sum = 0
+    ip.data.sum = dpkt.dpkt.in_cksum(bytes(ip.data))
+
 def ip6_addr_str(addr):
     return socket.inet_ntop(socket.AF_INET6, addr)
 
@@ -124,7 +128,15 @@ class Connection(object):
         if not pkt:
             return None
 
-        ip = dpkt.ip6.IP6(pkt)
+        vsn = (pkt[0] & 0xF0) >> 4
+        ip = None
+        if vsn == 4:
+            ip = dpkt.ip.IP(pkt)
+        elif vsn == 6:
+            ip = dpkt.ip6.IP6(pkt)
+        else:
+            print("Unsupported packet type. Must be IPv4 or IPv6")
+
         print(ip)
         return ip
 
@@ -136,9 +148,26 @@ class Connection(object):
         self._sock.send(buf)
 
     def handle_packet(self, ip):
-        self.handle_echo_request(ip)
+        if isinstance(ip, dpkt.ip.IP):
+            self.handle_v4_echo_request(ip)
+        elif isinstance(ip, dpkt.ip6.IP6):
+            self.handle_v6_echo_request(ip)
 
-    def handle_echo_request(self, ip):
+    def handle_v4_echo_request(self, ip):
+        icmp = ip.data
+
+        # transform request to response
+        icmp.type = 0
+
+        # fixup IP header
+        ip.src, ip.dst = ip.dst, ip.src
+
+        # fixup checksum
+        set_icmp4_checksum(ip)
+
+        self.send_packet(ip)
+
+    def handle_v6_echo_request(self, ip):
         icmp = ip.data
 
         # transform request to response

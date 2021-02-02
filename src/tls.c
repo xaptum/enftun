@@ -24,6 +24,7 @@
 #include "log.h"
 #include "tcp_multi.h"
 #include "tls.h"
+#include "tls_tpm.h"
 
 struct enftun_channel_ops enftun_tls_ops = {
     .read  = (int (*)(void*, struct enftun_packet*)) enftun_tls_read_packet,
@@ -72,7 +73,11 @@ int
 enftun_tls_load_credentials(struct enftun_tls* tls,
                             const char* cacert_file,
                             const char* cert_file,
-                            const char* key_file)
+                            const char* key_file,
+                            const char* tcti,
+                            const char* device,
+                            const char* socket_host,
+                            const char* socket_port)
 {
     if (!SSL_CTX_load_verify_locations(tls->ctx, cacert_file, NULL))
     {
@@ -92,11 +97,14 @@ enftun_tls_load_credentials(struct enftun_tls* tls,
     enftun_log_debug("Loaded client TLS certificate %s\n", cert_file);
 
     if (!(SSL_CTX_use_PrivateKey_file(tls->ctx, key_file, SSL_FILETYPE_PEM) ||
-          SSL_CTX_use_PrivateKey_file(tls->ctx, key_file, SSL_FILETYPE_ASN1)))
+          SSL_CTX_use_PrivateKey_file(tls->ctx, key_file, SSL_FILETYPE_ASN1) ||
+          enftun_tls_tpm_use_key(tls, key_file, tcti, device, socket_host,
+                                 socket_port)))
     {
         enftun_log_ssl_error("Failed to load client TLS key %s:", key_file);
         goto err;
     }
+
     enftun_log_debug("Loaded client TLS private key %s\n", key_file);
 
     if (!SSL_CTX_check_private_key(tls->ctx))

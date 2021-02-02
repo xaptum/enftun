@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Xaptum, Inc.
+ * Copyright 2020 Xaptum, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,14 +16,12 @@
 
 #pragma once
 
-#ifndef ENFTUN_MULTI_H
-#define ENFTUN_MULTI_H
+#ifndef ENFTUN_VERSION_H
+#define ENFTUN_VERSION_H
 
-#include "tcp.h"
+#define ENFTUN_VERSION       "@PROJECT_VERSION@"
+#define ENFTUN_VERSION_MAJOR "@PROJECT_VERSION_MAJOR@"
+#define ENFTUN_VERSION_MINOR "@PROJECT_VERSION_MINOR@"
+#define ENFTUN_VERSION_PATCH "@PROJECT_VERSION_PATCH@"
 
-// TCP Multi specific functions
-
-void
-enftun_tcp_multi_init(struct enftun_tcp* hss);
-
-#endif
+#endif // ENFTUN_VERSION_H

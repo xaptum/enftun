@@ -81,9 +81,8 @@ enftun_config_init(struct enftun_config* config)
     config->dev      = "enf0";
     config->dev_node = "/dev/net/tun";
 
-    config->remote_hosts        = calloc(3, sizeof(char*));
+    config->remote_hosts        = calloc(2, sizeof(char*));
     config->remote_hosts[0]     = "23.147.128.112";
-    config->remote_hosts[1]     = "2607:8f80:ffff::1";
     config->remote_port         = "443";
     config->remote_ca_cert_file = "/etc/enftun/enf.cacert.pem";
 
@@ -97,17 +96,23 @@ enftun_config_init(struct enftun_config* config)
 
     config->trusted_ifaces = calloc(2, sizeof(char*));
 
+    config->allow_ipv4 = 0; // false
+
     config->ra_period         = 10 * 60 * 1000; // milliseconds
     config->heartbeat_period  = 5 * 60 * 1000;
     config->heartbeat_timeout = 15 * 1000;
 
     config->xtt_enable      = 0;
     config->xtt_remote_port = "444";
-    config->xtt_tcti        = "device";
-    config->xtt_device      = "/dev/tpm0";
-    config->xtt_socket_host = "localhost";
-    config->xtt_socket_port = "2321";
     config->xtt_basename    = NULL;
+
+    config->tpm_tcti        = "device";
+    config->tpm_device      = "/dev/tpm0";
+    config->tpm_socket_host = "localhost";
+    config->tpm_socket_port = "2321";
+    config->tpm_hierarchy   = 0;
+    config->tpm_password    = NULL;
+    config->tpm_parent      = 0;
 
     return 0;
 }
@@ -173,6 +178,7 @@ enftun_config_parse(struct enftun_config* config, const char* file)
     lookup_string_array(cfg, "route.prefixes", &config->prefixes);
     lookup_string_array(cfg, "route.trusted_interfaces",
                         &config->trusted_ifaces);
+    config_lookup_bool(cfg, "route.allow_ipv4", &config->allow_ipv4);
     config_lookup_int(cfg, "route.ra_period", &config->ra_period);
     config_lookup_int(cfg, "route.heartbeat_period", &config->heartbeat_period);
     config_lookup_int(cfg, "route.heartbeat_timeout",
@@ -189,14 +195,25 @@ enftun_config_parse(struct enftun_config* config, const char* file)
         config->xtt_enable = 1;
         config_lookup_string(cfg, "identity.xtt.remote_port",
                              &config->xtt_remote_port);
-        config_lookup_string(cfg, "identity.xtt.tcti", &config->xtt_tcti);
-        config_lookup_string(cfg, "identity.xtt.device", &config->xtt_device);
-        config_lookup_string(cfg, "identity.xtt.socket_host",
-                             &config->xtt_socket_host);
-        config_lookup_string(cfg, "identity.xtt.socket_port",
-                             &config->xtt_socket_port);
         config_lookup_string(cfg, "identity.xtt.basename",
                              &config->xtt_basename);
+    }
+
+    /* TPM settings */
+    if (NULL != config_lookup(cfg, "identity.tpm"))
+    {
+        config->tpm_enable = 1;
+        config_lookup_string(cfg, "identity.tpm.tcti", &config->tpm_tcti);
+        config_lookup_string(cfg, "identity.tpm.device", &config->tpm_device);
+        config_lookup_string(cfg, "identity.tpm.socket_host",
+                             &config->tpm_socket_host);
+        config_lookup_string(cfg, "identity.tpm.socket_port",
+                             &config->tpm_socket_port);
+        config_lookup_int(cfg, "identity.tpm.hierarchy",
+                          &config->tpm_hierarchy);
+        config_lookup_string(cfg, "identity.tpm.password",
+                             &config->tpm_password);
+        config_lookup_int(cfg, "identity.tpm.parent", &config->tpm_parent);
     }
 
     return 0;
@@ -251,16 +268,24 @@ enftun_config_print(struct enftun_config* config, const char* key)
         fprintf(stdout, "%d\n", config->xtt_enable);
     else if (strcmp(key, "identity.xtt.remote_port") == 0)
         fprintf(stdout, "%s\n", config->xtt_remote_port);
-    else if (strcmp(key, "identity.xtt.tcti") == 0)
-        fprintf(stdout, "%s\n", config->xtt_tcti);
-    else if (strcmp(key, "identity.xtt.device") == 0)
-        fprintf(stdout, "%s\n", config->xtt_device);
-    else if (strcmp(key, "identity.xtt.socket_host") == 0)
-        fprintf(stdout, "%s\n", config->xtt_socket_host);
-    else if (strcmp(key, "identity.xtt.socket_port") == 0)
-        fprintf(stdout, "%s\n", config->xtt_socket_port);
     else if (strcmp(key, "identity.xtt.basename") == 0)
         fprintf(stdout, "%s\n", config->xtt_basename);
+    else if (strcmp(key, "identity.tpm.enable") == 0)
+        fprintf(stdout, "%d\n", config->tpm_enable);
+    else if (strcmp(key, "identity.tpm.tcti") == 0)
+        fprintf(stdout, "%s\n", config->tpm_tcti);
+    else if (strcmp(key, "identity.tpm.device") == 0)
+        fprintf(stdout, "%s\n", config->tpm_device);
+    else if (strcmp(key, "identity.tpm.socket_host") == 0)
+        fprintf(stdout, "%s\n", config->tpm_socket_host);
+    else if (strcmp(key, "identity.tpm.socket_port") == 0)
+        fprintf(stdout, "%s\n", config->tpm_socket_port);
+    else if (strcmp(key, "identity.tpm.hierarchy") == 0)
+        fprintf(stdout, "%d\n", config->tpm_hierarchy);
+    else if (strcmp(key, "identity.tpm.password") == 0)
+        fprintf(stdout, "%s\n", config->tpm_password);
+    else if (strcmp(key, "identity.tpm.parent") == 0)
+        fprintf(stdout, "%d\n", config->tpm_parent);
     else
     {
         fprintf(stderr, "%s not found\n", key);

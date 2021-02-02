@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Xaptum, Inc.
+ * Copyright 2020 Xaptum, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,16 +14,31 @@
  * limitations under the License.
  */
 
+#ifndef _TPM_H
+#define _TPM_H
 #pragma once
 
-#ifndef ENFTUN_MULTI_H
-#define ENFTUN_MULTI_H
+#include <tss2/tss2_tcti.h>
 
-#include "tcp.h"
+#include <openssl/evp.h>
 
-// TCP Multi specific functions
+#include "ssl.h"
+
+int
+init_tcti(TSS2_TCTI_CONTEXT **tcti_ctx,
+          const char* tcti,
+          const char* device,
+          const char* socket_host,
+          const char* socket_port);
 
 void
-enftun_tcp_multi_init(struct enftun_tcp* hss);
+free_tcti(TSS2_TCTI_CONTEXT *tcti_ctx);
+
+int
+tpm_key_to_pkey(EVP_PKEY **pkey_out, const char *key_filename,
+                const char* tcti,
+                const char* device,
+                const char* socket_host,
+                const char* socket_port);
 
 #endif

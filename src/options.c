@@ -23,11 +23,18 @@
 #include "log.h"
 #include "memory.h"
 #include "options.h"
+#include "version.h"
 
 static void
 print_usage()
 {
-    puts("usage: enftun [-h] -c conf_file [-p key]");
+    puts("usage: enftun [-h] [-v] -c conf_file [-p key]");
+}
+
+static void
+print_version()
+{
+    puts("" ENFTUN_VERSION);
 }
 
 int
@@ -55,12 +62,15 @@ enftun_options_parse_argv(struct enftun_options* opts,
                           char* argv[])
 {
     int c;
-    while ((c = getopt(argc, argv, "hc:p:")) != -1)
+    while ((c = getopt(argc, argv, "hvc:p:")) != -1)
     {
         switch (c)
         {
         case 'h':
             print_usage();
+            return -EINVAL;
+        case 'v':
+            print_version();
             return -EINVAL;
         case 'c':
             opts->conf_file = optarg;
