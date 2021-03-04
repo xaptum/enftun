@@ -158,6 +158,7 @@ static int prompt_user(const char *username, const char *network, const char *cf
     printf("Key target file: %s\n", key);
 
     printf("Enter y to continue, n to exit: ");
+    fflush(stdout);
     if (scanf("%c",&ch) < 0) {
         return 0;
     }
