@@ -262,7 +262,7 @@ enftun_udp6_pull(struct enftun_packet* pkt)
         goto err;
 
     // Have right amount of data for payload
-    if (pkt->size + sizeof(*udph) != ntohs(udph->len))
+    if (pkt->size + sizeof(*udph) != ntohs(udph->uh_ulen))
         goto err;
 
     // Is checksum valid
