@@ -26,6 +26,8 @@
 #include "channel.h"
 #include "packet.h"
 
+typedef int (*enftun_heartbeat_timeout)(struct enftun_heartbeat hb);
+
 struct enftun_heartbeat
 {
     struct enftun_channel* chan;
@@ -33,21 +35,21 @@ struct enftun_heartbeat
     const struct in6_addr* source_addr;
     const struct in6_addr* dest_addr;
 
-    struct enftun_packet reply_pkt;
-    struct enftun_crb reply_crb;
+    struct enftun_packet req_pkt;
+    struct enftun_crb req_crb;
 
-    uv_timer_t request_timer;
-    int heartbeat_period;
+    uv_timer_t req_timer;
+    int req_period;
 
     uv_timer_t reply_timer;
-    int heartbeat_timeout;
+    int reply_timeout;
 
-    bool hb_sending;
-    bool hb_inflight;
-    bool hb_scheduled;
+    bool req_scheduled;
+    bool req_sending;
+    bool req_inflight;
 
-    void (*on_timeout)(void* data);
-    void* data;
+    enftun_heartbeat_timeout timeout_cb;
+    void* data; // data for timeout callback
 };
 
 void
@@ -59,14 +61,14 @@ enftun_heartbeat_handle_packet(struct enftun_heartbeat* heartbeat,
 
 int
 enftun_heartbeat_init(struct enftun_heartbeat* heartbeat,
+                      int hb_period,
+                      int hb_timeout,
                       uv_loop_t* loop,
                       struct enftun_channel* chan,
                       const struct in6_addr* source,
                       const struct in6_addr* dest,
-                      void (*on_timeout)(void* data),
-                      void* cb_ctx,
-                      int hb_period,
-                      int hb_timeout);
+                      enftun_heartbeat_timeout cb,
+                      void* data);
 
 int
 enftun_heartbeat_free(struct enftun_heartbeat* heartbeat);
@@ -78,7 +80,7 @@ int
 enftun_heartbeat_stop(struct enftun_heartbeat* heartbeat);
 
 int
-enftun_heartbeat_restart(struct enftun_heartbeat* heartbeat);
+enftun_heartbeat_reset(struct enftun_heartbeat* heartbeat);
 
 int
 enftun_heartbeat_now(struct enftun_heartbeat* heartbeat);
