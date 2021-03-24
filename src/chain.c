@@ -18,6 +18,7 @@
 
 #include "chain.h"
 #include "log.h"
+#include "memory.h"
 
 static void
 do_read(struct enftun_chain* chain)
@@ -67,6 +68,8 @@ enftun_chain_init(struct enftun_chain* chain,
                   void* data,
                   enftun_chain_filter filter)
 {
+    CLEAR(*chain);
+
     chain->input  = input;
     chain->output = output;
 
@@ -83,6 +86,7 @@ enftun_chain_init(struct enftun_chain* chain,
 int
 enftun_chain_free(struct enftun_chain* chain __attribute__((unused)))
 {
+    CLEAR(*chain);
     return 0;
 }
 
