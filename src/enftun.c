@@ -156,55 +156,15 @@ enftun_tunnel(struct enftun_context* ctx)
 {
     int rc;
 
-    rc = enftun_channel_init(&ctx->tlschan, &enftun_tls_ops, &ctx->tls,
-                             &ctx->loop, ctx->tls.sock.fd);
+    rc = enftun_context_tunnel_init(ctx, chain_ingress_filter,
+                                    chain_egress_filter);
     if (rc < 0)
         goto out;
 
-    rc = enftun_channel_init(&ctx->tunchan, &enftun_tun_ops, &ctx->tun,
-                             &ctx->loop, ctx->tun.fd);
-    if (rc < 0)
-        goto free_tlschan;
-
-    rc = enftun_chain_init(&ctx->ingress, &ctx->tlschan, &ctx->tunchan, ctx,
-                           chain_ingress_filter);
-    if (rc < 0)
-        goto free_tunchan;
-
-    rc = enftun_chain_init(&ctx->egress, &ctx->tunchan, &ctx->tlschan, ctx,
-                           chain_egress_filter);
-    if (rc < 0)
-        goto free_ingress;
-
-    rc = enftun_ndp_init(&ctx->ndp, &ctx->tunchan, &ctx->loop, &ctx->ipv6,
-                         ctx->config.prefixes, ctx->config.ra_period);
-    if (rc < 0)
-        goto free_egress;
-
-    rc = enftun_dhcp_init(&ctx->dhcp, &ctx->tunchan, &ctx->ipv6);
-    if (rc < 0)
-        goto free_ndp;
-
     start_all(ctx);
-
     uv_run(&ctx->loop, UV_RUN_DEFAULT);
 
-    enftun_dhcp_free(&ctx->dhcp);
-
-free_ndp:
-    enftun_ndp_free(&ctx->ndp);
-
-free_egress:
-    enftun_chain_free(&ctx->egress);
-
-free_ingress:
-    enftun_chain_free(&ctx->ingress);
-
-free_tunchan:
-    enftun_channel_free(&ctx->tunchan);
-
-free_tlschan:
-    enftun_channel_free(&ctx->tlschan);
+    enftun_context_tunnel_free(ctx);
 
 out:
     return rc;
@@ -250,6 +210,7 @@ static int
 enftun_connect(struct enftun_context* ctx)
 {
     int rc = 0;
+
     if ((rc = enftun_context_ipv6_from_cert(ctx, ctx->config.cert_file)) < 0)
         goto out;
 
@@ -306,6 +267,9 @@ enftun_run(struct enftun_context* ctx)
 {
     int rc = 0;
 
+    if ((rc = enftun_context_run_init(ctx)) < 0)
+        goto out;
+
     while (1)
     {
         // Sets tls.need_provision if the certs don't exist yet
@@ -328,6 +292,9 @@ enftun_run(struct enftun_context* ctx)
         sleep(1);
     }
 
+out:
+    enftun_context_run_free(ctx);
+
     return rc;
 }
 
@@ -339,7 +306,7 @@ enftun_main(int argc, char* argv[])
 
     signal(SIGPIPE, SIG_IGN);
 
-    if ((rc = enftun_context_init(&ctx)) < 0)
+    if ((rc = enftun_context_global_init(&ctx)) < 0)
         goto out;
 
     if ((rc = enftun_options_parse_argv(&ctx.options, argc, argv)) < 0)
@@ -360,7 +327,7 @@ enftun_main(int argc, char* argv[])
     }
 
 free_context:
-    enftun_context_free(&ctx);
+    enftun_context_global_free(&ctx);
 
 out:
     return rc;

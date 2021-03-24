@@ -37,14 +37,19 @@
  */
 struct enftun_context
 {
+    // Global context
+    uv_loop_t loop;
+
     struct enftun_options options;
     struct enftun_config config;
 
+    // Run context
     struct enftun_conn_state conn_state;
 
     struct enftun_tls tls;
     struct enftun_tun tun;
 
+    // Tunnel context
     struct enftun_channel tlschan;
     struct enftun_channel tunchan;
 
@@ -54,17 +59,29 @@ struct enftun_context
     struct enftun_dhcp dhcp;
     struct enftun_ndp ndp;
 
-    uv_loop_t loop;
-
     struct in6_addr ipv6;
     char ipv6_str[45];
 };
 
 int
-enftun_context_init(struct enftun_context* ctx);
+enftun_context_global_init(struct enftun_context* ctx);
 
 int
-enftun_context_free(struct enftun_context* ctx);
+enftun_context_global_free(struct enftun_context* ctx);
+
+int
+enftun_context_run_init(struct enftun_context* ctx);
+
+int
+enftun_context_run_free(struct enftun_context* ctx);
+
+int
+enftun_context_tunnel_init(struct enftun_context* ctx,
+                           enftun_chain_filter ingress,
+                           enftun_chain_filter egress);
+
+int
+enftun_context_tunnel_free(struct enftun_context* ctx);
 
 int
 enftun_context_ipv6_from_cert(struct enftun_context* ctx, const char* cert);

@@ -45,9 +45,11 @@ fix_ipv6_string(char* ipv6_str)
 }
 
 int
-enftun_context_init(struct enftun_context* ctx)
+enftun_context_global_init(struct enftun_context* ctx)
 {
     int rc;
+
+    memset(ctx->ipv6_str, 0, sizeof(ctx->ipv6_str));
 
     rc = enftun_options_init(&ctx->options);
     if (rc < 0)
@@ -57,37 +59,14 @@ enftun_context_init(struct enftun_context* ctx)
     if (rc < 0)
         goto free_options;
 
-    rc = enftun_conn_state_init(&ctx->conn_state);
+    rc = uv_loop_init(&ctx->loop);
     if (rc < 0)
         goto free_config;
 
-    rc = enftun_tls_init(&ctx->tls, ctx->config.fwmark);
-    if (rc < 0)
-        goto free_conn_state;
-
-    rc = enftun_tun_init(&ctx->tun);
-    if (rc < 0)
-        goto free_tls;
-
-    rc = uv_loop_init(&ctx->loop);
-    if (rc < 0)
-        goto free_tun;
-
-    memset(ctx->ipv6_str, 0, sizeof(ctx->ipv6_str));
-
     return 0;
 
-free_tun:
-    enftun_tun_free(&ctx->tun);
-
-free_tls:
-    enftun_tls_free(&ctx->tls);
-
-free_conn_state:
-    enftun_conn_state_free(&ctx->conn_state);
-
 free_config:
-    enftun_config_free(&ctx->config);
+    enftun_options_free(&ctx->options);
 
 free_options:
     enftun_options_free(&ctx->options);
@@ -97,17 +76,120 @@ err:
 }
 
 int
-enftun_context_free(struct enftun_context* ctx)
+enftun_context_global_free(struct enftun_context* ctx)
 {
     uv_loop_close(&ctx->loop);
-
-    enftun_tun_free(&ctx->tun);
-    enftun_tls_free(&ctx->tls);
-
-    enftun_conn_state_free(&ctx->conn_state);
-
     enftun_config_free(&ctx->config);
     enftun_options_free(&ctx->options);
+
+    return 0;
+}
+
+int
+enftun_context_run_init(struct enftun_context* ctx)
+{
+    int rc;
+
+    rc = enftun_conn_state_init(&ctx->conn_state);
+    if (rc < 0)
+        goto err;
+
+    rc = enftun_tls_init(&ctx->tls, ctx->config.fwmark);
+    if (rc < 0)
+        goto free_conn_state;
+
+    rc = enftun_tun_init(&ctx->tun);
+    if (rc < 0)
+        goto free_tls;
+
+    return 0;
+
+free_tls:
+    enftun_tls_free(&ctx->tls);
+
+free_conn_state:
+    enftun_conn_state_free(&ctx->conn_state);
+
+err:
+    return rc;
+}
+
+int
+enftun_context_run_free(struct enftun_context* ctx)
+{
+    enftun_tun_free(&ctx->tun);
+    enftun_tls_free(&ctx->tls);
+    enftun_conn_state_free(&ctx->conn_state);
+
+    return 0;
+}
+
+int
+enftun_context_tunnel_init(struct enftun_context* ctx,
+                           enftun_chain_filter ingress,
+                           enftun_chain_filter egress)
+{
+    int rc;
+
+    rc = enftun_channel_init(&ctx->tlschan, &enftun_tls_ops, &ctx->tls,
+                             &ctx->loop, ctx->tls.sock.fd);
+    if (rc < 0)
+        goto out;
+
+    rc = enftun_channel_init(&ctx->tunchan, &enftun_tun_ops, &ctx->tun,
+                             &ctx->loop, ctx->tun.fd);
+    if (rc < 0)
+        goto free_tlschan;
+
+    rc = enftun_chain_init(&ctx->ingress, &ctx->tlschan, &ctx->tunchan, ctx,
+                           ingress);
+    if (rc < 0)
+        goto free_tunchan;
+
+    rc = enftun_chain_init(&ctx->egress, &ctx->tunchan, &ctx->tlschan, ctx,
+                           egress);
+    if (rc < 0)
+        goto free_ingress;
+
+    rc = enftun_ndp_init(&ctx->ndp, &ctx->tunchan, &ctx->loop, &ctx->ipv6,
+                         ctx->config.prefixes, ctx->config.ra_period);
+    if (rc < 0)
+        goto free_egress;
+
+    rc = enftun_dhcp_init(&ctx->dhcp, &ctx->tunchan, &ctx->ipv6);
+    if (rc < 0)
+        goto free_ndp;
+
+    return 0;
+
+free_ndp:
+    enftun_ndp_free(&ctx->ndp);
+
+free_egress:
+    enftun_chain_free(&ctx->egress);
+
+free_ingress:
+    enftun_chain_free(&ctx->ingress);
+
+free_tunchan:
+    enftun_channel_free(&ctx->tunchan);
+
+free_tlschan:
+    enftun_channel_free(&ctx->tlschan);
+
+out:
+    return rc;
+}
+
+int
+enftun_context_tunnel_free(struct enftun_context* ctx)
+{
+    enftun_dhcp_free(&ctx->dhcp);
+    enftun_ndp_free(&ctx->ndp);
+    enftun_chain_free(&ctx->egress);
+    enftun_chain_free(&ctx->ingress);
+    enftun_channel_free(&ctx->tunchan);
+    enftun_channel_free(&ctx->tlschan);
 
     return 0;
 }
