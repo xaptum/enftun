@@ -22,6 +22,7 @@
 #include <unistd.h>
 
 #include "log.h"
+#include "memory.h"
 #include "tcp_multi.h"
 #include "tls.h"
 #include "tls_tpm.h"
@@ -37,6 +38,8 @@ int
 enftun_tls_init(struct enftun_tls* tls, int mark)
 {
     int rc = 0;
+
+    CLEAR(*tls);
 
 #if OPENSSL_VERSION_NUMBER < 0x10100000
     SSL_library_init();
@@ -65,6 +68,7 @@ int
 enftun_tls_free(struct enftun_tls* tls)
 {
     SSL_CTX_free(tls->ctx);
+    CLEAR(*tls);
     return 0;
 }
 

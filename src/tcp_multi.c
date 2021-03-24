@@ -27,6 +27,7 @@
 #include <sys/types.h>
 
 #include "log.h"
+#include "memory.h"
 #include "tcp.h"
 #include "tcp_multi.h"
 #ifdef USE_HSS
@@ -124,6 +125,8 @@ static struct enftun_tcp_ops enftun_tcp_multi_ops = {
 void
 enftun_tcp_multi_init(struct enftun_tcp* tcp)
 {
+    CLEAR(*tcp);
+
     tcp->ops  = enftun_tcp_multi_ops;
     tcp->type = ENFTUN_TCP_NONE;
 }

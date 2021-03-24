@@ -27,6 +27,7 @@
 #include <sys/socket.h>
 
 #include "log.h"
+#include "memory.h"
 #include "sockaddr.h"
 #include "udp.h"
 
@@ -108,13 +109,13 @@ enftun_conn_state_close(struct enftun_conn_state* conn_state)
 int
 enftun_conn_state_init(struct enftun_conn_state* conn_state)
 {
-    (void) conn_state;
+    CLEAR(*conn_state);
     return 0;
 }
 
 int
 enftun_conn_state_free(struct enftun_conn_state* conn_state)
 {
-    (void) conn_state;
+    CLEAR(*conn_state);
     return 0;
 }
