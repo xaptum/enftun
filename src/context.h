@@ -70,7 +70,8 @@ int
 enftun_context_global_free(struct enftun_context* ctx);
 
 int
-enftun_context_run_init(struct enftun_context* ctx);
+enftun_context_run_init(struct enftun_context* ctx,
+                        enftun_conn_state_reconnect cb);
 
 int
 enftun_context_run_free(struct enftun_context* ctx);

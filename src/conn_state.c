@@ -80,42 +80,46 @@ enftun_conn_state_stop(struct enftun_conn_state* conn_state)
 }
 
 int
-enftun_conn_state_prepare(struct enftun_conn_state* conn_state,
-                          uv_loop_t* loop,
-                          enftun_conn_state_reconnect cb,
-                          void* cb_ctx,
-                          int mark)
+enftun_conn_state_init(struct enftun_conn_state* conn_state,
+                       uv_loop_t* loop,
+                       int mark,
+                       enftun_conn_state_reconnect cb,
+                       void* data)
 {
+    int rc;
+
+    CLEAR(*conn_state);
+
     conn_state->poll.data    = conn_state;
     conn_state->reconnect_cb = cb;
-    conn_state->data         = cb_ctx;
+    conn_state->data         = data;
     conn_state->mark         = mark;
 
-    enftun_netlink_connect(&conn_state->nl);
+    rc = enftun_netlink_connect(&conn_state->nl);
+    if (rc < 0)
+    {
+        enftun_log_error("Failed to connect to netlink\n");
+        goto out;
+    }
 
-    int rc = uv_poll_init(loop, &conn_state->poll, conn_state->nl.fd);
+    rc = uv_poll_init(loop, &conn_state->poll, conn_state->nl.fd);
     if (0 != rc)
-        return rc;
+        goto close_nl;
 
     return 0;
-}
 
-int
-enftun_conn_state_close(struct enftun_conn_state* conn_state)
-{
-    return enftun_netlink_close(&conn_state->nl);
-}
+close_nl:
+    enftun_netlink_close(&conn_state->nl);
 
-int
-enftun_conn_state_init(struct enftun_conn_state* conn_state)
-{
-    CLEAR(*conn_state);
-    return 0;
+out:
+    return rc;
 }
 
 int
 enftun_conn_state_free(struct enftun_conn_state* conn_state)
 {
+    enftun_netlink_close(&conn_state->nl);
+
     CLEAR(*conn_state);
     return 0;
 }

@@ -52,17 +52,11 @@ int
 enftun_conn_state_stop(struct enftun_conn_state* conn_state);
 
 int
-enftun_conn_state_prepare(struct enftun_conn_state* conn_state,
-                          uv_loop_t* loop,
-                          enftun_conn_state_reconnect cb,
-                          void* cb_ctx,
-                          int mark);
-
-int
-enftun_conn_state_close(struct enftun_conn_state* conn_state);
-
-int
-enftun_conn_state_init(struct enftun_conn_state* conn_state);
+enftun_conn_state_init(struct enftun_conn_state* conn_state,
+                       uv_loop_t* loop,
+                       int mark,
+                       enftun_conn_state_reconnect cb,
+                       void* data);
 
 int
 enftun_conn_state_free(struct enftun_conn_state* conn_state);

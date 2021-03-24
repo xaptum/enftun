@@ -86,11 +86,14 @@ enftun_context_global_free(struct enftun_context* ctx)
 }
 
 int
-enftun_context_run_init(struct enftun_context* ctx)
+enftun_context_run_init(struct enftun_context* ctx,
+                        enftun_conn_state_reconnect cb)
+
 {
     int rc;
 
-    rc = enftun_conn_state_init(&ctx->conn_state);
+    rc = enftun_conn_state_init(&ctx->conn_state, &ctx->loop,
+                                ctx->config.fwmark, cb, ctx);
     if (rc < 0)
         goto err;
 

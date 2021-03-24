@@ -221,15 +221,9 @@ enftun_connect(struct enftun_context* ctx)
             goto out;
     }
 
-    /* Always init conn_state */
-    if ((rc = enftun_conn_state_prepare(&ctx->conn_state, &ctx->loop,
-                                        trigger_reconnect, (void*) ctx,
-                                        ctx->config.fwmark)) < 0)
-        goto out;
-
     if ((rc = enftun_tls_connect(&ctx->tls, ctx->config.remote_hosts,
                                  ctx->config.remote_port)) < 0)
-        goto close_conn_state;
+        goto out;
 
     if ((rc = enftun_tun_open(&ctx->tun, ctx->config.dev,
                               ctx->config.dev_node)) < 0)
@@ -248,9 +242,6 @@ close_tun:
 close_tls:
     enftun_tls_disconnect(&ctx->tls);
 
-close_conn_state:
-    enftun_conn_state_close(&ctx->conn_state);
-
 out:
     return rc;
 }
@@ -266,7 +257,7 @@ enftun_run(struct enftun_context* ctx)
 {
     int rc = 0;
 
-    if ((rc = enftun_context_run_init(ctx)) < 0)
+    if ((rc = enftun_context_run_init(ctx, trigger_reconnect)) < 0)
         goto out;
 
     while (1)
