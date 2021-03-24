@@ -100,7 +100,7 @@ enftun_config_init(struct enftun_config* config)
 
     config->ra_period         = 10 * 60 * 1000; // milliseconds
     config->heartbeat_period  = 5 * 60 * 1000;
-    config->heartbeat_timeout = 15 * 1000;
+    config->heartbeat_timeout = 10 * 1000;
 
     config->xtt_enable      = 0;
     config->xtt_remote_port = "444";
@@ -171,6 +171,10 @@ enftun_config_parse(struct enftun_config* config, const char* file)
     config_lookup_string(cfg, "remote.port", &config->remote_port);
     config_lookup_string(cfg, "remote.ca_cert_file",
                          &config->remote_ca_cert_file);
+    config_lookup_int(cfg, "remote.heartbeat_period",
+                      &config->heartbeat_period);
+    config_lookup_int(cfg, "remote.heartbeat_timeout",
+                      &config->heartbeat_timeout);
 
     /* Route settings */
     config_lookup_int(cfg, "route.fwmark", &config->fwmark);
@@ -180,9 +184,6 @@ enftun_config_parse(struct enftun_config* config, const char* file)
                         &config->trusted_ifaces);
     config_lookup_bool(cfg, "route.allow_ipv4", &config->allow_ipv4);
     config_lookup_int(cfg, "route.ra_period", &config->ra_period);
-    config_lookup_int(cfg, "route.heartbeat_period", &config->heartbeat_period);
-    config_lookup_int(cfg, "route.heartbeat_timeout",
-                      &config->heartbeat_timeout);
 
     /* Identity settings */
     config_lookup_string(cfg, "identity.cert_file", &config->cert_file);
@@ -241,6 +242,10 @@ enftun_config_print(struct enftun_config* config, const char* key)
         fprintf(stdout, "%s\n", config->remote_port);
     else if (strcmp(key, "remote.ca_cert_file") == 0)
         fprintf(stdout, "%s\n", config->remote_ca_cert_file);
+    else if (strcmp(key, "remote.heartbeat_period") == 0)
+        fprintf(stdout, "%d\n", config->heartbeat_period);
+    else if (strcmp(key, "remote.heartbeat_timeout") == 0)
+        fprintf(stdout, "%d\n", config->heartbeat_timeout);
     /* Route settings */
     else if (strcmp(key, "route.fwmark") == 0)
         fprintf(stdout, "%d\n", config->fwmark);
@@ -252,10 +257,6 @@ enftun_config_print(struct enftun_config* config, const char* key)
         print_joined(config->trusted_ifaces, " ");
     else if (strcmp(key, "route.ra_period") == 0)
         fprintf(stdout, "%d\n", config->ra_period);
-    else if (strcmp(key, "route.heartbeat_period") == 0)
-        fprintf(stdout, "%d\n", config->heartbeat_period);
-    else if (strcmp(key, "route.heartbeat_timeout") == 0)
-        fprintf(stdout, "%d\n", config->heartbeat_timeout);
     /* Identity settings */
     else if (strcmp(key, "identity.cert_file") == 0)
         fprintf(stdout, "%s\n", config->cert_file);
