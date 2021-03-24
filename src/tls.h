@@ -63,8 +63,7 @@ enftun_tls_load_credentials(struct enftun_tls* tls,
 int
 enftun_tls_connect(struct enftun_tls* tls,
                    const char** hosts,
-                   const char* port,
-                   int fwmark);
+                   const char* port);
 
 int
 enftun_tls_disconnect(struct enftun_tls* tls);

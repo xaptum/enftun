@@ -38,8 +38,6 @@ enftun_tls_init(struct enftun_tls* tls, int mark)
 {
     int rc = 0;
 
-    (void) mark;
-
 #if OPENSSL_VERSION_NUMBER < 0x10100000
     SSL_library_init();
     SSL_load_error_strings();
@@ -54,9 +52,10 @@ enftun_tls_init(struct enftun_tls* tls, int mark)
         goto out;
     }
 
-    enftun_tcp_multi_init(&tls->sock);
-
+    tls->mark           = mark;
     tls->need_provision = 0;
+
+    enftun_tcp_multi_init(&tls->sock);
 
 out:
     return rc;
@@ -191,15 +190,12 @@ out:
 }
 
 int
-enftun_tls_connect(struct enftun_tls* tls,
-                   const char** hosts,
-                   const char* port,
-                   int fwmark)
+enftun_tls_connect(struct enftun_tls* tls, const char** hosts, const char* port)
 {
     int rc;
 
     /* Attempt a connection */
-    rc = tls->sock.ops.connect_any(&tls->sock, hosts, port, fwmark);
+    rc = tls->sock.ops.connect_any(&tls->sock, hosts, port, tls->mark);
 
     if (rc < 0)
     {

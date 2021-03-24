@@ -228,8 +228,7 @@ enftun_connect(struct enftun_context* ctx)
         goto out;
 
     if ((rc = enftun_tls_connect(&ctx->tls, ctx->config.remote_hosts,
-                                 ctx->config.remote_port, ctx->config.fwmark)) <
-        0)
+                                 ctx->config.remote_port)) < 0)
         goto close_conn_state;
 
     if ((rc = enftun_tun_open(&ctx->tun, ctx->config.dev,
