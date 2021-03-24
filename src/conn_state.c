@@ -62,6 +62,8 @@ on_poll(uv_poll_t* handle, int status, int events)
     int rc = check_preferred_route(conn_state);
     if (0 != rc)
         conn_state->reconnect_cb(conn_state);
+    else
+        enftun_heartbeat_now(&conn_state->hb);
 }
 
 static void
