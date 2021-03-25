@@ -260,7 +260,9 @@ int main(int argc, char **argv)
 
     /* Get the enftun config */
     enftun_config_init(&cfg);
-    enftun_config_parse(&cfg, enftun_cfg_file);
+    ret = enftun_config_parse(&cfg, enftun_cfg_file);
+    if (ret != 0)
+        goto cleanup;
 
     /* Turn relative paths into absolute */
     make_cfg_path_absolute(enftun_path, cfg.cert_file, cfg.key_file, &full_cert_path, &full_key_path);
