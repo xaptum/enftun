@@ -21,12 +21,18 @@
 
 #include <openssl/err.h>
 
+static void
+__venftun_log(const char* format, va_list args)
+{
+    vfprintf(stderr, format, args);
+}
+
 void
 enftun_log(const char* format, ...)
 {
     va_list arglist;
     va_start(arglist, format);
-    vfprintf(stderr, format, arglist);
+    __venftun_log(format, arglist);
     va_end(arglist);
 }
 
@@ -35,9 +41,9 @@ enftun_log_ssl(unsigned long err, const char* format, ...)
 {
     va_list arglist;
     va_start(arglist, format);
-    enftun_log(format, arglist);
+    __venftun_log(format, arglist);
     va_end(arglist);
 
-    enftun_log("%d:%s:%s:%s\n", err, ERR_lib_error_string(err),
+    enftun_log(" %d:%s:%s:%s\n", err, ERR_lib_error_string(err),
                ERR_func_error_string(err), ERR_reason_error_string(err));
 }
