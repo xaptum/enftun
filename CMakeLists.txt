@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.1 FATAL_ERROR)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
 project(enftun
-  VERSION 0.8.3
+  VERSION 0.9.0
   LANGUAGES C
 )
 
@@ -62,6 +62,7 @@ set(ENFTUN_SRCS
     src/enftun.c
     src/exec.c
     src/filter.c
+    src/heartbeat.c
     src/icmp.c
     src/ip.c
     src/log.c

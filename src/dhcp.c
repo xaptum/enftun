@@ -139,6 +139,8 @@ enftun_dhcp_init(struct enftun_dhcp* dhcp,
 {
     int rc = 0;
 
+    CLEAR(*dhcp);
+
     dhcp->chan = chan;
 
     dhcp->inflight = false;
@@ -160,8 +162,7 @@ enftun_dhcp_init(struct enftun_dhcp* dhcp,
 int
 enftun_dhcp_free(struct enftun_dhcp* dhcp)
 {
-    (void) dhcp;
-
+    CLEAR(*dhcp);
     return 0;
 }
 

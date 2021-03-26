@@ -22,6 +22,7 @@
 #include <unistd.h>
 
 #include "log.h"
+#include "memory.h"
 #include "tcp_multi.h"
 #include "tls.h"
 #include "tls_tpm.h"
@@ -38,13 +39,15 @@ enftun_tls_init(struct enftun_tls* tls, int mark)
 {
     int rc = 0;
 
-    (void) mark;
+    CLEAR(*tls);
 
 #if OPENSSL_VERSION_NUMBER < 0x10100000
     SSL_library_init();
     SSL_load_error_strings();
+    ERR_clear_error();
     tls->ctx = SSL_CTX_new(TLSv1_2_client_method());
 #else
+    ERR_clear_error();
     tls->ctx = SSL_CTX_new(TLS_client_method());
 #endif
     if (!tls->ctx)
@@ -54,9 +57,10 @@ enftun_tls_init(struct enftun_tls* tls, int mark)
         goto out;
     }
 
-    enftun_tcp_multi_init(&tls->sock);
-
+    tls->mark           = mark;
     tls->need_provision = 0;
+
+    enftun_tcp_multi_init(&tls->sock);
 
 out:
     return rc;
@@ -66,6 +70,7 @@ int
 enftun_tls_free(struct enftun_tls* tls)
 {
     SSL_CTX_free(tls->ctx);
+    CLEAR(*tls);
     return 0;
 }
 
@@ -79,14 +84,16 @@ enftun_tls_load_credentials(struct enftun_tls* tls,
                             const char* socket_host,
                             const char* socket_port)
 {
+    ERR_clear_error();
     if (!SSL_CTX_load_verify_locations(tls->ctx, cacert_file, NULL))
     {
-        enftun_log_ssl_error("Failed to load server TLS certificate %s",
+        enftun_log_ssl_error("Failed to load server TLS certificate %s:",
                              cacert_file);
         goto err;
     }
     enftun_log_debug("Loaded server TLS certificate %s\n", cacert_file);
 
+    ERR_clear_error();
     if (!(SSL_CTX_use_certificate_file(tls->ctx, cert_file, SSL_FILETYPE_PEM) ||
           SSL_CTX_use_certificate_file(tls->ctx, cert_file, SSL_FILETYPE_ASN1)))
     {
@@ -96,6 +103,7 @@ enftun_tls_load_credentials(struct enftun_tls* tls,
     }
     enftun_log_debug("Loaded client TLS certificate %s\n", cert_file);
 
+    ERR_clear_error();
     if (!(SSL_CTX_use_PrivateKey_file(tls->ctx, key_file, SSL_FILETYPE_PEM) ||
           SSL_CTX_use_PrivateKey_file(tls->ctx, key_file, SSL_FILETYPE_ASN1) ||
           enftun_tls_tpm_use_key(tls, key_file, tcti, device, socket_host,
@@ -107,6 +115,7 @@ enftun_tls_load_credentials(struct enftun_tls* tls,
 
     enftun_log_debug("Loaded client TLS private key %s\n", key_file);
 
+    ERR_clear_error();
     if (!SSL_CTX_check_private_key(tls->ctx))
     {
         enftun_log_ssl_error(
@@ -127,6 +136,7 @@ enftun_tls_handshake(struct enftun_tls* tls)
 {
     int rc;
 
+    ERR_clear_error();
     tls->ssl = SSL_new(tls->ctx);
     if (!tls->ssl)
     {
@@ -138,6 +148,7 @@ enftun_tls_handshake(struct enftun_tls* tls)
     SSL_set_options(tls->ssl, SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3 |
                                   SSL_OP_NO_TLSv1 | SSL_OP_NO_TLSv1_1);
 #else
+    ERR_clear_error();
     if (SSL_set_min_proto_version(tls->ssl, TLS1_2_VERSION) != 1)
     {
         enftun_log_ssl_error("Cannot set min proto version:");
@@ -145,6 +156,7 @@ enftun_tls_handshake(struct enftun_tls* tls)
     }
 #endif
 
+    ERR_clear_error();
     if (SSL_set_fd(tls->ssl, tls->sock.fd) != 1)
     {
         enftun_log_ssl_error("Failed to set SSL file descriptor (%d):",
@@ -170,6 +182,7 @@ enftun_tls_handshake(struct enftun_tls* tls)
      */
     tls->need_provision = 1;
 
+    ERR_clear_error();
     rc = SSL_do_handshake(tls->ssl);
     if (rc != 1)
     {
@@ -191,15 +204,12 @@ out:
 }
 
 int
-enftun_tls_connect(struct enftun_tls* tls,
-                   const char** hosts,
-                   const char* port,
-                   int fwmark)
+enftun_tls_connect(struct enftun_tls* tls, const char** hosts, const char* port)
 {
     int rc;
 
     /* Attempt a connection */
-    rc = tls->sock.ops.connect_any(&tls->sock, hosts, port, fwmark);
+    rc = tls->sock.ops.connect_any(&tls->sock, hosts, port, tls->mark);
 
     if (rc < 0)
     {
@@ -233,7 +243,7 @@ enftun_tls_disconnect(struct enftun_tls* tls)
 
         if (rc < 0)
         {
-            enftun_log_ssl_error("Failed to shutdown TLS connection");
+            enftun_log_ssl_error("Failed to shutdown TLS connection:");
         }
     }
 
@@ -285,7 +295,7 @@ enftun_tls_write(struct enftun_tls* tls, uint8_t* buf, size_t len)
         goto out;
     }
 
-    enftun_log_ssl_error("Failed to write");
+    enftun_log_ssl_error("Failed to write:");
 
 out:
     return rc;

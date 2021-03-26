@@ -27,6 +27,7 @@
 #include <sys/socket.h>
 
 #include "log.h"
+#include "memory.h"
 #include "sockaddr.h"
 #include "udp.h"
 
@@ -61,6 +62,17 @@ on_poll(uv_poll_t* handle, int status, int events)
     int rc = check_preferred_route(conn_state);
     if (0 != rc)
         conn_state->reconnect_cb(conn_state);
+    else
+        enftun_heartbeat_now(&conn_state->hb);
+}
+
+static void
+on_timeout(struct enftun_heartbeat* hb)
+{
+    struct enftun_conn_state* conn_state = hb->data;
+
+    enftun_log_info("Heatbeat reply timed out.\n");
+    conn_state->reconnect_cb(conn_state);
 }
 
 int
@@ -68,53 +80,85 @@ enftun_conn_state_start(struct enftun_conn_state* conn_state,
                         struct enftun_tls* tls_conn)
 {
     conn_state->conn = tls_conn;
-    int rc           = uv_poll_start(&conn_state->poll, UV_READABLE, on_poll);
+
+    int rc = enftun_heartbeat_start(&conn_state->hb);
+    if (0 != rc)
+        goto out;
+
+    rc = uv_poll_start(&conn_state->poll, UV_READABLE, on_poll);
+    if (0 != rc)
+        goto out;
+
+    return 0;
+
+out:
     return rc;
 }
 
 int
 enftun_conn_state_stop(struct enftun_conn_state* conn_state)
 {
-    return uv_poll_stop(&conn_state->poll);
+    uv_poll_stop(&conn_state->poll);
+    enftun_heartbeat_stop(&conn_state->hb);
+
+    return 0;
 }
 
 int
-enftun_conn_state_prepare(struct enftun_conn_state* conn_state,
-                          uv_loop_t* loop,
-                          enftun_conn_state_reconnect cb,
-                          void* cb_ctx,
-                          int mark)
+enftun_conn_state_init(struct enftun_conn_state* conn_state,
+                       uv_loop_t* loop,
+                       int mark,
+                       int hb_period,
+                       int hb_timeout,
+                       struct enftun_channel* chan,
+                       const struct in6_addr* saddr,
+                       const struct in6_addr* daddr,
+                       enftun_conn_state_reconnect cb,
+                       void* data)
 {
+    int rc;
+
+    CLEAR(*conn_state);
+
     conn_state->poll.data    = conn_state;
     conn_state->reconnect_cb = cb;
-    conn_state->data         = cb_ctx;
+    conn_state->data         = data;
     conn_state->mark         = mark;
 
-    enftun_netlink_connect(&conn_state->nl);
+    rc = enftun_netlink_connect(&conn_state->nl);
+    if (rc < 0)
+    {
+        enftun_log_error("Failed to connect to netlink\n");
+        goto out;
+    }
 
-    int rc = uv_poll_init(loop, &conn_state->poll, conn_state->nl.fd);
+    rc = enftun_heartbeat_init(&conn_state->hb, hb_period, hb_timeout, loop,
+                               chan, saddr, daddr, on_timeout, conn_state);
     if (0 != rc)
-        return rc;
+        goto close_nl;
+
+    rc = uv_poll_init(loop, &conn_state->poll, conn_state->nl.fd);
+    if (0 != rc)
+        goto close_hb;
 
     return 0;
-}
 
-int
-enftun_conn_state_close(struct enftun_conn_state* conn_state)
-{
-    return enftun_netlink_close(&conn_state->nl);
-}
+close_nl:
+    enftun_netlink_close(&conn_state->nl);
 
-int
-enftun_conn_state_init(struct enftun_conn_state* conn_state)
-{
-    (void) conn_state;
-    return 0;
+close_hb:
+    enftun_heartbeat_free(&conn_state->hb);
+
+out:
+    return rc;
 }
 
 int
 enftun_conn_state_free(struct enftun_conn_state* conn_state)
 {
-    (void) conn_state;
+    enftun_heartbeat_free(&conn_state->hb);
+    enftun_netlink_close(&conn_state->nl);
+
+    CLEAR(*conn_state);
     return 0;
 }
