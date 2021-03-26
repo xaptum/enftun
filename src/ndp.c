@@ -23,6 +23,7 @@
 #include "icmp.h"
 #include "ip.h"
 #include "log.h"
+#include "memory.h"
 #include "packet.h"
 
 static void
@@ -85,9 +86,10 @@ enftun_ndp_init(struct enftun_ndp* ndp,
 {
     int rc;
 
+    CLEAR(*ndp);
+
     ndp->chan = chan;
 
-    memset(&ndp->network, 0, sizeof(ndp->network));
     memcpy(&ndp->network, ipv6, 8);
     ndp->routes    = routes;
     ndp->ra_period = ra_period;
@@ -108,8 +110,7 @@ enftun_ndp_init(struct enftun_ndp* ndp,
 int
 enftun_ndp_free(struct enftun_ndp* ndp)
 {
-    (void) ndp;
-
+    CLEAR(*ndp);
     return 0;
 }
 

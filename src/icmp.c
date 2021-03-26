@@ -219,7 +219,7 @@ enftun_icmp6_echo_request(struct enftun_packet* pkt,
     req->icmp6_seq  = ECHO_SEQ;
     struct ip6_hdr* hdr =
         enftun_ip6_header(pkt, IPPROTO_ICMPV6, 255, src, dest);
-    req->icmp6_cksum = ip6_l3_cksum(hdr, &req);
+    req->icmp6_cksum = ip6_l3_cksum(hdr, req);
 
     return req;
 

@@ -16,6 +16,7 @@
 
 #include "channel.h"
 #include "log.h"
+#include "memory.h"
 
 static void
 do_complete_crb(struct enftun_crb* crb, int status)
@@ -118,6 +119,8 @@ enftun_channel_init(struct enftun_channel* chan,
 {
     int rc;
 
+    CLEAR(*chan);
+
     chan->ops         = ops;
     chan->ops_context = ops_context;
 
@@ -135,6 +138,7 @@ int
 enftun_channel_free(struct enftun_channel* chan)
 {
     uv_poll_stop(&chan->poll);
+    CLEAR(*chan);
     return 0;
 }
 
