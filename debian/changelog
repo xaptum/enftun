@@ -1,3 +1,39 @@
+enftun (0.9.0-1) bionic; urgency=medium
+
+  [ David R. Bild ]
+  * ci: update dependencies in CI Docker image
+  * ip: use netinet, not linux, header field names
+  * keygen: flush stdout after prompt
+  * test: copy all test files into build dir
+  * heartbeat: simplify timers and scheduling
+  * heartbeat: move settings into remote config section
+
+  [ Kathryn Fejer ]
+  * add separate ip address for the ENF router
+
+  [ David R. Bild ]
+  * context: refactor context initialization
+  * tls: store fwmark in struct
+  * all: clear all structs in init and free functions
+  * conn_state: replace prepare/close with init/free
+
+  [ Kathryn Fejer ]
+  * conn_state: enable heartbeat
+
+  [ David R. Bild ]
+  * conn_state: send heartbeat on network changes
+  * keygen: handle error in parsing config file
+  * log: fix use of variable args
+  * tls: properly clear OpenSSL error queue before calling new methods
+
+  [ Zane Beckwith ]
+  * icmp: Fix incorrect reference-to-pointer when computing ping checksum.
+
+  [ David R. Bild ]
+  * release v0.9.0
+
+ -- Zane Beckwith <zane.beckwith@xaptum.com>  Fri, 26 Mar 2021 16:03:01 +0000
+
 enftun (0.8.3-1) bionic; urgency=medium
 
   [ David R. Bild ]
