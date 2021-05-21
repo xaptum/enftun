@@ -1,3 +1,100 @@
+enftun (0.9.0-1) unstable; urgency=medium
+
+  [ David R. Bild ]
+  * readme: add install instructions for Ubuntu Bionic
+
+  [ Daniel Berliner ]
+  * Rename SCM to HSS
+
+  [ David R. Bild ]
+  * release v0.7.3
+
+  [ Daniel Berliner ]
+  * Load tss2 blob file via tpm2tss engine
+
+  [ Zane Beckwith ]
+  * .docker: Use buster, not stretch.
+  * .docker: Install libtss2-dev package, for the TPM TSS2 implementation.
+  * .travis: Use Buster docker image (v0.2.1)
+  * xtt: Use xtt v0.11 and xaptum-tpm v1.0, which requires new TSS library.
+  * README: Bump xtt requirement to 0.11.0.
+  * README: Mention libjansson dependency.
+  * tcp: Formatting, to satisfy clang-format check.
+
+  [ Daniel Berliner ]
+  * Add TPM parameters to enftun_xtt_handshake
+
+  [ Zane Beckwith ]
+  * tls_tpm: No longer need ifdef to avoid xtt+tpm.
+  * xtt: Save private key as TPM blob file (and create cert accordingly).
+
+  [ Daniel Berliner ]
+  * config: Make tpm own section.
+  * keygen: Create KEYGEN_USE_TPM CMake option.
+  * keygen/tpm: Get init_tcti working, and a function for loading TPM keys
+  * Allow either on-disk or TPM ECDSA keys.
+
+  [ Zane Beckwith ]
+  * keygen: Bring back linkage to libsodium.
+  * combine tls_tpm engine init, and set TCTI config for engine.
+  * Fix ordering of params in xtt.c TPM save_creds
+  * Consolidate KEYGEN_USE_TPM into BUILD_TPM option.
+  * config: Don't use tpm_password_len.
+  * tpm: Fix tpm_password strlen call.
+
+  [ David R. Bild ]
+  * enftun: learn to display version number
+  * release v0.8.0
+  * xtt: zero the handshake and group contexts
+  * release v0.8.1
+  * config: remove ENF broker IPv6 address from defaults
+  * release v0.8.2
+  * xtt: fix code formatting
+  * test/router: add support for IPv4 ICMP ping
+  * filter: add helper filter for IPv4 packet type
+  * filter: remove verbose log messages
+  * config: add option to control IPv4 support
+  * enftun: allow IPv4 through ingress and egress filters
+
+  [ Zane Beckwith ]
+  * xtt: Update to new XTT API for certificates.
+  * Bump xtt requirement to >=0.12.0
+  * release v0.8.3
+
+  [ David R. Bild ]
+  * ci: update dependencies in CI Docker image
+  * ip: use netinet, not linux, header field names
+  * keygen: flush stdout after prompt
+  * test: copy all test files into build dir
+  * heartbeat: simplify timers and scheduling
+  * heartbeat: move settings into remote config section
+
+  [ Kathryn Fejer ]
+  * add separate ip address for the ENF router
+
+  [ David R. Bild ]
+  * context: refactor context initialization
+  * tls: store fwmark in struct
+  * all: clear all structs in init and free functions
+  * conn_state: replace prepare/close with init/free
+
+  [ Kathryn Fejer ]
+  * conn_state: enable heartbeat
+
+  [ David R. Bild ]
+  * conn_state: send heartbeat on network changes
+  * keygen: handle error in parsing config file
+  * log: fix use of variable args
+  * tls: properly clear OpenSSL error queue before calling new methods
+
+  [ Zane Beckwith ]
+  * icmp: Fix incorrect reference-to-pointer when computing ping checksum.
+
+  [ David R. Bild ]
+  * release v0.9.0
+
+ -- David R. Bild <david.bild@xaptum.com>  Fri, 21 May 2021 04:53:27 +0000
+
 enftun (0.7.2-1) unstable; urgency=medium
 
   * Update to version 0.7.2
