@@ -1,4 +1,4 @@
-/*
+ #include <openssl/ec.h>/*
  * Copyright 2020 Xaptum, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -158,6 +158,7 @@ static int prompt_user(const char *username, const char *network, const char *cf
     printf("Key target file: %s\n", key);
 
     printf("Enter y to continue, n to exit: ");
+    fflush(stdout);
     if (scanf("%c",&ch) < 0) {
         return 0;
     }
@@ -259,7 +260,9 @@ int main(int argc, char **argv)
 
     /* Get the enftun config */
     enftun_config_init(&cfg);
-    enftun_config_parse(&cfg, enftun_cfg_file);
+    ret = enftun_config_parse(&cfg, enftun_cfg_file);
+    if (ret != 0)
+        goto cleanup;
 
     /* Turn relative paths into absolute */
     make_cfg_path_absolute(enftun_path, cfg.cert_file, cfg.key_file, &full_cert_path, &full_key_path);
@@ -279,14 +282,43 @@ int main(int argc, char **argv)
     }
     printf("Successful.\n");
 
-    /* Generate a key to send to IAM */
-    printf("Generating Key... ");
-    ret = gen_key(&key);
-    if (!ret) {
-        printf("Failed. Exiting.\n");
-        goto cleanup;
+    /* Generate a key (and save it to file) to send to IAM */
+    if (cfg.tpm_enable) {
+#ifdef USE_TPM
+        printf("Generating TPM Key and saving it to file... ");
+        ret = gen_and_save_tpm_key(&key, full_key_path,
+                cfg.tpm_tcti,
+                cfg.tpm_device,
+                cfg.tpm_socket_host,
+                cfg.tpm_socket_port,
+                cfg.tpm_parent,
+                cfg.tpm_hierarchy,
+                cfg.tpm_password,
+                cfg.tpm_password ? strlen(cfg.tpm_password) : 0);
+        if (!ret) {
+            printf("Failed. Exiting.\n");
+            goto cleanup;
+        }
+#else
+    fprintf(stderr, "Attempted to use a TPM, but not built with TPM enabled!\n");
+    goto cleanup;
+#endif
+    } else {
+        printf("Generating Key... ");
+        ret = gen_key(&key);
+        if (!ret) {
+            printf("Failed. Exiting.\n");
+            goto cleanup;
+        }
+
+        printf("Saving private key... ");
+        ret = write_key(&key, full_key_path);
+        if (!ret) {
+            printf("Failed. Exiting.\n");
+            goto cleanup;
+        }
     }
-    printf("Successful.\n");
+    printf("Key saved to %s\n", full_key_path);
 
     /* Create a request to have IAM create a new endpoint */
     printf("Preparing IAM request... ");
@@ -318,16 +350,6 @@ int main(int argc, char **argv)
     }
     printf("Successful.\n");
     printf("Note: Cert saved to %s\n", full_cert_path);
-
-    printf("Saving private key... ");
-    ret = write_key(&key, full_key_path);
-    if (!ret) {
-        printf("Failed. Exiting.\n");
-        /* TODO Unprovision */
-        printf("Warning: IP Address %s is still provisioned.\n", ep_resp.address);
-        goto cleanup;
-    }
-    printf("Key saved to %s\n", full_key_path);
 
     printf("All operations were successful.\n");
 

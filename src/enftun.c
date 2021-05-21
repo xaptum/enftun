@@ -81,19 +81,40 @@ chain_ingress_filter(struct enftun_chain* chain, struct enftun_packet* pkt)
 {
     struct enftun_context* ctx = (struct enftun_context*) chain->data;
 
-    if (!enftun_is_ipv6(pkt))
+    // Check if this is a heartbeat response
+    if (enftun_heartbeat_handle_packet(&ctx->conn_state.hb, pkt))
+        return 1; // STOLEN
+
+    // Received a packet, so reset the heartbeat timer
+    enftun_heartbeat_reset(&ctx->conn_state.hb);
+
+    // -------------------------- IPv4 --------------------------
+    if (enftun_is_ipv4(pkt))
     {
-        enftun_log_debug("DROP [ingress]: invalid IPv6 packet\n");
-        return 1;
+        if (!ctx->config.allow_ipv4)
+        {
+            enftun_log_debug("DROP [ingress]: route.allow_ipv4 = false\n");
+            return 1; // DROP
+        }
+
+        return 0; // ACCEPT
     }
 
-    if (!enftun_has_dst_ip(pkt, &ctx->ipv6))
+    // -------------------------- IPv6 --------------------------
+    if (enftun_is_ipv6(pkt))
     {
-        enftun_log_debug("DROP [ingress]: invalid dst IP\n");
-        return 1;
+        // Check dst IP is us
+        if (!enftun_has_dst_ip(pkt, &ctx->ipv6))
+        {
+            enftun_log_debug("DROP [ingress]: invalid dst IP\n");
+            return 1; // DROP
+        }
+
+        return 0; // ACCEPT
     }
 
-    return 0;
+    // -------------------------- Other --------------------------
+    return 1; // DROP
 }
 
 static int
@@ -101,25 +122,40 @@ chain_egress_filter(struct enftun_chain* chain, struct enftun_packet* pkt)
 {
     struct enftun_context* ctx = (struct enftun_context*) chain->data;
 
+    // -------------------------- Handlers --------------------------
     if (enftun_ndp_handle_packet(&ctx->ndp, pkt))
-        return 1;
+        return 1; // STOLEN
 
     if (enftun_dhcp_handle_packet(&ctx->dhcp, pkt))
-        return 1;
+        return 1; // STOLEN
 
-    if (!enftun_is_ipv6(pkt))
+    // -------------------------- IPv4 --------------------------
+    if (enftun_is_ipv4(pkt))
     {
-        enftun_log_debug("DROP [ egress]: invalid IPv6 packet\n");
-        return 1;
+        if (!ctx->config.allow_ipv4)
+        {
+            enftun_log_debug("DROP [ egress]: route.allow_ipv4 = false\n");
+            return 1; // DROP
+        }
+
+        return 0; // ACCEPT
     }
 
-    if (!enftun_has_src_ip(pkt, &ctx->ipv6))
+    // -------------------------- IPv6 --------------------------
+    if (enftun_is_ipv6(pkt))
     {
-        enftun_log_debug("DROP [ egress]: invalid src IP\n");
-        return 1;
+        // Check src IP is us
+        if (!enftun_has_src_ip(pkt, &ctx->ipv6))
+        {
+            enftun_log_debug("DROP [ egress]: invalid src IP\n");
+            return 1; // DROP
+        }
+
+        return 0; // ACCEPT
     }
 
-    return 0;
+    // -------------------------- Other --------------------------
+    return 1; // DROP
 }
 
 static int
@@ -127,55 +163,15 @@ enftun_tunnel(struct enftun_context* ctx)
 {
     int rc;
 
-    rc = enftun_channel_init(&ctx->tlschan, &enftun_tls_ops, &ctx->tls,
-                             &ctx->loop, ctx->tls.sock.fd);
+    rc = enftun_context_tunnel_init(ctx, chain_ingress_filter,
+                                    chain_egress_filter);
     if (rc < 0)
         goto out;
 
-    rc = enftun_channel_init(&ctx->tunchan, &enftun_tun_ops, &ctx->tun,
-                             &ctx->loop, ctx->tun.fd);
-    if (rc < 0)
-        goto free_tlschan;
-
-    rc = enftun_chain_init(&ctx->ingress, &ctx->tlschan, &ctx->tunchan, ctx,
-                           chain_ingress_filter);
-    if (rc < 0)
-        goto free_tunchan;
-
-    rc = enftun_chain_init(&ctx->egress, &ctx->tunchan, &ctx->tlschan, ctx,
-                           chain_egress_filter);
-    if (rc < 0)
-        goto free_ingress;
-
-    rc = enftun_ndp_init(&ctx->ndp, &ctx->tunchan, &ctx->loop, &ctx->ipv6,
-                         ctx->config.prefixes, ctx->config.ra_period);
-    if (rc < 0)
-        goto free_egress;
-
-    rc = enftun_dhcp_init(&ctx->dhcp, &ctx->tunchan, &ctx->ipv6);
-    if (rc < 0)
-        goto free_ndp;
-
     start_all(ctx);
-
     uv_run(&ctx->loop, UV_RUN_DEFAULT);
 
-    enftun_dhcp_free(&ctx->dhcp);
-
-free_ndp:
-    enftun_ndp_free(&ctx->ndp);
-
-free_egress:
-    enftun_chain_free(&ctx->egress);
-
-free_ingress:
-    enftun_chain_free(&ctx->ingress);
-
-free_tunchan:
-    enftun_channel_free(&ctx->tunchan);
-
-free_tlschan:
-    enftun_channel_free(&ctx->tlschan);
+    enftun_context_tunnel_free(ctx);
 
 out:
     return rc;
@@ -195,10 +191,12 @@ enftun_provision(struct enftun_context* ctx)
 
     rc = enftun_xtt_handshake(
         ctx->config.remote_hosts, ctx->config.xtt_remote_port,
-        ctx->config.fwmark, ctx->config.xtt_tcti, ctx->config.xtt_device,
+        ctx->config.fwmark, ctx->config.tpm_tcti, ctx->config.tpm_device,
         ctx->config.cert_file, ctx->config.key_file,
-        ctx->config.xtt_socket_host, ctx->config.xtt_socket_port,
-        ctx->config.remote_ca_cert_file, ctx->config.xtt_basename, &xtt);
+        ctx->config.tpm_socket_host, ctx->config.tpm_socket_port,
+        ctx->config.remote_ca_cert_file, ctx->config.xtt_basename,
+        ctx->config.tpm_hierarchy, ctx->config.tpm_password,
+        ctx->config.tpm_parent, &xtt);
 
     if (0 != rc)
     {
@@ -219,6 +217,7 @@ static int
 enftun_connect(struct enftun_context* ctx)
 {
     int rc = 0;
+
     if ((rc = enftun_context_ipv6_from_cert(ctx, ctx->config.cert_file)) < 0)
         goto out;
 
@@ -229,16 +228,9 @@ enftun_connect(struct enftun_context* ctx)
             goto out;
     }
 
-    /* Always init conn_state */
-    if ((rc = enftun_conn_state_prepare(&ctx->conn_state, &ctx->loop,
-                                        trigger_reconnect, (void*) ctx,
-                                        ctx->config.fwmark)) < 0)
-        goto out;
-
     if ((rc = enftun_tls_connect(&ctx->tls, ctx->config.remote_hosts,
-                                 ctx->config.remote_port, ctx->config.fwmark)) <
-        0)
-        goto close_conn_state;
+                                 ctx->config.remote_port)) < 0)
+        goto out;
 
     if ((rc = enftun_tun_open(&ctx->tun, ctx->config.dev,
                               ctx->config.dev_node)) < 0)
@@ -257,9 +249,6 @@ close_tun:
 close_tls:
     enftun_tls_disconnect(&ctx->tls);
 
-close_conn_state:
-    enftun_conn_state_close(&ctx->conn_state);
-
 out:
     return rc;
 }
@@ -275,12 +264,16 @@ enftun_run(struct enftun_context* ctx)
 {
     int rc = 0;
 
+    if ((rc = enftun_context_run_init(ctx, trigger_reconnect)) < 0)
+        goto out;
+
     while (1)
     {
         // Sets tls.need_provision if the certs don't exist yet
         rc = enftun_tls_load_credentials(
             &ctx->tls, ctx->config.remote_ca_cert_file, ctx->config.cert_file,
-            ctx->config.key_file);
+            ctx->config.key_file, ctx->config.tpm_tcti, ctx->config.tpm_device,
+            ctx->config.tpm_socket_host, ctx->config.tpm_socket_port);
 
         if (ctx->tls.need_provision && ctx->config.xtt_enable)
         {
@@ -296,6 +289,9 @@ enftun_run(struct enftun_context* ctx)
         sleep(1);
     }
 
+out:
+    enftun_context_run_free(ctx);
+
     return rc;
 }
 
@@ -307,7 +303,7 @@ enftun_main(int argc, char* argv[])
 
     signal(SIGPIPE, SIG_IGN);
 
-    if ((rc = enftun_context_init(&ctx)) < 0)
+    if ((rc = enftun_context_global_init(&ctx)) < 0)
         goto out;
 
     if ((rc = enftun_options_parse_argv(&ctx.options, argc, argv)) < 0)
@@ -328,7 +324,7 @@ enftun_main(int argc, char* argv[])
     }
 
 free_context:
-    enftun_context_free(&ctx);
+    enftun_context_global_free(&ctx);
 
 out:
     return rc;

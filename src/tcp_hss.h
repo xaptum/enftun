@@ -16,14 +16,14 @@
 
 #pragma once
 
-#ifndef ENFTUN_SCM_H
-#define ENFTUN_SCM_H
+#ifndef ENFTUN_HSS_H
+#define ENFTUN_HSS_H
 
 #include "tcp.h"
 
-// TCP SCM specific functions
+// TCP HSS specific functions
 
 void
-enftun_tcp_scm_init(struct enftun_tcp* scm);
+enftun_tcp_hss_init(struct enftun_tcp* hss);
 
 #endif

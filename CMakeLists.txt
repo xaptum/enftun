@@ -3,19 +3,19 @@ cmake_minimum_required(VERSION 3.1 FATAL_ERROR)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
 project(enftun
-  VERSION 0.7.2
+  VERSION 0.9.0
   LANGUAGES C
 )
 
 option(BUILD_CACERT  "Install the the ENF ca cert" ON)
 option(BUILD_EXAMPLE "Build and install example configs" ON)
-option(BUILD_SCM   "Build with scm support" OFF)
+option(BUILD_HSS   "Build with hss support" OFF)
 option(BUILD_SYSTEMD "Build with systemd support" ON)
 option(BUILD_TEST    "Build tests" ON)
 option(BUILD_XTT     "Build with XTT support" ON)
 option(BUILD_KEYGEN  "Build with keygen tool" ON)
+option(BUILD_TPM     "Build with TPM support" ON)
 option(CHECK_FORMAT  "Check source format during build" ON)
-
 
 include(GNUInstallDirs)
 
@@ -24,14 +24,20 @@ find_package(LibUV REQUIRED QUIET 1.9)
 find_package(OpenSSL REQUIRED QUIET 1.0)
 
 if(BUILD_XTT)
-    add_definitions(-DUSE_TPM)
+    set(BUILD_TPM ON CACHE BOOL "Build with TPM support" FORCE)
     add_definitions(-DUSE_XTT)
     find_package(sodium REQUIRED QUIET 1.0.11)
-    find_package(xtt COMPONENTS tpm REQUIRED QUIET 0.10.4)
+    find_package(TSS2 REQUIRED QUIET)
+    find_package(xtt COMPONENTS tpm REQUIRED QUIET 0.12.0)
 endif()
 
-if(BUILD_SCM)
-    add_definitions(-DUSE_SCM)
+if(BUILD_TPM)
+    add_definitions(-DUSE_TPM)
+    find_package(TSS2 REQUIRED QUIET)
+endif()
+
+if(BUILD_HSS)
+    add_definitions(-DUSE_HSS)
 endif()
 
 add_compile_options(-std=c99 -Wall -Wextra -Wno-missing-field-initializers -Wno-missing-braces)
@@ -56,6 +62,7 @@ set(ENFTUN_SRCS
     src/enftun.c
     src/exec.c
     src/filter.c
+    src/heartbeat.c
     src/icmp.c
     src/ip.c
     src/log.c
@@ -67,6 +74,7 @@ set(ENFTUN_SRCS
     src/tcp.c
     src/tcp_multi.c
     src/tls.c
+    src/tls_tpm.c
     src/tun.c
     src/udp.c
     )
@@ -75,11 +83,17 @@ if(BUILD_XTT)
     list(APPEND ENFTUN_SRCS src/xtt.c)
 endif()
 
-if(BUILD_SCM)
-    list(APPEND ENFTUN_SRCS src/tcp_scm.c)
+if(BUILD_HSS)
+    list(APPEND ENFTUN_SRCS src/tcp_hss.c)
 endif()
 
+configure_file(src/version.h.in version.h)
+
 add_executable(enftun ${ENFTUN_SRCS})
+
+target_include_directories(enftun PRIVATE
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
+)
 
 target_link_libraries(enftun
   PRIVATE
