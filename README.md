@@ -2,7 +2,6 @@
 
 [![Build Status](https://travis-ci.org/xaptum/enftun.svg?branch=master)](https://travis-ci.org/xaptum/enftun)
 [![Release](https://img.shields.io/github/release/xaptum/enftun.svg)](https://github.com/xaptum/enftun/releases)
-[![deb](https://img.shields.io/bintray/v/xaptum/deb/enftun.svg?label=deb)](https://bintray.com/xaptum/deb/enftun)
 
 `enftun` is a tunnel client for connecting to the Xaptum Edge Network Fabric (ENF).
 
@@ -11,30 +10,17 @@
 `enftun` is available for the following Linux distributions. It may
 also be built from source.
 
-### Debian Stretch
+### Debian (Stretch, Buster) and Ubuntu (Bionic)
 
 ``` bash
+DIST=$(lsb_release -cs)
+
 # Install the Xaptum API repo GPG signing key.
 sudo apt-get install dirmngr
 sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys c615bfaa7fe1b4ca
 
 # Add the repository to your APT sources
-echo "deb http://dl.bintray.com/xaptum/deb stretch main" | sudo tee /etc/apt/sources.list.d/xaptum.list
-sudo apt-get update
-
-# Install the library.
-sudo apt-get install enftun
-```
-
-### Ubuntu Bionic
-
-``` bash
-# Install the Xaptum API repo GPG signing key.
-sudo apt-get install dirmngr
-sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys c615bfaa7fe1b4ca
-
-# Add the repository to your APT sources
-echo "deb http://dl.bintray.com/xaptum/deb bionic main" | sudo tee /etc/apt/sources.list.d/xaptum.list
+echo "deb https://xaptum.jfrog.io/artifactory/debian ${DIST} main" | sudo tee /etc/apt/sources.list.d/xaptum.list
 sudo apt-get update
 
 # Install the library.
