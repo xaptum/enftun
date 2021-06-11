@@ -37,21 +37,24 @@ struct enftun_heartbeat
     const struct in6_addr* source_addr;
     const struct in6_addr* dest_addr;
 
-    struct enftun_packet req_pkt;
-    struct enftun_crb req_crb;
+    enftun_heartbeat_timeout timeout_cb;
+    void* data; // data for timeout callback
 
-    uv_timer_t req_timer;
-    int req_period;
+    // Request timer
+    uv_timer_t request_timer;
+    int request_period;
 
+    struct enftun_packet request_pkt;
+
+    struct enftun_crb request_crb;
+    bool request_scheduled;
+    bool request_sending;
+
+    // Reply timer
     uv_timer_t reply_timer;
     int reply_timeout;
 
-    bool req_scheduled;
-    bool req_sending;
-    bool req_inflight;
-
-    enftun_heartbeat_timeout timeout_cb;
-    void* data; // data for timeout callback
+    bool awaiting_reply;
 };
 
 void
