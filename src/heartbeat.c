@@ -14,6 +14,14 @@
  * limitations under the License.
  */
 
+/*
+ * Periodic heartbeats to detect tunnel connection failure.
+ *
+ * After a period of inactivity (no packets received), send a ping
+ * echo request to trigger a reply. If a packet is not received within
+ * a timeout after that, consider the tunnel down.
+ */
+
 #include "heartbeat.h"
 
 #include <time.h>
@@ -24,70 +32,70 @@
 #include "log.h"
 
 static void
-on_req_timer(uv_timer_t* timer);
+on_request_timer(uv_timer_t* timer);
 
 static void
 on_reply_timer(uv_timer_t* timer);
 
 static void
-send_req(struct enftun_heartbeat* heartbeat);
+schedule_request(struct enftun_heartbeat* heartbeat);
+
+static void
+send_request(struct enftun_heartbeat* heartbeat);
 
 static void
 on_write(struct enftun_crb* crb)
 {
     struct enftun_heartbeat* heartbeat = crb->context;
 
+    heartbeat->request_sending = false;
+
     if (crb->status)
         enftun_log_error("heartbeat: failed to send request: %d\n",
                          crb->status);
 
-    heartbeat->req_sending = false;
-
-    if (!heartbeat->req_inflight)
+    if (!heartbeat->awaiting_reply)
     {
-        heartbeat->req_inflight = true;
-
         // Start timer to wait for reply
         uv_timer_start(&heartbeat->reply_timer, on_reply_timer,
                        heartbeat->reply_timeout, 0);
+
+        heartbeat->awaiting_reply = true;
     }
 
-    if (heartbeat->req_scheduled)
-        send_req(heartbeat);
+    // If another request was scheduled, send it now.
+    if (heartbeat->request_scheduled)
+        send_request(heartbeat);
 }
 
 static void
-send_req(struct enftun_heartbeat* heartbeat)
+send_request(struct enftun_heartbeat* heartbeat)
 {
-    heartbeat->req_scheduled = false;
-    heartbeat->req_sending   = true;
+    heartbeat->request_scheduled = false;
+    heartbeat->request_sending   = true;
 
-    enftun_packet_reset(&heartbeat->req_pkt);
-    enftun_icmp6_echo_request(&heartbeat->req_pkt, heartbeat->source_addr,
+    enftun_packet_reset(&heartbeat->request_pkt);
+    enftun_icmp6_echo_request(&heartbeat->request_pkt, heartbeat->source_addr,
                               heartbeat->dest_addr);
-    enftun_crb_write(&heartbeat->req_crb, heartbeat->chan);
+    enftun_crb_write(&heartbeat->request_crb, heartbeat->chan);
 
     enftun_log_debug("heartbeat: request sent.\n");
-
-    // Start timer again
-    uv_timer_start(&heartbeat->req_timer, on_req_timer, heartbeat->req_period,
-                   0);
 }
 
 static void
-schedule_req(struct enftun_heartbeat* heartbeat)
+schedule_request(struct enftun_heartbeat* heartbeat)
 {
-    heartbeat->req_scheduled = true;
+    heartbeat->request_scheduled = true;
 
-    if (!heartbeat->req_sending)
-        send_req(heartbeat);
+    if (!heartbeat->request_sending)
+        send_request(heartbeat);
 }
 
 static void
-on_req_timer(uv_timer_t* timer)
+on_request_timer(uv_timer_t* timer)
 {
     struct enftun_heartbeat* heartbeat = timer->data;
-    schedule_req(heartbeat);
+    schedule_request(heartbeat);
 }
 
 static void
@@ -95,19 +103,16 @@ on_reply_timer(uv_timer_t* timer)
 {
     struct enftun_heartbeat* heartbeat = timer->data;
 
-    heartbeat->req_inflight = false;
-
     // Notify that reply timed out
     heartbeat->timeout_cb(heartbeat);
-
-    return;
 }
 
 int
 enftun_heartbeat_start(struct enftun_heartbeat* heartbeat)
 {
-    int rc = uv_timer_start(&heartbeat->req_timer, on_req_timer,
-                            heartbeat->req_period, 0);
+    int rc =
+        uv_timer_start(&heartbeat->request_timer, on_request_timer,
+                       heartbeat->request_period, heartbeat->request_period);
 
     return rc;
 }
@@ -115,11 +120,12 @@ enftun_heartbeat_start(struct enftun_heartbeat* heartbeat)
 int
 enftun_heartbeat_stop(struct enftun_heartbeat* heartbeat)
 {
-    uv_timer_stop(&heartbeat->req_timer);
+    uv_timer_stop(&heartbeat->request_timer);
     uv_timer_stop(&heartbeat->reply_timer);
+    heartbeat->awaiting_reply = false;
 
-    if (heartbeat->req_sending)
-        enftun_crb_cancel(&heartbeat->req_crb);
+    if (heartbeat->request_sending)
+        enftun_crb_cancel(&heartbeat->request_crb);
 
     return 0;
 }
@@ -127,8 +133,10 @@ enftun_heartbeat_stop(struct enftun_heartbeat* heartbeat)
 int
 enftun_heartbeat_reset(struct enftun_heartbeat* heartbeat)
 {
+    uv_timer_again(&heartbeat->request_timer);
+
     uv_timer_stop(&heartbeat->reply_timer);
-    schedule_req(heartbeat);
+    heartbeat->awaiting_reply = false;
 
     return 0;
 }
@@ -136,7 +144,10 @@ enftun_heartbeat_reset(struct enftun_heartbeat* heartbeat)
 int
 enftun_heartbeat_now(struct enftun_heartbeat* heartbeat)
 {
-    schedule_req(heartbeat);
+    schedule_request(heartbeat);
+
+    uv_timer_again(&heartbeat->request_timer);
+
     return 0;
 }
 
@@ -146,6 +157,10 @@ enftun_heartbeat_handle_packet(struct enftun_heartbeat* heartbeat,
 {
     ENFTUN_SAVE_INIT(pkt);
 
+    // A packet was received, so reset the timers.
+    enftun_heartbeat_reset(heartbeat);
+
+    // If a reply to our request, steal the packet.
     struct ip6_hdr* iph = enftun_ip6_pull_if_dest(pkt, heartbeat->source_addr);
     if (!iph)
         goto pass;
@@ -153,9 +168,6 @@ enftun_heartbeat_handle_packet(struct enftun_heartbeat* heartbeat,
     struct icmp6_hdr* icmph = enftun_icmp6_echo_reply_pull(pkt, iph);
     if (!icmph)
         goto pass;
-
-    heartbeat->req_inflight = false;
-    uv_timer_stop(&heartbeat->reply_timer);
 
     enftun_log_debug("heartbeat: reply received.\n");
 
@@ -182,24 +194,25 @@ enftun_heartbeat_init(struct enftun_heartbeat* heartbeat,
     heartbeat->source_addr = source;
     heartbeat->dest_addr   = dest;
 
-    heartbeat->req_crb.context  = heartbeat;
-    heartbeat->req_crb.packet   = &heartbeat->req_pkt;
-    heartbeat->req_crb.complete = on_write;
-
-    heartbeat->req_timer.data = heartbeat;
-    heartbeat->req_period     = hb_period;
-
-    heartbeat->reply_timer.data = heartbeat;
-    heartbeat->reply_timeout    = hb_timeout;
-
-    heartbeat->req_scheduled = false;
-    heartbeat->req_sending   = false;
-    heartbeat->req_inflight  = false;
-
     heartbeat->timeout_cb = cb;
     heartbeat->data       = data;
 
-    uv_timer_init(loop, &heartbeat->req_timer);
+    heartbeat->request_period     = hb_period;
+    heartbeat->request_timer.data = heartbeat;
+
+    heartbeat->request_crb.context  = heartbeat;
+    heartbeat->request_crb.packet   = &heartbeat->request_pkt;
+    heartbeat->request_crb.complete = on_write;
+
+    heartbeat->request_scheduled = false;
+    heartbeat->request_sending   = false;
+
+    heartbeat->reply_timeout    = hb_timeout;
+    heartbeat->reply_timer.data = heartbeat;
+
+    heartbeat->awaiting_reply = false;
+
+    uv_timer_init(loop, &heartbeat->request_timer);
     uv_timer_init(loop, &heartbeat->reply_timer);
 
     return 0;
