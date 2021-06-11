@@ -1,3 +1,11 @@
+enftun (0.9.1-1) unstable; urgency=medium
+
+  * readme: update bintray to jfrog
+  * heartbeat: do not send a heartbeat after each received packet
+  * release v0.9.1
+
+ -- David R. Bild <david.bild@xaptum.com>  Fri, 11 Jun 2021 21:41:34 +0000
+
 enftun (0.9.0-1) unstable; urgency=medium
 
   [ David R. Bild ]
