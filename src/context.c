@@ -23,6 +23,7 @@
 #include "conn_state.h"
 #include "ip.h"
 #include "log.h"
+#include "pcap.h"
 
 /**
  * Adds missing colons back into IPv6 string.
@@ -93,6 +94,11 @@ enftun_context_run_init(struct enftun_context* ctx,
 {
     int rc;
 
+    rc = enftun_pcap_init(&ctx->pcap, ctx->config.trace_enable,
+                          ctx->config.trace_pcap_file);
+    if (rc < 0)
+        enftun_log_warn("Failed to initialize pcap file. Tracing disabled.");
+
     rc = enftun_conn_state_init(
         &ctx->conn_state, &ctx->loop, ctx->config.fwmark,
         ctx->config.heartbeat_period, ctx->config.heartbeat_timeout,
@@ -126,6 +132,7 @@ enftun_context_run_free(struct enftun_context* ctx)
     enftun_tun_free(&ctx->tun);
     enftun_tls_free(&ctx->tls);
     enftun_conn_state_free(&ctx->conn_state);
+    enftun_pcap_free(&ctx->pcap);
 
     return 0;
 }

@@ -29,6 +29,7 @@
 #include "dhcp.h"
 #include "ndp.h"
 #include "options.h"
+#include "pcap.h"
 #include "tls.h"
 #include "tun.h"
 
@@ -44,6 +45,8 @@ struct enftun_context
     struct enftun_config config;
 
     // Run context
+    struct enftun_pcap pcap;
+
     struct enftun_conn_state conn_state;
 
     struct enftun_tls tls;

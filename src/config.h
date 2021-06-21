@@ -66,6 +66,9 @@ struct enftun_config
     int tpm_hierarchy;
     const char* tpm_password;
     int tpm_parent;
+
+    int trace_enable;
+    const char* trace_pcap_file;
 };
 
 int

@@ -70,6 +70,7 @@ set(ENFTUN_SRCS
     src/netlink.c
     src/options.c
     src/packet.c
+    src/pcap.c
     src/sockaddr.c
     src/tcp.c
     src/tcp_multi.c
@@ -99,6 +100,7 @@ target_link_libraries(enftun
   PRIVATE
   LibConfig::LibConfig
   LibUV::LibUV
+  m
   OpenSSL::SSL
 )
 

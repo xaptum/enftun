@@ -114,6 +114,9 @@ enftun_config_init(struct enftun_config* config)
     config->tpm_password    = NULL;
     config->tpm_parent      = 0;
 
+    config->trace_enable    = 0;
+    config->trace_pcap_file = NULL;
+
     return 0;
 }
 
@@ -215,6 +218,13 @@ enftun_config_parse(struct enftun_config* config, const char* file)
         config_lookup_int(cfg, "identity.tpm.parent", &config->tpm_parent);
     }
 
+    /* Trace settings */
+    if (NULL != config_lookup(cfg, "trace"))
+    {
+        config->trace_enable = 1;
+        config_lookup_string(cfg, "trace.pcap_file", &config->trace_pcap_file);
+    }
+
     return 0;
 }
 
@@ -284,6 +294,8 @@ enftun_config_print(struct enftun_config* config, const char* key)
         fprintf(stdout, "%s\n", config->tpm_password);
     else if (strcmp(key, "identity.tpm.parent") == 0)
         fprintf(stdout, "%d\n", config->tpm_parent);
+    else if (strcmp(key, "trace.pcap_file") == 0)
+        fprintf(stdout, "%s\n", config->trace_pcap_file);
     else
     {
         fprintf(stderr, "%s not found\n", key);

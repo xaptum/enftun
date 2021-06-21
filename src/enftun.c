@@ -80,6 +80,9 @@ chain_ingress_filter(struct enftun_chain* chain, struct enftun_packet* pkt)
 {
     struct enftun_context* ctx = (struct enftun_context*) chain->data;
 
+    // -------------------------- Tracing --------------------------
+    enftun_pcap_trace(&ctx->pcap, pkt);
+
     // Check if this is a heartbeat response
     if (enftun_heartbeat_handle_packet(&ctx->conn_state.hb, pkt))
         return 1; // STOLEN
@@ -120,6 +123,9 @@ static int
 chain_egress_filter(struct enftun_chain* chain, struct enftun_packet* pkt)
 {
     struct enftun_context* ctx = (struct enftun_context*) chain->data;
+
+    // -------------------------- Tracing --------------------------
+    enftun_pcap_trace(&ctx->pcap, pkt);
 
     // -------------------------- Handlers --------------------------
     if (enftun_ndp_handle_packet(&ctx->services.ndp, pkt))
