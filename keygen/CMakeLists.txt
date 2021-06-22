@@ -8,7 +8,7 @@ project(enftun-keygen
 include(GNUInstallDirs)
 
 find_package(OpenSSL REQUIRED QUIET 1.1)
-find_package(Jansson REQUIRED)
+find_package(LibJansson REQUIRED)
 find_package(CURL REQUIRED)
 find_package(sodium REQUIRED QUIET 1.0.11)
 
