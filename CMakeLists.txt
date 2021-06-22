@@ -14,6 +14,7 @@ option(BUILD_SYSTEMD "Build with systemd support" ON)
 option(BUILD_TEST    "Build tests" ON)
 option(BUILD_XTT     "Build with XTT support" ON)
 option(BUILD_KEYGEN  "Build with keygen tool" ON)
+option(BUILD_SLIRP   "Build with libslirp backend" OFF)
 option(BUILD_TPM     "Build with TPM support" ON)
 option(CHECK_FORMAT  "Check source format during build" ON)
 
@@ -38,6 +39,10 @@ endif()
 
 if(BUILD_HSS)
     add_definitions(-DUSE_HSS)
+endif()
+
+if(BUILD_SLIRP)
+    find_package(vdeslirp REQUIRED)
 endif()
 
 add_compile_options(-std=c99 -Wall -Wextra -Wno-missing-field-initializers -Wno-missing-braces)
@@ -88,6 +93,10 @@ if(BUILD_HSS)
     list(APPEND ENFTUN_SRCS src/tcp_hss.c)
 endif()
 
+if(BUILD_SLIRP)
+    list(APPEND ENFTUN_SRCS src/slirp.c)
+endif()
+
 configure_file(src/version.h.in version.h)
 
 add_executable(enftun ${ENFTUN_SRCS})
@@ -109,6 +118,12 @@ if(BUILD_XTT)
     PRIVATE
     xtt::xtt
     sodium)
+endif()
+
+if(BUILD_SLIRP)
+    target_link_libraries(enftun
+    PRIVATE
+    vdeslirp::vdeslirp)
 endif()
 
 set_target_properties(enftun
