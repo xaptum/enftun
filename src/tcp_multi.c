@@ -20,7 +20,6 @@
 #include <unistd.h>
 
 #include <arpa/inet.h>
-#include <linux/socket.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <sys/socket.h>

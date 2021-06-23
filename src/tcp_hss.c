@@ -20,7 +20,6 @@
 #include <unistd.h>
 
 #include <arpa/inet.h>
-#include <linux/socket.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <sys/socket.h>
@@ -78,6 +77,8 @@ enftun_tcp_hss_connect(struct enftun_tcp* hss,
                        const char* port,
                        int fwmark)
 {
+    (void) fwmark;
+
     int rc;
     struct addrinfo *addr_h, *addr, hints;
 
