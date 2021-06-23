@@ -22,7 +22,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define ENFTUN_PACKET_MAX_SIZE 1504
+#define ENFTUN_PACKET_MAX_SIZE 1520
 
 extern const size_t enftun_packet_max_size;
 

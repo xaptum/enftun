@@ -34,7 +34,7 @@ enftun_packet_reset(struct enftun_packet* pkt)
     pkt->size = 0;
 
     enftun_packet_reserve_head(
-        pkt, 4); // space for stream header while staying word aligned
+        pkt, 20); // space for stream/ethernet header while staying word aligned
 }
 
 void
