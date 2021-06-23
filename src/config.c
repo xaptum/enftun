@@ -75,6 +75,8 @@ enftun_config_init(struct enftun_config* config)
 
     config_init(&config->cfg);
 
+    config->slirp_enable = 0;
+
     config->tun_ip_path = "/bin/ip";
     config->tun_ip_set  = 1; // true
 
@@ -159,6 +161,12 @@ enftun_config_parse(struct enftun_config* config, const char* file)
     {
         log_config_read_error(config, file);
         return -EINVAL;
+    }
+
+    /* Slirp settings */
+    if (NULL != config_lookup(cfg, "slirp"))
+    {
+        config->slirp_enable = 1;
     }
 
     /* TUN settings */

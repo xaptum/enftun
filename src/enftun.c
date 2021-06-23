@@ -27,6 +27,11 @@
 #include "log.h"
 #include "ndp.h"
 #include "tls.h"
+
+#ifdef USE_SLIRP
+#include "slirp.h"
+#endif
+
 #ifdef USE_XTT
 #include "xtt.h"
 #endif
@@ -238,19 +243,41 @@ enftun_connect(struct enftun_context* ctx)
                                  ctx->config.remote_port)) < 0)
         goto out;
 
-    if ((rc = enftun_tun_open(&ctx->tun, ctx->config.tun_dev,
-                              ctx->config.tun_dev_node)) < 0)
-        goto close_tls;
+    if (ctx->config.slirp_enable)
+    {
+#ifdef USE_SLIRP
+        rc = enftun_slirp_open(&ctx->slirp);
+#else
+        enftun_log_error("enftun was not build with slirp support.");
+        rc = -1;
+#endif
+        if (rc < 0)
+            goto close_tls;
+    }
+    else
+    {
+        rc = enftun_tun_open(&ctx->tun, ctx->config.tun_dev,
+                             ctx->config.tun_dev_node);
+        if (rc < 0)
+            goto close_tls;
 
-    if (ctx->config.tun_ip_set &&
-        (rc = enftun_tun_set_ip6(&ctx->tun, ctx->config.tun_ip_path,
-                                 &ctx->ipv6)) < 0)
-        goto close_tun;
+        if (ctx->config.tun_ip_set &&
+            (rc = enftun_tun_set_ip6(&ctx->tun, ctx->config.tun_ip_path,
+                                     &ctx->ipv6)) < 0)
+            goto close_tun;
+    }
 
     rc = enftun_tunnel(ctx);
 
 close_tun:
-    enftun_tun_close(&ctx->tun);
+    if (ctx->config.slirp_enable)
+#ifdef USE_SLIRP
+        enftun_slirp_close(&ctx->slirp);
+#else
+        ;
+#endif
+    else
+        enftun_tun_close(&ctx->tun);
 
 close_tls:
     enftun_tls_disconnect(&ctx->tls);

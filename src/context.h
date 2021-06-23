@@ -33,6 +33,10 @@
 #include "tls.h"
 #include "tun.h"
 
+#ifdef USE_SLIRP
+#include "slirp.h"
+#endif
+
 /**
  * The state for one tunnel.
  */
@@ -51,7 +55,12 @@ struct enftun_context
 
     struct enftun_tls tls;
 
-    struct enftun_tun tun;
+    union {
+        struct enftun_tun tun;
+#ifdef USE_SLIRP
+        struct enftun_slirp slirp;
+#endif
+    };
 
     // Tunnel context
     struct

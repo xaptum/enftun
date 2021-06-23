@@ -102,7 +102,7 @@ enftun_context_run_init(struct enftun_context* ctx,
     rc = enftun_conn_state_init(
         &ctx->conn_state, &ctx->loop, ctx->config.fwmark,
         ctx->config.heartbeat_period, ctx->config.heartbeat_timeout,
-        &ctx->channels.local, &ctx->ipv6, &ip6_enf_router, cb, ctx);
+        &ctx->channels.remote, &ctx->ipv6, &ip6_enf_router, cb, ctx);
     if (rc < 0)
         goto err;
 
@@ -110,7 +110,19 @@ enftun_context_run_init(struct enftun_context* ctx,
     if (rc < 0)
         goto free_conn_state;
 
-    rc = enftun_tun_init(&ctx->tun);
+    if (ctx->config.slirp_enable)
+    {
+#ifdef USE_SLIRP
+        rc = enftun_slirp_init(&ctx->slirp);
+#else
+        enftun_log_error("enftun was not build with slirp support.");
+        rc = -1;
+#endif
+    }
+    else
+    {
+        rc = enftun_tun_init(&ctx->tun);
+    }
     if (rc < 0)
         goto free_tls;
 
@@ -129,7 +141,14 @@ err:
 int
 enftun_context_run_free(struct enftun_context* ctx)
 {
-    enftun_tun_free(&ctx->tun);
+    if (ctx->config.slirp_enable)
+#ifdef USE_SLIRP
+        enftun_slirp_free(&ctx->slirp);
+#else
+        ;
+#endif
+    else
+        enftun_tun_free(&ctx->tun);
     enftun_tls_free(&ctx->tls);
     enftun_conn_state_free(&ctx->conn_state);
     enftun_pcap_free(&ctx->pcap);
@@ -149,8 +168,22 @@ enftun_context_tunnel_init(struct enftun_context* ctx,
     if (rc < 0)
         goto out;
 
-    rc = enftun_channel_init(&ctx->channels.local, &enftun_tun_ops, &ctx->tun,
-                             &ctx->loop);
+    if (ctx->config.slirp_enable)
+    {
+#ifdef USE_SLIRP
+        rc = enftun_channel_init(&ctx->channels.local, &enftun_slirp_ops,
+                                 &ctx->slirp, &ctx->loop);
+#else
+        enftun_log_error("enftun was not build with slirp support.");
+        rc = -1;
+#endif
+    }
+    else
+    {
+        rc = enftun_channel_init(&ctx->channels.local, &enftun_tun_ops,
+                                 &ctx->tun, &ctx->loop);
+    }
+
     if (rc < 0)
         goto free_remote_chan;
 

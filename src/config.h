@@ -29,6 +29,8 @@ struct enftun_config
 
     const char* conf_file;
 
+    int slirp_enable;
+
     const char* tun_ip_path;
     int tun_ip_set;
 

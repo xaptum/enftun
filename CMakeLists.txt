@@ -42,6 +42,7 @@ if(BUILD_HSS)
 endif()
 
 if(BUILD_SLIRP)
+    add_definitions(-DUSE_SLIRP)
     find_package(vdeslirp REQUIRED)
 endif()
 
