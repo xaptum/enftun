@@ -2,8 +2,9 @@
 
 import argparse
 import ipaddress
-import ssl
 import socket
+import socketserver
+import ssl
 import struct
 import sys
 
@@ -55,56 +56,46 @@ def is6(host):
     except:
         return False
 
-class Router(object):
+class Router(socketserver.ThreadingMixIn, socketserver.TCPServer):
 
-    def __init__(self, host, port):
-        self.host = host
-        self.port = port
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
-    def start(self):
-        address = (self.host, self.port)
+        self.allow_reuse_address = True
 
-        print('Listening up on {}:{}'.format(*address))
+        self.ssl_ctx = ssl.SSLContext()
+        ## Doesn't seem to be a way to get Python ssl module to accept
+        ## arbitrary self-signed certs.
+        #self.ssl_ctx.verify_mode = ssl.CERT_REQUIRED
+        self.ssl_ctx.options |= ssl.OP_NO_SSLv2
+        self.ssl_ctx.options |= ssl.OP_NO_SSLv3
+        self.ssl_ctx.options |= ssl.OP_NO_TLSv1
+        self.ssl_ctx.options |= ssl.OP_NO_TLSv1_1
+        self.ssl_ctx.load_cert_chain(certfile="router.crt.pem",
+                                     keyfile="router.key.pem")
 
-        family = socket.AF_INET6 if is6(self.host) else socket.AF_INET
-        self._sock  = socket.socket(family, socket.SOCK_STREAM)
-        self._sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.conns = set()
 
-        self._sock.bind(address)
-        self._sock.listen(1)
+    def server_activate(self):
+        super().server_activate()
+        print('Listening on {}:{}'.format(*self.server_address))
 
-        try:
-            while True:
-                print('Waiting for connection')
-                sock, address = self._sock.accept()
+    def get_request(self):
+        sock, peer = self.socket.accept()
+        conn = self.ssl_ctx.wrap_socket(sock, server_side=True)
+        return conn, peer
 
-                print('Connection from {}:{}'.format(*address))
-                try:
-                    Connection(sock).start()
-                except:
-                    pass
-        finally:
-            self._sock.close()
+class Connection(socketserver.BaseRequestHandler):
 
-class Connection(object):
+    def setup(self):
+        print('Connection from {}:{} opened.'.format(*self.client_address))
+        self.server.conns.add(self)
 
-    def __init__(self, sock):
-        ctx = ssl.SSLContext(ssl.CERT_REQUIRED)
-        ctx.options |= ssl.OP_NO_SSLv2
-        ctx.options |= ssl.OP_NO_SSLv3
-        ctx.options |= ssl.OP_NO_TLSv1
-        ctx.options |= ssl.OP_NO_TLSv1_1
-        ctx.load_cert_chain(certfile="router.crt.pem",
-                                 keyfile="router.key.pem")
+    def finish(self):
+        print('Connection from {}:{} closed.'.format(*self.client_address))
+        self.server.conns.remove(self)
 
-        try:
-            self._sock = ctx.wrap_socket(sock,
-                                         server_side=True)
-        except Exception as e:
-            print(e)
-            raise
-
-    def start(self):
+    def handle(self):
         try:
             while True:
                 pkt = self.recv_packet()
@@ -115,16 +106,16 @@ class Connection(object):
         except Exception as e:
             print(e)
         finally:
-            self._sock.shutdown(socket.SHUT_RDWR)
-            self._sock.close()
+            self.request.shutdown(socket.SHUT_RDWR)
+            self.request.close()
 
     def recv_packet(self):
-        hdr = self._sock.recv(2)
+        hdr = self.request.recv(2)
         if not hdr:
             return None
 
         (size,) = struct.unpack('!H', hdr)
-        pkt = self._sock.recv(size)
+        pkt = self.request.recv(size)
         if not pkt:
             return None
 
@@ -145,13 +136,15 @@ class Connection(object):
         body = bytes(ip)
         head = struct.pack('!H', len(body))
         buf = head + body
-        self._sock.send(buf)
+        self.request.send(buf)
 
     def handle_packet(self, ip):
-        if isinstance(ip, dpkt.ip.IP):
+        if isinstance(ip.data, dpkt.icmp.ICMP):
             self.handle_v4_echo_request(ip)
-        elif isinstance(ip, dpkt.ip6.IP6):
+        elif isinstance(ip.data, dpkt.icmp6.ICMP6):
             self.handle_v6_echo_request(ip)
+        else:
+            self.forward(ip)
 
     def handle_v4_echo_request(self, ip):
         icmp = ip.data
@@ -181,6 +174,11 @@ class Connection(object):
 
         self.send_packet(ip)
 
+    def forward(self, ip):
+        for conn in self.server.conns:
+            if conn != self:
+                conn.send_packet(ip)
+
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
@@ -192,5 +190,5 @@ if __name__ == "__main__":
                         type=int, default=4443)
     args = parser.parse_args()
 
-    router = Router(args.bind, args.port)
-    router.start()
+    router = Router((args.bind, args.port), Connection)
+    router.serve_forever()
