@@ -232,13 +232,13 @@ enftun_connect(struct enftun_context* ctx)
                                  ctx->config.remote_port)) < 0)
         goto out;
 
-    if ((rc = enftun_tun_open(&ctx->tun, ctx->config.dev,
-                              ctx->config.dev_node)) < 0)
+    if ((rc = enftun_tun_open(&ctx->tun, ctx->config.tun_dev,
+                              ctx->config.tun_dev_node)) < 0)
         goto close_tls;
 
-    if (ctx->config.ip_set &&
-        (rc = enftun_tun_set_ip6(&ctx->tun, ctx->config.ip_path, &ctx->ipv6)) <
-            0)
+    if (ctx->config.tun_ip_set &&
+        (rc = enftun_tun_set_ip6(&ctx->tun, ctx->config.tun_ip_path,
+                                 &ctx->ipv6)) < 0)
         goto close_tun;
 
     rc = enftun_tunnel(ctx);

@@ -29,11 +29,11 @@ struct enftun_config
 
     const char* conf_file;
 
-    const char* ip_path;
-    int ip_set;
+    const char* tun_ip_path;
+    int tun_ip_set;
 
-    const char* dev;
-    const char* dev_node;
+    const char* tun_dev;
+    const char* tun_dev_node;
 
     const char** remote_hosts;
     const char* remote_port;

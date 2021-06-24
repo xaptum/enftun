@@ -75,11 +75,11 @@ enftun_config_init(struct enftun_config* config)
 
     config_init(&config->cfg);
 
-    config->ip_path = "/bin/ip";
-    config->ip_set  = 1; // true
+    config->tun_ip_path = "/bin/ip";
+    config->tun_ip_set  = 1; // true
 
-    config->dev      = "enf0";
-    config->dev_node = "/dev/net/tun";
+    config->tun_dev      = "enf0";
+    config->tun_dev_node = "/dev/net/tun";
 
     config->remote_hosts        = calloc(2, sizeof(char*));
     config->remote_hosts[0]     = "23.147.128.112";
@@ -158,13 +158,11 @@ enftun_config_parse(struct enftun_config* config, const char* file)
         return -EINVAL;
     }
 
-    /* Platform settings */
-    config_lookup_string(cfg, "tun.ip_path", &config->ip_path);
-    config_lookup_bool(cfg, "tun.ip_set", &config->ip_set);
-
     /* TUN settings */
-    config_lookup_string(cfg, "tun.dev", &config->dev);
-    config_lookup_string(cfg, "tun.dev_node", &config->dev_node);
+    config_lookup_string(cfg, "tun.ip_path", &config->tun_ip_path);
+    config_lookup_bool(cfg, "tun.ip_set", &config->tun_ip_set);
+    config_lookup_string(cfg, "tun.dev", &config->tun_dev);
+    config_lookup_string(cfg, "tun.dev_node", &config->tun_dev_node);
 
     /* Remote settings */
     lookup_string_array(cfg, "remote.hosts", &config->remote_hosts);
@@ -223,16 +221,15 @@ enftun_config_parse(struct enftun_config* config, const char* file)
 int
 enftun_config_print(struct enftun_config* config, const char* key)
 {
-    /* Platform settings */
-    if (strcmp(key, "tun.ip_path") == 0)
-        fprintf(stdout, "%s\n", config->ip_path);
-    else if (strcmp(key, "tun.ip_set") == 0)
-        fprintf(stdout, "%s\n", config->ip_set ? "true" : "false");
     /* TUN settings */
+    if (strcmp(key, "tun.ip_path") == 0)
+        fprintf(stdout, "%s\n", config->tun_ip_path);
+    else if (strcmp(key, "tun.ip_set") == 0)
+        fprintf(stdout, "%s\n", config->tun_ip_set ? "true" : "false");
     else if (strcmp(key, "tun.dev") == 0)
-        fprintf(stdout, "%s\n", config->dev);
+        fprintf(stdout, "%s\n", config->tun_dev);
     else if (strcmp(key, "tun.dev_node") == 0)
-        fprintf(stdout, "%s\n", config->dev_node);
+        fprintf(stdout, "%s\n", config->tun_dev_node);
     /* Remote settings */
     else if (strcmp(key, "remote.hosts") == 0)
         print_joined(config->remote_hosts, " ");
