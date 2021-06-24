@@ -45,6 +45,7 @@ struct enftun_crb
 
 struct enftun_channel_ops
 {
+    int (*fd)(void* ctx);
     int (*read)(void* ctx, struct enftun_packet* pkt);
     int (*write)(void* ctx, struct enftun_packet* pkt);
     void (*prepare)(void* ctx, struct enftun_packet* pkt);
@@ -67,8 +68,7 @@ int
 enftun_channel_init(struct enftun_channel* chan,
                     struct enftun_channel_ops* ops,
                     void* ops_context,
-                    uv_loop_t* loop,
-                    int fd);
+                    uv_loop_t* loop);
 
 int
 enftun_channel_free(struct enftun_channel* chan);

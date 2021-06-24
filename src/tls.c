@@ -28,6 +28,7 @@
 #include "tls_tpm.h"
 
 struct enftun_channel_ops enftun_tls_ops = {
+    .fd    = (int (*)(void*)) enftun_tls_fd,
     .read  = (int (*)(void*, struct enftun_packet*)) enftun_tls_read_packet,
     .write = (int (*)(void*, struct enftun_packet*)) enftun_tls_write_packet,
     .prepare =
@@ -316,6 +317,12 @@ int
 enftun_tls_pending(struct enftun_tls* tls)
 {
     return SSL_pending(tls->ssl);
+}
+
+int
+enftun_tls_fd(struct enftun_tls* tls)
+{
+    return tls->sock.fd;
 }
 
 int

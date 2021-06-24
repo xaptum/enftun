@@ -56,6 +56,9 @@ int
 enftun_tun_write(struct enftun_tun* tun, uint8_t* buf, size_t len);
 
 int
+enftun_tun_fd(struct enftun_tun* tun);
+
+int
 enftun_tun_read_packet(struct enftun_tun* tun, struct enftun_packet* pkt);
 
 int

@@ -138,12 +138,12 @@ enftun_context_tunnel_init(struct enftun_context* ctx,
     int rc;
 
     rc = enftun_channel_init(&ctx->tlschan, &enftun_tls_ops, &ctx->tls,
-                             &ctx->loop, ctx->tls.sock.fd);
+                             &ctx->loop);
     if (rc < 0)
         goto out;
 
     rc = enftun_channel_init(&ctx->tunchan, &enftun_tun_ops, &ctx->tun,
-                             &ctx->loop, ctx->tun.fd);
+                             &ctx->loop);
     if (rc < 0)
         goto free_tlschan;
 

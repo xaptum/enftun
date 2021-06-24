@@ -114,10 +114,9 @@ int
 enftun_channel_init(struct enftun_channel* chan,
                     struct enftun_channel_ops* ops,
                     void* ops_context,
-                    uv_loop_t* loop,
-                    int fd)
+                    uv_loop_t* loop)
 {
-    int rc;
+    int rc, fd;
 
     CLEAR(*chan);
 
@@ -129,7 +128,9 @@ enftun_channel_init(struct enftun_channel* chan,
 
     chan->events    = 0;
     chan->poll.data = chan;
-    rc              = uv_poll_init(loop, &chan->poll, fd);
+
+    fd = chan->ops->fd(chan->ops_context);
+    rc = uv_poll_init(loop, &chan->poll, fd);
 
     return rc;
 }

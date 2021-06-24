@@ -75,6 +75,9 @@ int
 enftun_tls_write(struct enftun_tls* tls, uint8_t* buf, size_t len);
 
 int
+enftun_tls_fd(struct enftun_tls* tls);
+
+int
 enftun_tls_pending(struct enftun_tls* tls);
 
 int

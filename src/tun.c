@@ -35,6 +35,7 @@
 #include "tun.h"
 
 struct enftun_channel_ops enftun_tun_ops = {
+    .fd      = (int (*)(void*)) enftun_tun_fd,
     .read    = (int (*)(void*, struct enftun_packet*)) enftun_tun_read_packet,
     .write   = (int (*)(void*, struct enftun_packet*)) enftun_tun_write_packet,
     .prepare = NULL,
@@ -163,6 +164,12 @@ enftun_tun_write(struct enftun_tun* tun, uint8_t* buf, size_t len)
         return -errno;
     else
         return rc;
+}
+
+int
+enftun_tun_fd(struct enftun_tun* tun)
+{
+    return tun->fd;
 }
 
 int
