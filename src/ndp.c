@@ -64,7 +64,8 @@ send_ra(struct enftun_ndp* ndp)
     enftun_crb_write(&ndp->ra_crb, ndp->chan);
 
     // Start timer again
-    uv_timer_start(&ndp->timer, on_timer, ndp->ra_period, 0);
+    if (ndp->ra_period > 0)
+        uv_timer_start(&ndp->timer, on_timer, ndp->ra_period, 0);
 }
 
 static void
@@ -117,9 +118,10 @@ enftun_ndp_free(struct enftun_ndp* ndp)
 int
 enftun_ndp_start(struct enftun_ndp* ndp)
 {
-    int rc;
+    int rc = 0;
 
-    rc = uv_timer_start(&ndp->timer, on_timer, 0, 0);
+    if (ndp->ra_period > 0)
+        rc = uv_timer_start(&ndp->timer, on_timer, 0, 0);
 
     return rc;
 }

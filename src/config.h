@@ -49,7 +49,7 @@ struct enftun_config
     const char** trusted_ifaces;
     int allow_ipv4;
 
-    int ra_period; /* router advertisement period in ms */
+    int ra_period; /* router advertisement period in ms; 0 to disable */
 
     int heartbeat_period;
     int heartbeat_timeout;
