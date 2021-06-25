@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Xaptum, Inc.
+ * Copyright 2018-2021 Xaptum, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,17 +47,28 @@ struct enftun_context
     struct enftun_conn_state conn_state;
 
     struct enftun_tls tls;
+
     struct enftun_tun tun;
 
     // Tunnel context
-    struct enftun_channel tlschan;
-    struct enftun_channel tunchan;
+    struct
+    {
+        struct enftun_channel remote;
+        struct enftun_channel local;
+    } channels;
 
-    struct enftun_chain ingress;
-    struct enftun_chain egress;
+    struct
+    {
+        struct enftun_chain ingress;
+        struct enftun_chain egress;
+    } chains;
 
-    struct enftun_dhcp dhcp;
-    struct enftun_ndp ndp;
+    // Services
+    struct
+    {
+        struct enftun_dhcp dhcp;
+        struct enftun_ndp ndp;
+    } services;
 
     struct in6_addr ipv6;
     char ipv6_str[45];

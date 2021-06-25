@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Xaptum, Inc.
+ * Copyright 2018-2021 Xaptum, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -96,7 +96,7 @@ enftun_context_run_init(struct enftun_context* ctx,
     rc = enftun_conn_state_init(
         &ctx->conn_state, &ctx->loop, ctx->config.fwmark,
         ctx->config.heartbeat_period, ctx->config.heartbeat_timeout,
-        &ctx->tlschan, &ctx->ipv6, &ip6_enf_router, cb, ctx);
+        &ctx->channels.local, &ctx->ipv6, &ip6_enf_router, cb, ctx);
     if (rc < 0)
         goto err;
 
@@ -137,51 +137,53 @@ enftun_context_tunnel_init(struct enftun_context* ctx,
 {
     int rc;
 
-    rc = enftun_channel_init(&ctx->tlschan, &enftun_tls_ops, &ctx->tls,
+    rc = enftun_channel_init(&ctx->channels.remote, &enftun_tls_ops, &ctx->tls,
                              &ctx->loop);
     if (rc < 0)
         goto out;
 
-    rc = enftun_channel_init(&ctx->tunchan, &enftun_tun_ops, &ctx->tun,
+    rc = enftun_channel_init(&ctx->channels.local, &enftun_tun_ops, &ctx->tun,
                              &ctx->loop);
     if (rc < 0)
-        goto free_tlschan;
+        goto free_remote_chan;
 
-    rc = enftun_chain_init(&ctx->ingress, &ctx->tlschan, &ctx->tunchan, ctx,
-                           ingress);
+    rc = enftun_chain_init(&ctx->chains.ingress, &ctx->channels.remote,
+                           &ctx->channels.local, ctx, ingress);
     if (rc < 0)
-        goto free_tunchan;
+        goto free_local_chan;
 
-    rc = enftun_chain_init(&ctx->egress, &ctx->tunchan, &ctx->tlschan, ctx,
-                           egress);
+    rc = enftun_chain_init(&ctx->chains.egress, &ctx->channels.local,
+                           &ctx->channels.remote, ctx, egress);
     if (rc < 0)
         goto free_ingress;
 
-    rc = enftun_ndp_init(&ctx->ndp, &ctx->tunchan, &ctx->loop, &ctx->ipv6,
-                         ctx->config.prefixes, ctx->config.ra_period);
+    rc = enftun_ndp_init(&ctx->services.ndp, &ctx->channels.local, &ctx->loop,
+                         &ctx->ipv6, ctx->config.prefixes,
+                         ctx->config.ra_period);
     if (rc < 0)
         goto free_egress;
 
-    rc = enftun_dhcp_init(&ctx->dhcp, &ctx->tunchan, &ctx->ipv6);
+    rc =
+        enftun_dhcp_init(&ctx->services.dhcp, &ctx->channels.local, &ctx->ipv6);
     if (rc < 0)
         goto free_ndp;
 
     return 0;
 
 free_ndp:
-    enftun_ndp_free(&ctx->ndp);
+    enftun_ndp_free(&ctx->services.ndp);
 
 free_egress:
-    enftun_chain_free(&ctx->egress);
+    enftun_chain_free(&ctx->chains.egress);
 
 free_ingress:
-    enftun_chain_free(&ctx->ingress);
+    enftun_chain_free(&ctx->chains.ingress);
 
-free_tunchan:
-    enftun_channel_free(&ctx->tunchan);
+free_local_chan:
+    enftun_channel_free(&ctx->channels.local);
 
-free_tlschan:
-    enftun_channel_free(&ctx->tlschan);
+free_remote_chan:
+    enftun_channel_free(&ctx->channels.remote);
 
 out:
     return rc;
@@ -190,12 +192,12 @@ out:
 int
 enftun_context_tunnel_free(struct enftun_context* ctx)
 {
-    enftun_dhcp_free(&ctx->dhcp);
-    enftun_ndp_free(&ctx->ndp);
-    enftun_chain_free(&ctx->egress);
-    enftun_chain_free(&ctx->ingress);
-    enftun_channel_free(&ctx->tunchan);
-    enftun_channel_free(&ctx->tlschan);
+    enftun_dhcp_free(&ctx->services.dhcp);
+    enftun_ndp_free(&ctx->services.ndp);
+    enftun_chain_free(&ctx->chains.egress);
+    enftun_chain_free(&ctx->chains.ingress);
+    enftun_channel_free(&ctx->channels.local);
+    enftun_channel_free(&ctx->channels.remote);
 
     return 0;
 }

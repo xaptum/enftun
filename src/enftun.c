@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Xaptum, Inc.
+ * Copyright 2018-2021 Xaptum, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#include "channel.h"
 #include "conn_state.h"
 #include "context.h"
 #include "dhcp.h"
@@ -42,9 +41,9 @@ start_all(struct enftun_context* ctx)
     if (ctx->tls.sock.type == ENFTUN_TCP_NATIVE)
         enftun_conn_state_start(&ctx->conn_state, &ctx->tls);
 
-    enftun_chain_start(&ctx->ingress, chain_complete);
-    enftun_chain_start(&ctx->egress, chain_complete);
-    enftun_ndp_start(&ctx->ndp);
+    enftun_chain_start(&ctx->chains.ingress, chain_complete);
+    enftun_chain_start(&ctx->chains.egress, chain_complete);
+    enftun_ndp_start(&ctx->services.ndp);
 
     enftun_log_info("Started.\n");
 }
@@ -52,9 +51,9 @@ start_all(struct enftun_context* ctx)
 static void
 stop_all(struct enftun_context* ctx)
 {
-    enftun_ndp_stop(&ctx->ndp);
-    enftun_chain_stop(&ctx->ingress);
-    enftun_chain_stop(&ctx->egress);
+    enftun_ndp_stop(&ctx->services.ndp);
+    enftun_chain_stop(&ctx->chains.ingress);
+    enftun_chain_stop(&ctx->chains.egress);
 
     if (ctx->tls.sock.type == ENFTUN_TCP_NATIVE)
         enftun_conn_state_stop(&ctx->conn_state);
@@ -123,10 +122,10 @@ chain_egress_filter(struct enftun_chain* chain, struct enftun_packet* pkt)
     struct enftun_context* ctx = (struct enftun_context*) chain->data;
 
     // -------------------------- Handlers --------------------------
-    if (enftun_ndp_handle_packet(&ctx->ndp, pkt))
+    if (enftun_ndp_handle_packet(&ctx->services.ndp, pkt))
         return 1; // STOLEN
 
-    if (enftun_dhcp_handle_packet(&ctx->dhcp, pkt))
+    if (enftun_dhcp_handle_packet(&ctx->services.dhcp, pkt))
         return 1; // STOLEN
 
     // -------------------------- IPv4 --------------------------
