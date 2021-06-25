@@ -56,6 +56,35 @@ err:
     return NULL;
 }
 
+struct nd_neighbor_solicit*
+enftun_icmp6_nd_ns_pull(struct enftun_packet* pkt, struct ip6_hdr* iph)
+{
+    ENFTUN_SAVE_INIT(pkt);
+
+    if (IPPROTO_ICMPV6 != iph->ip6_nxt)
+        goto err;
+
+    struct nd_neighbor_solicit* ns =
+        enftun_packet_remove_head(pkt, sizeof(*ns));
+    if (!ns)
+        goto err;
+
+    if (ND_NEIGHBOR_SOLICIT != ns->nd_ns_type)
+        goto err;
+
+    if (0 != ns->nd_ns_code)
+        goto err;
+
+    if (0 != ip6_l3_cksum(iph, &ns->nd_ns_hdr))
+        goto err;
+
+    return ns;
+
+err:
+    ENFTUN_RESTORE(pkt);
+    return NULL;
+}
+
 struct nd_opt_mtu*
 enftun_icmp6_nd_mtu(struct enftun_packet* pkt)
 {
@@ -165,6 +194,33 @@ enftun_icmp6_nd_ra(struct enftun_packet* pkt,
     ra->nd_ra_cksum    = ip6_l3_cksum(nh, &ra->nd_ra_hdr);
 
     return ra;
+
+err:
+    return NULL;
+}
+
+struct nd_neighbor_advert*
+enftun_icmp6_nd_na(struct enftun_packet* pkt,
+                   const struct in6_addr* src,
+                   const struct in6_addr* dst,
+                   const struct in6_addr* target)
+{
+    enftun_ip6_reserve(pkt);
+
+    struct nd_neighbor_advert* na = enftun_packet_insert_tail(pkt, sizeof(*na));
+    if (!na)
+        goto err;
+
+    na->nd_na_type           = ND_NEIGHBOR_ADVERT;
+    na->nd_na_code           = 0;
+    na->nd_na_cksum          = 0; // computed below
+    na->nd_na_flags_reserved = ND_NA_FLAG_SOLICITED;
+    memcpy(&na->nd_na_target, target, sizeof(*target));
+
+    struct ip6_hdr* nh = enftun_ip6_header(pkt, IPPROTO_ICMPV6, 255, src, dst);
+    na->nd_na_cksum    = ip6_l3_cksum(nh, &na->nd_na_hdr);
+
+    return na;
 
 err:
     return NULL;

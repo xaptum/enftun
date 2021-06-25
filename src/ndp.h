@@ -31,6 +31,7 @@ struct enftun_ndp
     struct enftun_channel* chan;
 
     struct in6_addr network;
+
     const char** routes;
     int ra_period;
 
@@ -41,6 +42,11 @@ struct enftun_ndp
 
     bool ra_sending;
     bool ra_scheduled;
+
+    struct enftun_packet na_pkt;
+    struct enftun_crb na_crb;
+
+    bool na_sending;
 };
 
 int

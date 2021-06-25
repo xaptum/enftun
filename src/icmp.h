@@ -62,8 +62,17 @@ enftun_icmp6_nd_ra(struct enftun_packet* pkt,
                    uint16_t prefix,
                    const char** other_routes);
 
+struct nd_neighbor_advert*
+enftun_icmp6_nd_na(struct enftun_packet* pkt,
+                   const struct in6_addr* src,
+                   const struct in6_addr* dst,
+                   const struct in6_addr* target);
+
 struct nd_router_solicit*
 enftun_icmp6_nd_rs_pull(struct enftun_packet* pkt, struct ip6_hdr* iph);
+
+struct nd_neighbor_solicit*
+enftun_icmp6_nd_ns_pull(struct enftun_packet* pkt, struct ip6_hdr* iph);
 
 struct icmp6_hdr*
 enftun_icmp6_echo_reply_pull(struct enftun_packet* pkt, struct ip6_hdr* iph);

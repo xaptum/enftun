@@ -28,8 +28,14 @@
 
 static void
 send_ra(struct enftun_ndp* ndp);
+
 static void
 schedule_ra(struct enftun_ndp* ndp);
+
+static void
+send_na(struct enftun_ndp* ndp,
+        const struct in6_addr* src,
+        const struct in6_addr* dst);
 
 static void
 on_timer(uv_timer_t* timer)
@@ -39,7 +45,7 @@ on_timer(uv_timer_t* timer)
 }
 
 static void
-on_write(struct enftun_crb* crb)
+on_ra_write(struct enftun_crb* crb)
 {
     struct enftun_ndp* ndp = crb->context;
 
@@ -49,6 +55,17 @@ on_write(struct enftun_crb* crb)
     ndp->ra_sending = false;
     if (ndp->ra_scheduled)
         send_ra(ndp);
+}
+
+static void
+on_na_write(struct enftun_crb* crb)
+{
+    struct enftun_ndp* ndp = crb->context;
+
+    if (crb->status)
+        enftun_log_error("ndp: failed to send NA: %d\n", crb->status);
+
+    ndp->na_sending = false;
 }
 
 static void
@@ -77,6 +94,22 @@ schedule_ra(struct enftun_ndp* ndp)
         send_ra(ndp);
 }
 
+static void
+send_na(struct enftun_ndp* ndp,
+        const struct in6_addr* src,
+        const struct in6_addr* dst)
+{
+    if (ndp->na_sending == true)
+        return;
+
+    ndp->na_sending = true;
+
+    enftun_packet_reset(&ndp->na_pkt);
+    enftun_icmp6_nd_na(&ndp->na_pkt, src, dst, src);
+
+    enftun_crb_write(&ndp->na_crb, ndp->chan);
+}
+
 int
 enftun_ndp_init(struct enftun_ndp* ndp,
                 struct enftun_channel* chan,
@@ -92,6 +125,7 @@ enftun_ndp_init(struct enftun_ndp* ndp,
     ndp->chan = chan;
 
     memcpy(&ndp->network, ipv6, 8);
+
     ndp->routes    = routes;
     ndp->ra_period = ra_period;
 
@@ -100,7 +134,13 @@ enftun_ndp_init(struct enftun_ndp* ndp,
 
     ndp->ra_crb.context  = ndp;
     ndp->ra_crb.packet   = &ndp->ra_pkt;
-    ndp->ra_crb.complete = on_write;
+    ndp->ra_crb.complete = on_ra_write;
+
+    ndp->na_sending = false;
+
+    ndp->na_crb.context  = ndp;
+    ndp->na_crb.packet   = &ndp->na_pkt;
+    ndp->na_crb.complete = on_na_write;
 
     ndp->timer.data = ndp;
     rc              = uv_timer_init(loop, &ndp->timer);
@@ -137,8 +177,8 @@ enftun_ndp_stop(struct enftun_ndp* ndp)
     return 0;
 }
 
-int
-enftun_ndp_handle_packet(struct enftun_ndp* ndp, struct enftun_packet* pkt)
+static int
+handle_rs(struct enftun_ndp* ndp, struct enftun_packet* pkt)
 {
     ENFTUN_SAVE_INIT(pkt);
 
@@ -157,4 +197,31 @@ enftun_ndp_handle_packet(struct enftun_ndp* ndp, struct enftun_packet* pkt)
 pass:
     ENFTUN_RESTORE(pkt);
     return 0;
+}
+
+static int
+handle_ns(struct enftun_ndp* ndp, struct enftun_packet* pkt)
+{
+    ENFTUN_SAVE_INIT(pkt);
+
+    struct ip6_hdr* iph = enftun_ip6_pull(pkt);
+    if (!iph)
+        goto pass;
+
+    struct nd_neighbor_solicit* ns = enftun_icmp6_nd_ns_pull(pkt, iph);
+    if (!ns)
+        goto pass;
+
+    send_na(ndp, &ns->nd_ns_target, &iph->ip6_src);
+    return 1;
+
+pass:
+    ENFTUN_RESTORE(pkt);
+    return 0;
+}
+
+int
+enftun_ndp_handle_packet(struct enftun_ndp* ndp, struct enftun_packet* pkt)
+{
+    return handle_rs(ndp, pkt) || handle_ns(ndp, pkt);
 }
