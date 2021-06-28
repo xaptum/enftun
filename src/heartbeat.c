@@ -27,8 +27,8 @@
 #include <time.h>
 #include <uv.h>
 
-#include "icmp.h"
-#include "ip.h"
+#include "icmp6.h"
+#include "ip6.h"
 #include "log.h"
 
 static void

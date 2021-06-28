@@ -21,7 +21,7 @@
 
 #include "cert.h"
 #include "conn_state.h"
-#include "ip.h"
+#include "ip6.h"
 #include "log.h"
 #include "pcap.h"
 

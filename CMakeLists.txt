@@ -58,13 +58,13 @@ set(ENFTUN_SRCS
     src/conn_state.c
     src/context.c
     src/dhcp.c
-    src/dhcp_msgs.c
+    src/dhcp6_msgs.c
     src/enftun.c
     src/exec.c
     src/filter.c
     src/heartbeat.c
-    src/icmp.c
-    src/ip.c
+    src/icmp6.c
+    src/ip6.c
     src/log.c
     src/ndp.c
     src/netlink.c

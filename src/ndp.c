@@ -20,8 +20,8 @@
 #include <netinet/ip6.h>
 #include <string.h>
 
-#include "icmp.h"
-#include "ip.h"
+#include "icmp6.h"
+#include "ip6.h"
 #include "log.h"
 #include "memory.h"
 #include "packet.h"

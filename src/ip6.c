@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "ip.h"
+#include "ip6.h"
 
 #include <errno.h>
 #include <stdio.h>

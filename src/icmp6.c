@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-#include "icmp.h"
+#include "icmp6.h"
 
 #include <stdint.h>
 
 #include <netinet/in.h>
 
 #include "cksum.h"
-#include "ip.h"
+#include "ip6.h"
 #include "log.h"
 #include "packet.h"
 

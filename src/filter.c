@@ -17,7 +17,7 @@
 #include <arpa/inet.h>
 
 #include "filter.h"
-#include "ip.h"
+#include "ip6.h"
 #include "log.h"
 
 #define IP4_HEADER(hdr, pkt) struct iphdr* hdr = (struct iphdr*) pkt->data

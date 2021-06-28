@@ -21,9 +21,9 @@
 #include <netinet/ip6.h>
 #include <netinet/udp.h>
 
+#include "dhcp6_msgs.h"
 #include "dhcp6_types.h"
-#include "dhcp_msgs.h"
-#include "ip.h"
+#include "ip6.h"
 #include "log.h"
 #include "memory.h"
 #include "packet.h"

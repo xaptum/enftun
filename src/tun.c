@@ -29,7 +29,7 @@
 #include <netinet/in.h>
 
 #include "exec.h"
-#include "ip.h"
+#include "ip6.h"
 #include "log.h"
 #include "memory.h"
 #include "tun.h"

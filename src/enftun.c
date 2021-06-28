@@ -23,6 +23,7 @@
 #include "context.h"
 #include "dhcp.h"
 #include "filter.h"
+#include "ip6.h"
 #include "log.h"
 #include "ndp.h"
 #include "tls.h"

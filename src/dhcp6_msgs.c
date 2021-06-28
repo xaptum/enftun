@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "dhcp_msgs.h"
+#include "dhcp6_msgs.h"
 
 #include <stdbool.h>
 #include <string.h>
