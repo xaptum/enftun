@@ -19,6 +19,7 @@
 #ifndef ENFTUN_MEM_H
 #define ENFTUN_MEM_H
 
+#include <stdbool.h>
 #include <string.h>
 
 /*
@@ -27,5 +28,36 @@
  * This could be optimized away. Do not use to clear secrets.
  */
 #define CLEAR(s) memset(&(s), 0, sizeof(s))
+
+/*
+ * https://github.com/rustyrussell/ccan/blob/master/ccan/mem/mem.c
+ * License: CC0 (Public domain)
+ */
+static inline bool
+memeq(const void* data, size_t length, unsigned char val)
+{
+    const unsigned char* p = data;
+    size_t len;
+
+    /* Check first 16 bytes manually */
+    for (len = 0; len < 16; len++)
+    {
+        if (!length)
+            return true;
+        if (*p != val)
+            return false;
+        p++;
+        length--;
+    }
+
+    /* Now we know that's all equal, memcmp with self. */
+    return memcmp(data, p, length) == 0;
+}
+
+static inline bool
+memeqzero(const void* data, size_t length)
+{
+    return memeq(data, length, 0x00);
+}
 
 #endif // ENFTUN_MEM_H
