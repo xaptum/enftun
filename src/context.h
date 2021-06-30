@@ -27,6 +27,7 @@
 #include "config.h"
 #include "conn_state.h"
 #include "dhcp.h"
+#include "nat.h"
 #include "ndp.h"
 #include "options.h"
 #include "pcap.h"
@@ -80,6 +81,7 @@ struct enftun_context
     {
         struct enftun_dhcp dhcp;
         struct enftun_ndp ndp;
+        struct enftun_nat nat;
     } services;
 
     struct in6_addr ipv6;

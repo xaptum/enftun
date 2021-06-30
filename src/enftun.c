@@ -118,6 +118,8 @@ chain_ingress_filter(struct enftun_chain* chain, struct enftun_packet* pkt)
             return 1; // DROP
         }
 
+        enftun_nat_ingress(&ctx->services.nat, pkt);
+
         return 0; // ACCEPT
     }
 
@@ -155,6 +157,8 @@ chain_egress_filter(struct enftun_chain* chain, struct enftun_packet* pkt)
     // -------------------------- IPv6 --------------------------
     if (enftun_is_ipv6(pkt))
     {
+        enftun_nat_egress(&ctx->services.nat, pkt);
+
         // Check src IP is us
         if (!enftun_has_src_ip(pkt, &ctx->ipv6))
         {

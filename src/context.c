@@ -208,7 +208,15 @@ enftun_context_tunnel_init(struct enftun_context* ctx,
     if (rc < 0)
         goto free_ndp;
 
+    rc = enftun_nat_init(&ctx->services.nat, ctx->config.nat_rules,
+                         ctx->config.nat_rules_len, &ctx->ipv6);
+    if (rc < 0)
+        goto free_dhcp;
+
     return 0;
+
+free_dhcp:
+    enftun_dhcp_free(&ctx->services.dhcp);
 
 free_ndp:
     enftun_ndp_free(&ctx->services.ndp);

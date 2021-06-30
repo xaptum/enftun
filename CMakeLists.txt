@@ -73,6 +73,7 @@ set(ENFTUN_SRCS
     src/icmp6.c
     src/ip6.c
     src/log.c
+    src/nat.c
     src/nat_rule.c
     src/ndp.c
     src/netlink.c
