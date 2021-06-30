@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Xaptum, Inc.
+ * Copyright 2018-2021 Xaptum, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 
+#include "config.h"
+#include "config_nat.h"
+
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -21,9 +24,9 @@
 
 #include <libconfig.h>
 
-#include "config.h"
 #include "log.h"
 #include "memory.h"
+#include "nat_rule.h"
 
 /**
  * Joins a null-terminated array of strings with the specified
@@ -116,6 +119,9 @@ enftun_config_init(struct enftun_config* config)
     config->tpm_password    = NULL;
     config->tpm_parent      = 0;
 
+    config->nat_enable = 0;
+    config->nat_rules  = NULL;
+
     config->trace_enable    = 0;
     config->trace_pcap_file = NULL;
 
@@ -128,6 +134,7 @@ enftun_config_free(struct enftun_config* config)
     free(config->trusted_ifaces);
     free(config->prefixes);
     free(config->remote_hosts);
+    free(config->nat_rules);
     config_destroy(&config->cfg);
     CLEAR(*config);
     return 0;
@@ -224,6 +231,14 @@ enftun_config_parse(struct enftun_config* config, const char* file)
         config_lookup_string(cfg, "identity.tpm.password",
                              &config->tpm_password);
         config_lookup_int(cfg, "identity.tpm.parent", &config->tpm_parent);
+    }
+
+    /* NAT settings */
+    if (NULL != config_lookup(cfg, "nat"))
+    {
+        config->nat_enable = 1;
+        lookup_nat_rule_list(cfg, "nat.rules", &config->nat_rules,
+                             &config->nat_rules_len);
     }
 
     /* Trace settings */

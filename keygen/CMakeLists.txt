@@ -29,6 +29,7 @@ add_executable(enftun-keygen
     src/iam.c
     src/tpm.c
     src/enftun/config.c
+    src/enftun/config_nat.c
     src/enftun/log.c
     src/enftun/tls_tpm.c
     )
